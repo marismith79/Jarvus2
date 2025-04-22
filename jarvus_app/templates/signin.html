@@ -1,9 +1,10 @@
-<form method="POST">
-    <input type="text" name="username" placeholder="Username" required />
-    <input type="password" name="password" placeholder="Password" required />
-    <button type="submit">Sign In</button>
+<!-- templates/signin.html -->
+<!DOCTYPE html>
+<html>
+  <body>
+    <a href="{{ url_for('auth.signin') }}">Sign in with your Jarvus account</a>
     {% if error %}
-      <p>{{ error }}</p>
+      <p style="color:red">{{ error }}</p>
     {% endif %}
-  </form>
-  
+  </body>
+</html>
