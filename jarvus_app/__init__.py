@@ -1,12 +1,12 @@
 from flask import Flask
-from project_name.config import Config  # Adjust if you rename the package
+from jarvus_app.config import Config  # Adjust if you rename the package
 
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
     # Register routes here
-    from project_name.routes.web_pages import web
+    from jarvus_app.routes.web_pages import web
     app.register_blueprint(web)
 
     return app
