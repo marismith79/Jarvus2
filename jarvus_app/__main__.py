@@ -1,12 +1,12 @@
 from flask import Flask
-from app.config import Config
+from jarvus_app.config import Config
 
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
     # Register routes here
-    from app.routes.web_pages import web
+    from jarvus_app.routes.web_pages import web
     app.register_blueprint(web)
 
     return app

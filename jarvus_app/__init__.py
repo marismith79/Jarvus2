@@ -1,16 +1,19 @@
 from flask import Flask
-from jarvus_app.config import Config  # Adjust if you rename the package
+from jarvus_app.routes.web_pages import web
+from jarvus_app.routes.auth import auth
+from jarvus_app.routes.api import api
+
 
 def create_app():
     app = Flask(__name__)
-    app.config.from_object(Config)
+    app.secret_key = "11234567890"  # replace with os.getenv or env var
+    app.config["DEBUG"] = True
 
-    # Register routes here
-    from jarvus_app.routes.web_pages import web
     app.register_blueprint(web)
+    app.register_blueprint(auth)
+    app.register_blueprint(api)
 
     return app
 
-# Optional for CLI/WSGI-based usage
 def create_app_wsgi():
     return create_app()
