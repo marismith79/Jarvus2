@@ -1,13 +1,16 @@
-import click
-from flask.cli import FlaskGroup
+from flask import Flask
+from app.config import Config
 
-from . import create_app_wsgi
+def create_app():
+    app = Flask(__name__)
+    app.config.from_object(Config)
 
+    # Register routes here
+    from app.routes.web_pages import web
+    app.register_blueprint(web)
 
-@click.group(cls=FlaskGroup, create_app=create_app_wsgi)
-def main():
-    """Management script for the project_name application."""
+    return app
 
-
-if __name__ == "__main__":  # pragma: no cover
-    main()
+if __name__ == "__main__":
+    app = create_app()
+    app.run(debug=True)

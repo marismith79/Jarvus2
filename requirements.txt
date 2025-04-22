@@ -4,6 +4,10 @@ flask-simplelogin
 flask-bootstrap
 flask-sqlalchemy
 sqlalchemy-serializer
-dynaconf
 click
 flask-restful
+Jinja2
+python-dotenv
+azure-storage-blob
+azure-cosmos
+openai

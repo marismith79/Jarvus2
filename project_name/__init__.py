@@ -1,3 +1,16 @@
-from .base import create_app, create_app_wsgi
+from flask import Flask
+from project_name.config import Config  # Adjust if you rename the package
 
-__all__ = ["create_app", "create_app_wsgi"]
+def create_app():
+    app = Flask(__name__)
+    app.config.from_object(Config)
+
+    # Register routes here
+    from project_name.routes.web_pages import web
+    app.register_blueprint(web)
+
+    return app
+
+# Optional for CLI/WSGI-based usage
+def create_app_wsgi():
+    return create_app()
