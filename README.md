@@ -9,24 +9,24 @@ See also
 <!--  DELETE THE LINES ABOVE THIS AND WRITE YOUR PROJECT README BELOW -->
 
 ---
-# project_name Flask Application
+# jarvus2 Flask Application
 
-project_description
+Awesome jarvus2 created by marismith79
 
 ## Installation
 
 From source:
 
 ```bash
-git clone https://github.com/author_name/project_urlname project_name
-cd project_name
+git clone https://github.com/marismith79/Jarvus2 jarvus2
+cd jarvus2
 make install
 ```
 
 From pypi:
 
 ```bash
-pip install project_name
+pip install jarvus2
 ```
 
 ## Executing
@@ -36,13 +36,13 @@ This application has a CLI interface that extends the Flask CLI.
 Just run:
 
 ```bash
-$ project_name
+$ jarvus2
 ```
 
 or
 
 ```bash
-$ python -m project_name
+$ python -m jarvus2
 ```
 
 To see the help message and usage instructions.
@@ -50,10 +50,10 @@ To see the help message and usage instructions.
 ## First run
 
 ```bash
-project_name create-db   # run once
-project_name populate-db  # run once (optional)
-project_name add-user -u admin -p 1234  # ads a user
-project_name run
+jarvus2 create-db   # run once
+jarvus2 populate-db  # run once (optional)
+jarvus2 add-user -u admin -p 1234  # ads a user
+jarvus2 run
 ```
 
 Go to:
