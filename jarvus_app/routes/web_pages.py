@@ -5,7 +5,7 @@ web = Blueprint("web", __name__)
 
 @web.route("/")
 def landing():
-    return render_template("home.html")
+    return render_template("landing.html")
 
 @web.route("/home")
 def home():

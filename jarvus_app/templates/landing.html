@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jarvus - AI Powered Solutions</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="logo">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Jarvus Logo">
+                <span>Jarvus</span>
+            </div>
+            <nav>
+                <a href="#about">About</a>
+                <a href="/signin" class="cta-button">Sign In</a>
+            </nav>
+        </div>
+    </header>
+
+    <section class="hero">
+        <div class="container">
+            <div class="announcement-banner">
+                <span>✨ Jarvus just got better</span>
+                <a href="#launch">Explore the Launch</a>
+            </div>
+
+            <div class="credentials">
+                <div class="badge">
+                    <span>Backed by Top Investors</span>
+                </div>
+                <div class="separator">|</div>
+                <div class="description">Built for Solo Therapists</div>
+            </div>
+
+            <div class="hero-content">
+                <h1>Take Control of Your Solo Practice</h1>
+                <p>Built for solo therapists at every stage. Automate credentialing, paneling, marketing, and more.</p>
+                
+                <div class="signup-form">
+                    <input type="email" placeholder="hello@example.com">
+                    <button class="cta-button">Sign Up</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="features">
+        <div class="container">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <img src="{{ url_for('static', filename='images/feature-icon.svg') }}" alt="Feature Icon">
+                </div>
+                <h3>Automate Credentialing</h3>
+                <p>Our AI-powered platform fills out credentialing forms and updates you on progress.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <img src="{{ url_for('static', filename='images/feature-icon.svg') }}" alt="Feature Icon">
+                </div>
+                <h3>Create Superbills</h3>
+                <p>Generate compliant client-ready superbills automatically with a few clicks.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <img src="{{ url_for('static', filename='images/feature-icon.svg') }}" alt="Feature Icon">
+                </div>
+                <h3>Submit Insurance Claims</h3>
+                <p>Seamlessly generate and submit claims to insurance companies.</p>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <div class="footer-logo">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Jarvus Logo">
+                <span>Jarvus</span>
+            </div>
+            <div class="footer-links">
+                <a href="#terms">Terms</a>
+                <a href="#privacy">Privacy</a>
+                <a href="#contact">Contact</a>
+            </div>
+            <div class="copyright">
+                &copy; 2025 Jarvus. All rights reserved.
+            </div>
+        </div>
+    </footer>
+</body>
+</html> 

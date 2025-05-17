@@ -57,11 +57,13 @@ def authorized():
 
 @auth.route("/logout")
 def logout():
-    """Clear session and redirect to B2C logout."""
     session.clear()
+
+    post_logout = url_for("web.landing", _external=True)
     logout_url = (
-        f"https://{TENANT_NAME}.b2clogin.com/{TENANT_DOMAIN}/{SIGNIN_FLOW}/"
-        f"oauth2/v2.0/logout?post_logout_redirect_uri="
-        f"{url_for('auth.signin', _external=True)}"
+        f"https://{TENANT_NAME}.b2clogin.com/{TENANT_DOMAIN}/{SIGNIN_FLOW}"
+        "/oauth2/v2.0/logout"
+        f"?post_logout_redirect_uri={post_logout}"
     )
     return redirect(logout_url)
+
