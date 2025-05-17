@@ -15,7 +15,12 @@
             </div>
             <nav>
                 <a href="#about">About</a>
-                <a href="/signin" class="cta-button">Sign In</a>
+                {% if session.get('user') %}
+                    <a href="{{ url_for('web.profile') }}">Profile</a>
+                    <a href="{{ url_for('auth.logout') }}" class="cta-button">Log Out</a>
+                {% else %}
+                    <a href="/signin" class="cta-button">Sign In</a>
+                {% endif %}
             </nav>
         </div>
     </header>
@@ -40,8 +45,8 @@
                 <p>Built for solo therapists at every stage. Automate credentialing, paneling, marketing, and more.</p>
                 
                 <div class="signup-form">
-                    <input type="email" placeholder="hello@example.com">
-                    <button class="cta-button">Sign Up</button>
+                    <input type="email" placeholder="example@email.com">
+                    <button class="cta-button">Book Demo</button>
                 </div>
             </div>
         </div>

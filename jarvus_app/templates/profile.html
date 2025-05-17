@@ -1,3 +1,160 @@
-<h1>{{ user }}'s Profile</h1>
-<p>Edit your info here.</p>
-<a href="/home">Back to Home</a>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jarvus - Your Profile</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="logo">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Jarvus Logo">
+                <span>Jarvus</span>
+            </div>
+            <nav>
+                <a href="/">Home</a>
+                <a href="#" class="active">Profile</a>
+                <a href="{{ url_for('auth.logout') }}" class="cta-button">Log Out</a>
+            </nav>
+        </div>
+    </header>
+
+    <section class="profile-hero">
+        <div class="container">
+            <h1>Welcome! {{ user.given_name if user.given_name else user.name }}</h1>
+            <p>Manage your profile and practice information</p>
+        </div>
+    </section>
+
+    <section class="profile-content">
+        <div class="container">
+            <div class="profile-grid">
+                <!-- Personal Information Section -->
+                <div class="profile-card">
+                    <h2>Personal Information</h2>
+                    <form class="profile-form">
+                        <div class="form-group">
+                            <label for="name">Full Name</label>
+                            <input type="text" id="name" value="{{ user.name }}" placeholder="Your name">
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email Address</label>
+                            <input type="email" id="email" value="{{ user.emails[0] if user.emails else '' }}" placeholder="Your email">
+                        </div>
+                        <div class="form-group">
+                            <label for="phone">Phone Number</label>
+                            <input type="tel" id="phone" placeholder="Your phone">
+                        </div>
+                        <button type="submit" class="cta-button">Save Changes</button>
+                    </form>
+                </div>
+
+                <!-- Practice Information Section -->
+                <div class="profile-card">
+                    <h2>Practice Information</h2>
+                    <form class="profile-form">
+                        <div class="form-group">
+                            <label for="practice_name">Practice Name</label>
+                            <input type="text" id="practice_name" placeholder="Your practice name">
+                        </div>
+                        <div class="form-group">
+                            <label for="practice_address">Practice Address</label>
+                            <input type="text" id="practice_address" placeholder="Street address">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group half">
+                                <label for="practice_city">City</label>
+                                <input type="text" id="practice_city" placeholder="City">
+                            </div>
+                            <div class="form-group half">
+                                <label for="practice_state">State</label>
+                                <input type="text" id="practice_state" placeholder="State">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="practice_zip">ZIP Code</label>
+                            <input type="text" id="practice_zip" placeholder="ZIP code">
+                        </div>
+                        <button type="submit" class="cta-button">Save Changes</button>
+                    </form>
+                </div>
+
+                <!-- Credentials Section -->
+                <div class="profile-card">
+                    <h2>Credentials & Licensing</h2>
+                    <form class="profile-form">
+                        <div class="form-group">
+                            <label for="license_number">License Number</label>
+                            <input type="text" id="license_number" placeholder="Your license number">
+                        </div>
+                        <div class="form-group">
+                            <label for="license_state">State</label>
+                            <input type="text" id="license_state" placeholder="State of licensure">
+                        </div>
+                        <div class="form-group">
+                            <label for="license_expiry">Expiration Date</label>
+                            <input type="date" id="license_expiry">
+                        </div>
+                        <div class="form-group">
+                            <label for="npi">NPI Number</label>
+                            <input type="text" id="npi" placeholder="National Provider Identifier">
+                        </div>
+                        <button type="submit" class="cta-button">Save Changes</button>
+                    </form>
+                </div>
+
+                <!-- Insurance & Billing Section -->
+                <div class="profile-card">
+                    <h2>Insurance & Billing</h2>
+                    <form class="profile-form">
+                        <div class="form-group">
+                            <label for="accepted_insurance">Accepted Insurance</label>
+                            <select id="accepted_insurance" multiple>
+                                <option value="bluecross">Blue Cross Blue Shield</option>
+                                <option value="aetna">Aetna</option>
+                                <option value="cigna">Cigna</option>
+                                <option value="uhc">United Healthcare</option>
+                                <option value="medicare">Medicare</option>
+                                <option value="medicaid">Medicaid</option>
+                            </select>
+                            <small>Hold Ctrl/Cmd to select multiple</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="session_rate">Standard Session Rate</label>
+                            <input type="number" id="session_rate" placeholder="Rate in USD">
+                        </div>
+                        <div class="form-group">
+                            <label for="sliding_scale">Sliding Scale Available</label>
+                            <select id="sliding_scale">
+                                <option value="yes">Yes</option>
+                                <option value="no">No</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="cta-button">Save Changes</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <div class="footer-logo">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Jarvus Logo">
+                <span>Jarvus</span>
+            </div>
+            <div class="footer-links">
+                <a href="#terms">Terms</a>
+                <a href="#privacy">Privacy</a>
+                <a href="#contact">Contact</a>
+            </div>
+            <div class="copyright">
+                &copy; 2025 Jarvus. All rights reserved.
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

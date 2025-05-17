@@ -5,16 +5,13 @@ web = Blueprint("web", __name__)
 
 @web.route("/")
 def landing():
-    return render_template("landing.html")
-
-@web.route("/home")
-def home():
-    if "user" not in session:
-        return redirect(url_for("auth.signin"))
-    return render_template("home.html", user=session["user"])
+    return render_template("landing.html", session=session)
 
 @web.route("/profile")
 def profile():
     if "user" not in session:
         return redirect(url_for("auth.signin"))
-    return render_template("profile.html", user=session["user"])
+    
+    # Extract user data to pass to template
+    user_data = session["user"]
+    return render_template("profile.html", user=user_data)

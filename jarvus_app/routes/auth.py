@@ -49,7 +49,7 @@ def authorized():
 
     if "id_token_claims" in result:
         session["user"] = result["id_token_claims"]  # store the token claims
-        return redirect(url_for("web.home"))
+        return redirect(url_for("web.landing"))
 
     # on error, show the sign‑in page with an error message
     error = result.get("error_description") or result.get("error")
