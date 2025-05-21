@@ -10,9 +10,10 @@ Jinja2
 python-dotenv
 azure-storage-blob
 azure-cosmos
-openaiFlask==3.1.0
+openai>=0.27.0
 Flask-Admin==1.6.1
 Flask-Bootstrap==3.3.7.1
 Flask-RESTful==0.3.10
 Flask-SQLAlchemy==3.1.1
 Flask-WTF==1.2.2
+requests>=2.31.0

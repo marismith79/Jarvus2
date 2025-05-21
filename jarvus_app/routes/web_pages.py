@@ -15,3 +15,10 @@ def profile():
     # Extract user data to pass to template
     user_data = session["user"]
     return render_template("profile.html", user=user_data)
+
+@web.route("/chatbot")
+def chatbot():
+    if "user" not in session:
+        return redirect(url_for("auth.signin"))
+    
+    return render_template("chat.html", session=session)

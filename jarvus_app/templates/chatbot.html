@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jarvus - Web Automation Assistant</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="logo">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Jarvus Logo">
+                <span>Jarvus</span>
+            </div>
+            <nav>
+                <a href="/">Home</a>
+                <a href="#" class="active">Chat</a>
+                <a href="{{ url_for('web.profile') }}">Profile</a>
+                <a href="{{ url_for('auth.logout') }}" class="cta-button">Log Out</a>
+            </nav>
+        </div>
+    </header>
+
+    <section class="chat-section">
+        <div class="container">
+            <div class="row h-100">
+                <!-- Chat Interface -->
+                <div class="col-md-8 h-100 d-flex flex-column">
+                    <div class="card flex-grow-1">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">Web Automation Assistant</h5>
+                        </div>
+                        <div class="card-body d-flex flex-column">
+                            <!-- Chat Messages -->
+                            <div id="chat-messages" class="flex-grow-1 overflow-auto mb-3">
+                                <div class="message system">
+                                    <div class="message-content">
+                                        Hello! I'm your web automation assistant. I can help you navigate websites, fill forms, and perform various web tasks. What would you like me to do?
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Message Input -->
+                            <div class="input-group">
+                                <input type="text" id="message-input" class="form-control" placeholder="Type your message...">
+                                <button class="btn btn-primary" id="send-button">
+                                    <i class="fas fa-paper-plane"></i> Send
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Task Visualization -->
+                <div class="col-md-4 h-100">
+                    <div class="card h-100">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0">Task Execution</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="task-visualization" class="h-100">
+                                <!-- Screenshot Preview -->
+                                <div class="screenshot-container mb-3">
+                                    <img id="screenshot" class="img-fluid rounded" style="display: none;">
+                                </div>
+                                
+                                <!-- Task Log -->
+                                <div class="task-log">
+                                    <h6>Task Log:</h6>
+                                    <div id="task-log" class="border rounded p-2" style="height: 300px; overflow-y: auto;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <div class="footer-logo">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Jarvus Logo">
+                <span>Jarvus</span>
+            </div>
+            <div class="footer-links">
+                <a href="#terms">Terms</a>
+                <a href="#privacy">Privacy</a>
+                <a href="#contact">Contact</a>
+            </div>
+            <div class="copyright">
+                &copy; 2025 Jarvus. All rights reserved.
+            </div>
+        </div>
+    </footer>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const messageInput = document.getElementById('message-input');
+        const sendButton = document.getElementById('send-button');
+        const chatMessages = document.getElementById('chat-messages');
+        const taskLog = document.getElementById('task-log');
+        const screenshot = document.getElementById('screenshot');
+
+        function addMessage(content, isUser = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user' : 'system'}`;
+            messageDiv.innerHTML = `
+                <div class="message-content">
+                    ${content}
+                </div>
+            `;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function addTaskLogEntry(message, type = 'info') {
+            const entry = document.createElement('div');
+            entry.className = `task-log-entry ${type}`;
+            entry.textContent = message;
+            taskLog.appendChild(entry);
+            taskLog.scrollTop = taskLog.scrollHeight;
+        }
+
+        function updateScreenshot(base64Image) {
+            if (base64Image) {
+                screenshot.src = `data:image/png;base64,${base64Image}`;
+                screenshot.style.display = 'block';
+            } else {
+                screenshot.style.display = 'none';
+            }
+        }
+
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message) return;
+
+            // Add user message to chat
+            addMessage(message, true);
+            messageInput.value = '';
+
+            try {
+                const response = await fetch('/chatbot/send', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message }),
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Process each command result
+                    for (const step of result.results) {
+                        const command = step.command;
+                        const commandResult = step.result;
+                        
+                        // Log the command
+                        addTaskLogEntry(`Executing: ${command.method}`, 'info');
+                        
+                        // If there's a screenshot, update it
+                        if (commandResult.result && command.method === 'takeScreenshot') {
+                            updateScreenshot(commandResult.result);
+                        }
+                        
+                        // Log the result
+                        if (commandResult.error) {
+                            addTaskLogEntry(`Error: ${commandResult.error.message}`, 'error');
+                        } else {
+                            addTaskLogEntry(`Success: ${command.method} completed`, 'success');
+                        }
+                    }
+                    
+                    // Add AI response to chat
+                    addMessage('Task completed successfully!');
+                } else {
+                    addMessage(`Error: ${result.error}`);
+                    addTaskLogEntry(`Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                addMessage('An error occurred while processing your request.');
+                addTaskLogEntry(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        sendButton.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    });
+    </script>
+</body>
+</html> 

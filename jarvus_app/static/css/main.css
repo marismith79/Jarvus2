@@ -1,0 +1,77 @@
+/* Main styles */
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1;
+}
+
+/* Navbar styles */
+.navbar-brand img {
+    margin-right: 0.5rem;
+}
+
+/* Footer styles */
+.footer {
+    margin-top: auto;
+}
+
+/* Chatbot specific styles */
+.chat-container {
+    height: calc(100vh - 200px);
+    display: flex;
+    flex-direction: column;
+}
+
+.message {
+    margin-bottom: 1rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.message.user {
+    align-items: flex-end;
+}
+
+.message-content {
+    padding: 0.75rem 1rem;
+    border-radius: 1rem;
+    max-width: 80%;
+}
+
+.message.system .message-content {
+    background-color: #f0f0f0;
+}
+
+.message.user .message-content {
+    background-color: #007bff;
+    color: white;
+}
+
+/* Task visualization styles */
+.task-log-entry {
+    padding: 0.5rem;
+    border-bottom: 1px solid #eee;
+}
+
+.task-log-entry:last-child {
+    border-bottom: none;
+}
+
+.task-log-entry.success {
+    color: #28a745;
+}
+
+.task-log-entry.error {
+    color: #dc3545;
+}
+
+.screenshot-container {
+    text-align: center;
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 0.5rem;
+} 
