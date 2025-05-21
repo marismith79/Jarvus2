@@ -1,0 +1,327 @@
+[
+    {
+      "name": "navigate",
+      "description": "Loads the given URL in the browser.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "url": { "type": "string", "description": "The URL to navigate to." }
+        },
+        "required": ["url"]
+      }
+    },
+    {
+      "name": "findElement",
+      "description": "Finds a single element matching the given selector.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "using": { "type": "string", "description": "Locator strategy (e.g., 'css selector', 'xpath')." },
+          "value": { "type": "string", "description": "The locator value." }
+        },
+        "required": ["using", "value"]
+      }
+    },
+    {
+      "name": "findElements",
+      "description": "Finds all elements matching the given selector.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "using": { "type": "string" },
+          "value": { "type": "string" }
+        },
+        "required": ["using", "value"]
+      }
+    },
+    {
+      "name": "click",
+      "description": "Clicks on the specified element.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "elementId": { "type": "string", "description": "The internal ID of the element to click." }
+        },
+        "required": ["elementId"]
+      }
+    },
+    {
+      "name": "sendKeys",
+      "description": "Types the given text into the specified element.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "elementId": { "type": "string" },
+          "text": { "type": "string", "description": "Text to send to the element." }
+        },
+        "required": ["elementId", "text"]
+      }
+    },
+    {
+      "name": "clear",
+      "description": "Clears the content of the specified text field element.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "elementId": { "type": "string" }
+        },
+        "required": ["elementId"]
+      }
+    },
+    {
+      "name": "submit",
+      "description": "Submits the form containing the specified element.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "elementId": { "type": "string" }
+        },
+        "required": ["elementId"]
+      }
+    },
+    {
+      "name": "selectByValue",
+      "description": "Selects an option in a `<select>` element by its value attribute.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "elementId": { "type": "string" },
+          "value": { "type": "string" }
+        },
+        "required": ["elementId", "value"]
+      }
+    },
+    {
+      "name": "selectByIndex",
+      "description": "Selects an option in a `<select>` element by its index.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "elementId": { "type": "string" },
+          "index": { "type": "integer" }
+        },
+        "required": ["elementId", "index"]
+      }
+    },
+    {
+      "name": "selectByVisibleText",
+      "description": "Selects an option in a `<select>` element by its visible text.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "elementId": { "type": "string" },
+          "text": { "type": "string" }
+        },
+        "required": ["elementId", "text"]
+      }
+    },
+    {
+      "name": "hover",
+      "description": "Moves the mouse pointer over the specified element.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "elementId": { "type": "string" }
+        },
+        "required": ["elementId"]
+      }
+    },
+    {
+      "name": "doubleClick",
+      "description": "Double-clicks on the specified element.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "elementId": { "type": "string" }
+        },
+        "required": ["elementId"]
+      }
+    },
+    {
+      "name": "contextClick",
+      "description": "Right-clicks (context clicks) on the specified element.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "elementId": { "type": "string" }
+        },
+        "required": ["elementId"]
+      }
+    },
+    {
+      "name": "dragAndDrop",
+      "description": "Drags the source element and drops it onto the target element.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "sourceId": { "type": "string" },
+          "targetId": { "type": "string" }
+        },
+        "required": ["sourceId", "targetId"]
+      }
+    },
+    {
+      "name": "waitForElement",
+      "description": "Waits until an element matching the selector is present or timeout occurs.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "using": { "type": "string" },
+          "value": { "type": "string" },
+          "timeout": { "type": "integer", "description": "Milliseconds to wait before timing out." }
+        },
+        "required": ["using", "value", "timeout"]
+      }
+    },
+    {
+      "name": "executeScript",
+      "description": "Executes JavaScript in the context of the current page.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "script": { "type": "string", "description": "JavaScript code to execute." },
+          "arguments": { "type": "array", "items": {} }
+        },
+        "required": ["script"]
+      }
+    },
+    {
+      "name": "takeScreenshot",
+      "description": "Takes a screenshot of the current viewport and returns it as a Base64-encoded string.",
+      "parameters": { "type": "object", "properties": {} }
+    },
+    {
+      "name": "takeElementScreenshot",
+      "description": "Takes a screenshot of the specified element only.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "elementId": { "type": "string" }
+        },
+        "required": ["elementId"]
+      }
+    },
+    {
+      "name": "getCurrentUrl",
+      "description": "Returns the URL of the current page.",
+      "parameters": { "type": "object", "properties": {} }
+    },
+    {
+      "name": "getTitle",
+      "description": "Returns the title of the current page.",
+      "parameters": { "type": "object", "properties": {} }
+    },
+    {
+      "name": "getText",
+      "description": "Gets the visible text of the specified element.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "elementId": { "type": "string" }
+        },
+        "required": ["elementId"]
+      }
+    },
+    {
+      "name": "getAttribute",
+      "description": "Gets the value of the specified attribute of an element.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "elementId": { "type": "string" },
+          "name": { "type": "string", "description": "Attribute name to retrieve." }
+        },
+        "required": ["elementId", "name"]
+      }
+    },
+    {
+      "name": "isDisplayed",
+      "description": "Checks whether the specified element is displayed.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "elementId": { "type": "string" }
+        },
+        "required": ["elementId"]
+      }
+    },
+    {
+      "name": "isEnabled",
+      "description": "Checks whether the specified element is enabled.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "elementId": { "type": "string" }
+        },
+        "required": ["elementId"]
+      }
+    },
+    {
+      "name": "refresh",
+      "description": "Refreshes the current page.",
+      "parameters": { "type": "object", "properties": {} }
+    },
+    {
+      "name": "goBack",
+      "description": "Navigates back in the browser’s history.",
+      "parameters": { "type": "object", "properties": {} }
+    },
+    {
+      "name": "goForward",
+      "description": "Navigates forward in the browser’s history.",
+      "parameters": { "type": "object", "properties": {} }
+    },
+    {
+      "name": "switchToFrame",
+      "description": "Switches context to the specified frame element.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "frameId": { "type": "string" }
+        },
+        "required": ["frameId"]
+      }
+    },
+    {
+      "name": "switchToDefaultContent",
+      "description": "Switches context back to the page’s default content.",
+      "parameters": { "type": "object", "properties": {} }
+    },
+    {
+      "name": "switchToWindow",
+      "description": "Switches context to the specified window handle.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "windowHandle": { "type": "string" }
+        },
+        "required": ["windowHandle"]
+      }
+    },
+    {
+      "name": "acceptAlert",
+      "description": "Accepts the currently open JavaScript alert/dialog.",
+      "parameters": { "type": "object", "properties": {} }
+    },
+    {
+      "name": "dismissAlert",
+      "description": "Dismisses the currently open JavaScript alert/dialog.",
+      "parameters": { "type": "object", "properties": {} }
+    },
+    {
+      "name": "getAlertText",
+      "description": "Retrieves the text from the currently open alert/dialog.",
+      "parameters": { "type": "object", "properties": {} }
+    },
+    {
+      "name": "sendAlertText",
+      "description": "Sends text to a prompt dialog.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "text": { "type": "string" }
+        },
+        "required": ["text"]
+      }
+    }
+  ]  

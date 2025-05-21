@@ -68,6 +68,7 @@ class MCPService:
         try:
             # Get completion from Azure OpenAI
             response = openai.ChatCompletion.create(
+                model="jarvusagents6029438036",
                 engine=self.deployment_name,
                 messages=[
                     {"role": "system", "content": system_message},
