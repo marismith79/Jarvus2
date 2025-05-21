@@ -66,9 +66,7 @@ class MCPService:
         """
         
         try:
-            # Get completion from Azure OpenAI
             response = openai.ChatCompletion.create(
-                model="jarvusagents6029438036",
                 engine=self.deployment_name,
                 messages=[
                     {"role": "system", "content": system_message},
@@ -78,29 +76,13 @@ class MCPService:
                 max_tokens=800
             )
             
-            # Extract the JSON response from the AI's message
+            # Extract the AI's message as a string
             ai_response = response.choices[0].message.content
-            commands = json.loads(ai_response)
-            
-            results = []
-            for command in commands:
-                method = command.get('method')
-                params = command.get('params', {})
-                result = self.execute_mcp_command(method, params)
-                results.append({
-                    'command': command,
-                    'result': result
-                })
-            
+            print("Raw AI response:", ai_response)  # Log the raw response
+
+            # Return the AI response as a string
             return {
                 'success': True,
-                'results': results
-            }
-            
-        except json.JSONDecodeError:
-            return {
-                'success': False,
-                'error': 'Failed to parse AI response as JSON',
                 'ai_response': ai_response
             }
         except Exception as e:

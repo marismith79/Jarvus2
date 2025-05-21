@@ -155,29 +155,9 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    // Process each command result
-                    for (const step of result.results) {
-                        const command = step.command;
-                        const commandResult = step.result;
-                        
-                        // Log the command
-                        addTaskLogEntry(`Executing: ${command.method}`, 'info');
-                        
-                        // If there's a screenshot, update it
-                        if (commandResult.result && command.method === 'takeScreenshot') {
-                            updateScreenshot(commandResult.result);
-                        }
-                        
-                        // Log the result
-                        if (commandResult.error) {
-                            addTaskLogEntry(`Error: ${commandResult.error.message}`, 'error');
-                        } else {
-                            addTaskLogEntry(`Success: ${command.method} completed`, 'success');
-                        }
-                    }
-                    
-                    // Add AI response to chat
-                    addMessage('Task completed successfully!');
+                    // Display the AI response as a string in the chat and task log
+                    addTaskLogEntry(result.ai_response, 'info');
+                    addMessage(result.ai_response);
                 } else {
                     addMessage(`Error: ${result.error}`);
                     addTaskLogEntry(`Error: ${result.error}`, 'error');
