@@ -26,19 +26,19 @@
 
     <section class="chat-section">
         <div class="container">
-            <div class="row h-100">
+            <div class="chat-flex-row">
                 <!-- Chat Interface -->
-                <div class="col-md-8 h-100 d-flex flex-column">
+                <div class="chat-flex-col chat-main">
                     <div class="card flex-grow-1">
                         <div class="card-header bg-primary text-white">
-                            <h5 class="mb-0">Web Automation Assistant</h5>
+                            <h5 class="mb-0">Chat</h5>
                         </div>
                         <div class="card-body d-flex flex-column">
                             <!-- Chat Messages -->
                             <div id="chat-messages" class="flex-grow-1 overflow-auto mb-3">
                                 <div class="message system">
                                     <div class="message-content">
-                                        Hello! I'm your web automation assistant. I can help you navigate websites, fill forms, and perform various web tasks. What would you like me to do?
+                                        Hey there! Is there any way I can help your practice today?
                                     </div>
                                 </div>
                             </div>
@@ -55,25 +55,12 @@
                 </div>
                 
                 <!-- Task Visualization -->
-                <div class="col-md-4 h-100">
+                <div class="chat-flex-col chat-tasks">
                     <div class="card h-100">
                         <div class="card-header bg-info text-white">
                             <h5 class="mb-0">Task Execution</h5>
                         </div>
                         <div class="card-body">
-                            <div id="task-visualization" class="h-100">
-                                <!-- Screenshot Preview -->
-                                <div class="screenshot-container mb-3">
-                                    <img id="screenshot" class="img-fluid rounded" style="display: none;">
-                                </div>
-                                
-                                <!-- Task Log -->
-                                <div class="task-log">
-                                    <h6>Task Log:</h6>
-                                    <div id="task-log" class="border rounded p-2" style="height: 300px; overflow-y: auto;">
-                                    </div>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -83,10 +70,6 @@
 
     <footer>
         <div class="container">
-            <div class="footer-logo">
-                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Jarvus Logo">
-                <span>Jarvus</span>
-            </div>
             <div class="footer-links">
                 <a href="#terms">Terms</a>
                 <a href="#privacy">Privacy</a>

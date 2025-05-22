@@ -16,6 +16,7 @@
             </div>
             <nav>
                 <a href="/">Home</a>
+                <a href="{{ url_for('web.chatbot') }}">Chat</a>
                 <a href="#" class="active">Profile</a>
                 <a href="{{ url_for('auth.logout') }}" class="cta-button">Log Out</a>
             </nav>
@@ -142,10 +143,6 @@
 
     <footer>
         <div class="container">
-            <div class="footer-logo">
-                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Jarvus Logo">
-                <span>Jarvus</span>
-            </div>
             <div class="footer-links">
                 <a href="#terms">Terms</a>
                 <a href="#privacy">Privacy</a>
