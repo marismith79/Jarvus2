@@ -21,4 +21,4 @@ def chatbot():
     if "user" not in session:
         return redirect(url_for("auth.signin"))
     
-    return render_template("chat.html", session=session)
+    return render_template("chatbot.html", session=session)
