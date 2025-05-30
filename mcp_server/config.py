@@ -4,12 +4,17 @@ from typing import Optional
 import os
 
 class Settings(BaseSettings):
-    # Availity API Configuration
-    AVAILITY_CLIENT_ID: str = "dev_client_id"  # Default for development
-    AVAILITY_CLIENT_SECRET: str = "dev_client_secret"  # Default for development
-    AVAILITY_PAYER_ID: str = "dev_payer_id"  # Default for development
-    AVAILITY_TOKEN_URL: str = "https://api.availity.com/availity/v1/token"  # Correct token URL
-    AVAILITY_API_BASE_URL: str = "https://api.availity.com/v1"
+    # Availity API settings
+    AVAILITY_CLIENT_ID: str
+    AVAILITY_CLIENT_SECRET: str
+    AVAILITY_PAYER_ID: str
+    AVAILITY_TOKEN_URL: str = "https://api.availity.com/availity/v1/token"
+    AVAILITY_API_BASE_URL: str = "https://api.availity.com/availity/development-partner/v1"
+    
+    # MCP settings
+    MCP_SERVER_NAME: str = "availity"
+    MCP_SERVER_VERSION: str = "1.0.0"
+    MCP_SERVER_DESCRIPTION: str = "MCP server for Availity API integration"
     
     # Server Configuration
     APP_NAME: str = "Availity MCP Server"

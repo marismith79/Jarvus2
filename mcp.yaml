@@ -1,0 +1,12 @@
+servers:
+  availity:
+    command: python
+    args:
+      - -m
+      - mcp_server.app
+    env:
+      AVAILITY_CLIENT_ID: ${AVAILITY_CLIENT_ID}
+      AVAILITY_CLIENT_SECRET: ${AVAILITY_CLIENT_SECRET}
+      AVAILITY_PAYER_ID: ${AVAILITY_PAYER_ID}
+      AVAILITY_TOKEN_URL: ${AVAILITY_TOKEN_URL}
+      AVAILITY_API_BASE_URL: ${AVAILITY_API_BASE_URL} 

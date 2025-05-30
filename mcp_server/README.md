@@ -1,213 +1,49 @@
 # Availity MCP Server
 
-A FastAPI-based MCP server that wraps Availity's REST API, providing a clean interface for claim status and configuration management.
+A Model Context Protocol (MCP) server that provides tools for interacting with Availity's API. This server follows Anthropic's Model Context Protocol specification to provide a standardized interface for AI models to interact with Availity's services.
 
 ## Project Structure
 
 ```
 mcp_server/
 ├── __init__.py
-├── app.py                 # Main FastAPI application
+├── app.py                 # MCP server implementation
 ├── config.py             # Configuration and environment settings
-├── auth/
+├── services/
 │   ├── __init__.py
-│   └── token_manager.py  # OAuth2 token management
-├── routers/
-│   ├── __init__.py
-│   ├── auth.py          # Authentication endpoints
-│   ├── claim_status.py  # Claim status endpoints
-│   └── configurations.py # Configuration endpoints
-├── schemas/
-│   ├── __init__.py
-│   ├── claim_status.py  # Claim status data models
-│   └── configurations.py # Configuration data models
-└── services/
-    ├── __init__.py
-    └── availity.py      # Availity API tools / service wrapper 
+│   └── availity.py      # Availity API service wrapper
+└── requirements.txt      # Project dependencies
 ```
 
-## Components
+## Features
 
-### Configuration (`config.py`)
-- Manages environment variables and application settings
-- Defines default values for development
-- Handles API URLs and credentials
+- MCP-compliant tool definitions
+- Availity API integration
+- Type-safe request/response handling
+- Environment-based configuration
 
-### Authentication (`auth/token_manager.py`)
-- Manages OAuth2 token lifecycle
-- Handles token refresh and caching
-- Provides token validation
+## Available Tools
 
-### Routers
-- `auth.py`: OAuth2 token endpoint
-- `claim_status.py`: Claim status list and detail endpoints
-- `configurations.py`: Payer configuration endpoints
-
-### Schemas
-- `claim_status.py`: Data models for claim status responses
-- `configurations.py`: Data models for configuration responses
-
-### Services (`services/availity.py`)
-- Wraps Availity API calls
-- Handles authentication and request formatting
-- Manages error handling and response parsing
-
-## API Endpoints
-
-### 1. Get Access Token
-```bash
-curl -X POST "http://localhost:8000/availity/v1/oauth/token" \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "grant_type=client_credentials&client_id=YOUR_CLIENT_ID&client_secret=YOUR_CLIENT_SECRET&scope=hipaa"
+### 1. Get Claim Status
+```python
+@mcp.tool()
+async def get_claim_status(claim_id: str, payer_id: str) -> Dict[str, Any]
 ```
-
-Response:
-```json
-{
-  "access_token": "YOUR_ACCESS_TOKEN",
-  "expires_in": 300,
-  "token_type": "Bearer"
-}
-```
+Get the status of a specific claim.
 
 ### 2. List Claim Statuses
-```bash
-curl "http://localhost:8000/availity/v1/claim-statuses?payer_id=12345&claim_number=ABC123456" \
-  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+```python
+@mcp.tool()
+async def list_claim_statuses(payer_id: str, claim_number: str) -> Dict[str, Any]
 ```
+List all claim statuses for a payer and claim number.
 
-Response:
-```json
-{
-  "totalCount": 1,
-  "count": 1,
-  "offset": 0,
-  "limit": 1,
-  "links": {
-    "self": {
-      "href": "https://api.availity.com/demo/v1/claim-statuses?payer.id=BCBSF&..."
-    }
-  },
-  "claimStatuses": [
-    {
-      "id": "123",
-      "status": "Complete",
-      "statusCode": "4",
-      "createdDate": "2015-06-25T17:26:19.000+0000",
-      "updatedDate": "2015-06-25T17:26:19.000+0000",
-      "payer": {
-        "id": "BCBSF",
-        "name": "FLORIDA BLUE"
-      },
-      "submitter": {
-        "lastName": "SUBMITLAST",
-        "firstName": "SUBMITFIRST",
-        "id": "H8747"
-      },
-      "providers": [
-        {
-          "lastName": "PRVLAST",
-          "firstName": "PRVFIRST",
-          "npi": "1619978434"
-        }
-      ],
-      "subscriber": {
-        "lastName": "KENNEY",
-        "memberId": "CNDXZ7980219"
-      },
-      "patient": {
-        "lastName": "KENNEY",
-        "birthDate": "1960-04-20",
-        "gender": "Female",
-        "genderCode": "F",
-        "accountNumber": "unknown",
-        "subscriberRelationship": "Self",
-        "subscriberRelationshipCode": "18"
-      },
-      "claimStatuses": [
-        {
-          "traceId": "36777",
-          "fromDate": "2014-07-26",
-          "toDate": "2014-07-26",
-          "statusDetails": [
-            {
-              "category": "Acknowledgement/Forwarded",
-              "categoryCode": "A0",
-              "status": "Business Application Currently Not Available",
-              "statusCode": "484",
-              "effectiveDate": "2015-06-25",
-              "claimAmount": "0",
-              "claimAmountUnits": "USD",
-              "paymentAmount": "0",
-              "paymentAmountUnits": "USD"
-            }
-          ]
-        }
-      ],
-      "claimCount": "1"
-    }
-  ]
-}
+### 3. Get Configurations
+```python
+@mcp.tool()
+async def get_configurations(type: str, subtype_id: str, payer_id: str) -> Dict[str, Any]
 ```
-
-### 3. Get Specific Claim Status
-```bash
-curl "http://localhost:8000/availity/v1/claim-statuses/123" \
-  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
-```
-
-Response: Same as individual claim status object from list response.
-
-### 4. Get Payer Configurations
-```bash
-curl "http://localhost:8000/availity/v1/configurations?type=claim-status&subtype_id=276&payer_id=BCBSF" \
-  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
-```
-
-Response:
-```json
-{
-  "totalCount": 1,
-  "count": 1,
-  "offset": 0,
-  "limit": 50,
-  "links": {
-    "self": {
-      "href": "https://api.availity.com/demo/v1/configurations?payerId=BCBSF&type=270"
-    }
-  },
-  "configurations": [
-    {
-      "type": "270",
-      "categoryId": "admin",
-      "categoryValue": "Administrative Transactions",
-      "payerId": "BCBSF",
-      "version": "5010A1",
-      "elements": {
-        "providerLastName": {
-          "type": "Text",
-          "label": "Provider Last Name",
-          "order": 0,
-          "allowed": true,
-          "required": false,
-          "errorMessage": "Please enter a valid Provider Last Name.",
-          "pattern": "^[a-zA-Z0-9\\s!&,()+'\\-./;?=#\\\\]{1,60}$",
-          "maxLength": 60
-        },
-        // ... more elements ...
-      },
-      "requiredFieldCombinations": {
-        "patient": [
-          ["memberId", "patientLastName", "patientBirthDate"],
-          ["memberId", "patientLastName", "patientFirstName"],
-          ["patientLastName", "patientFirstName", "patientBirthDate"],
-          ["memberId", "patientFirstName", "patientBirthDate"]
-        ]
-      }
-    }
-  ]
-}
-```
+Get payer configurations.
 
 ## Setup and Installation
 
@@ -227,34 +63,64 @@ AVAILITY_API_BASE_URL=https://api.availity.com/availity/development-partner/v1
 
 3. Run the server:
 ```bash
-uvicorn mcp_server.app:app --reload
+python -m mcp_server.app
 ```
 
-## Error Handling
+## Claude Desktop Integration
 
-The server includes comprehensive error handling:
-- Invalid token responses
-- API errors
-- Validation errors
-- Network errors
+To use this server with Claude Desktop, add the following to your Claude Desktop configuration:
 
-All errors are returned with appropriate HTTP status codes and descriptive messages.
+```json
+{
+    "mcpServers": {
+        "availity": {
+            "command": "python",
+            "args": [
+                "-m",
+                "mcp_server.app"
+            ]
+        }
+    }
+}
+```
 
 ## Development
 
-To add new features:
-1. Create appropriate schemas in `schemas/`
-2. Add service methods in `services/availity.py`
-3. Create router endpoints in `routers/`
-4. Update documentation
+The server uses the official MCP SDK and follows the Model Context Protocol specification. Key features:
 
-## Testing
+- Tool definitions using `@mcp.tool()` decorator
+- Type hints and docstrings for better tool documentation
+- Standardized error handling
+- Environment-based configuration
 
-Use the curl commands above to test each endpoint. The server includes debug logging to help troubleshoot issues.
+### Testing
+
+The server includes a test script (`test_mcp.py`) that verifies the functionality of the MCP tools. This script tests the following endpoints:
+
+- **get_claim_status**: Retrieves the status of a specific claim.
+- **list_claim_statuses**: Lists all claim statuses for a given payer and claim number.
+- **get_configurations**: Retrieves payer configurations.
+
+To run the tests, execute:
+
+```bash
+python test_mcp.py
+```
 
 ## Security
 
-- OAuth2 authentication
-- Token refresh handling
-- Secure credential management
-- Environment variable configuration 
+- Credentials are managed through environment variables
+- All API calls are authenticated
+- Error handling for failed requests
+- Input validation through type hints
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+## License
+
+MIT License 
