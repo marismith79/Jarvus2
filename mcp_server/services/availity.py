@@ -56,21 +56,17 @@ class AvailityService:
         }
         return await self._make_request("GET", "configurations", params=params)
 
-    async def summary_search(self, payer_id: str, claim_number: str) -> Dict[str, Any]:
-        """Invoke summarySearch workflow for enhanced claim status."""
-        data = {
+    async def list_claim_statuses(self, payer_id: str, claim_number: str) -> List[Dict[str, Any]]:
+        """List claim statuses matching payer ID and claim number."""
+        params = {
             "payerId": payer_id,
             "claimNumber": claim_number
         }
-        return await self._make_request("POST", "claim-statuses/summarySearch", json=data)
+        return await self._make_request("GET", "claim-statuses", params=params)
 
-    async def detail_search(self, payer_id: str, claim_number: str) -> Dict[str, Any]:
-        """Invoke detailSearch for full line-level adjudication."""
-        data = {
-            "payerId": payer_id,
-            "claimNumber": claim_number
-        }
-        return await self._make_request("POST", "claim-statuses/detailSearch", json=data)
+    async def get_claim_status(self, status_id: str) -> Dict[str, Any]:
+        """Get a specific claim status by ID."""
+        return await self._make_request("GET", f"claim-statuses/{status_id}")
 
 # Create a singleton instance
 availity_service = AvailityService() 

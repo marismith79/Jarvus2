@@ -1,30 +1,22 @@
 from fastapi import APIRouter, HTTPException
-from ..schemas.request import ClaimStatusRequest
-from ..schemas.response import ClaimStatusSummary, ClaimStatusDetail
+from typing import List
 from ..services.availity import availity_service
+from ..schemas.claim_status import ClaimStatusList, ClaimStatusDetail
 
 router = APIRouter()
 
-@router.post("/claim-statuses/summarySearch", response_model=ClaimStatusSummary)
-async def summary_search(request: ClaimStatusRequest):
-    """Get summary claim status information."""
+@router.get("/claim-statuses", response_model=ClaimStatusList)
+async def list_claim_statuses(payer_id: str, claim_number: str):
+    """List claim statuses matching payer ID and claim number."""
     try:
-        result = await availity_service.summary_search(
-            payer_id=request.payer_id,
-            claim_number=request.claim_number
-        )
-        return ClaimStatusSummary(**result)
+        return await availity_service.list_claim_statuses(payer_id, claim_number)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/claim-statuses/detailSearch", response_model=ClaimStatusDetail)
-async def detail_search(request: ClaimStatusRequest):
-    """Get detailed claim status information."""
+@router.get("/claim-statuses/{status_id}", response_model=ClaimStatusDetail)
+async def get_claim_status(status_id: str):
+    """Get a specific claim status by ID."""
     try:
-        result = await availity_service.detail_search(
-            payer_id=request.payer_id,
-            claim_number=request.claim_number
-        )
-        return ClaimStatusDetail(**result)
+        return await availity_service.get_claim_status(status_id)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) 
