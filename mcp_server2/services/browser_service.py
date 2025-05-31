@@ -242,20 +242,22 @@ class BrowserService:
                 target_by = params.get('target_by', 'css')
                 target_value = params.get('target_value')
 
+                locator = None
                 if position == 'above':
-                    element = driver.find_element(By.CSS_SELECTOR, f"{target_value}").find_element(locate_with(By.CSS_SELECTOR, target_value).above(base_element))
+                    locator = locate_with(self._get_by(target_by), target_value).above(base_element)
                 elif position == 'below':
-                    element = driver.find_element(By.CSS_SELECTOR, f"{target_value}").find_element(locate_with(By.CSS_SELECTOR, target_value).below(base_element))
+                    locator = locate_with(self._get_by(target_by), target_value).below(base_element)
                 elif position == 'to_left_of':
-                    element = driver.find_element(By.CSS_SELECTOR, f"{target_value}").find_element(locate_with(By.CSS_SELECTOR, target_value).to_left_of(base_element))
+                    locator = locate_with(self._get_by(target_by), target_value).to_left_of(base_element)
                 elif position == 'to_right_of':
-                    element = driver.find_element(By.CSS_SELECTOR, f"{target_value}").find_element(locate_with(By.CSS_SELECTOR, target_value).to_right_of(base_element))
+                    locator = locate_with(self._get_by(target_by), target_value).to_right_of(base_element)
                 elif position == 'near':
-                    element = driver.find_element(By.CSS_SELECTOR, f"{target_value}").find_element(locate_with(By.CSS_SELECTOR, target_value).near(base_element))
+                    locator = locate_with(self._get_by(target_by), target_value).near(base_element)
                 else:
                     raise ValueError(f"Invalid relative position: {position}")
 
-                return {'status': 'success', 'element': str(element)}
+                element = driver.find_element(locator)
+                return {"status": "success", "element": {"tag": element.tag_name, "text": element.text, "outerHTML": element.get_attribute("outerHTML")}}
 
             # Performance Monitoring
             elif action_type == 'start_performance_monitoring':
@@ -363,4 +365,24 @@ class BrowserService:
                 del self.drivers[session_id]
             except Exception as e:
                 logger.error(f"Error cleaning up driver: {e}")
-                raise 
+                raise
+
+    def _get_by(self, by):
+        if by == 'css':
+            return By.CSS_SELECTOR
+        elif by == 'xpath':
+            return By.XPATH
+        elif by == 'id':
+            return By.ID
+        elif by == 'name':
+            return By.NAME
+        elif by == 'class':
+            return By.CLASS_NAME
+        elif by == 'tag':
+            return By.TAG_NAME
+        elif by == 'link_text':
+            return By.LINK_TEXT
+        elif by == 'partial_link_text':
+            return By.PARTIAL_LINK_TEXT
+        else:
+            raise ValueError(f"Unknown locator strategy: {by}") 

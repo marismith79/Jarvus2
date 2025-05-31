@@ -1,0 +1,22 @@
+{
+  "status": "success",
+  "metrics": {
+    "start_time": 1748718434.0666428,
+    "metrics": {},
+    "end_time": 1748718434.0925827,
+    "duration": 0.02593994140625,
+    "navigation_timing": {
+      "connectEnd": 1748718434071,
+      "connectStart": 1748718434071,
+      "domComplete": 1748718434080,
+      "domInteractive": 1748718434080,
+      "domainLookupEnd": 1748718434071,
+      "domainLookupStart": 1748718434071,
+      "loadEventEnd": 1748718434080,
+      "navigationStart": 1748718434070,
+      "requestStart": 1748718434072,
+      "responseEnd": 1748718434073,
+      "responseStart": 1748718434072
+    }
+  }
+}

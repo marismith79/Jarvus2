@@ -260,4 +260,7 @@ browser_service.execute_action(session_id, {
 4. **Error Handling**
    - Monitor for performance degradation
    - Set up alerts for performance thresholds
-   - Track error rates under different conditions 
+   - Track error rates under different conditions
+
+## Note on Network Throttling
+The current Selenium setup does not support network throttling via Chrome DevTools Protocol (CDP). To enable network condition simulation, you need a Selenium Grid/node that supports CDP commands (e.g., using a compatible Docker image like `selenium/standalone-chrome`). Please refer to the [Selenium Docker documentation](https://github.com/SeleniumHQ/docker-selenium) for more details. 

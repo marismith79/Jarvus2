@@ -199,6 +199,10 @@ def test_performance_metrics():
         })
         print("Normal conditions metrics:", json.dumps(normal_metrics, indent=2))
         
+        # After retrieving normal conditions metrics:
+        with open("performance_metrics_normal.json", "w") as f:
+            json.dump(normal_metrics, f, indent=2)
+        
         # 2. Test under 3G conditions
         print("\n2. Testing under 3G conditions:")
         browser_service.execute_action(session_id, {
@@ -227,6 +231,10 @@ def test_performance_metrics():
             "params": {}
         })
         print("3G conditions metrics:", json.dumps(three_g_metrics, indent=2))
+        
+        # After retrieving 3G conditions metrics:
+        with open("performance_metrics_3g.json", "w") as f:
+            json.dump(three_g_metrics, f, indent=2)
         
         # 3. Test under 2G conditions
         print("\n3. Testing under 2G conditions:")
@@ -257,12 +265,20 @@ def test_performance_metrics():
         })
         print("2G conditions metrics:", json.dumps(two_g_metrics, indent=2))
         
+        # After retrieving 2G conditions metrics:
+        with open("performance_metrics_2g.json", "w") as f:
+            json.dump(two_g_metrics, f, indent=2)
+        
         # 4. Compare metrics
         print("\n4. Performance Comparison:")
         print(f"Normal conditions duration: {normal_metrics['metrics']['duration']:.2f}s")
         print(f"3G conditions duration: {three_g_metrics['metrics']['duration']:.2f}s")
         print(f"2G conditions duration: {two_g_metrics['metrics']['duration']:.2f}s")
         
+    except Exception as e:
+        print(f"Test failed: {e}")
+        driver.save_screenshot("test_failure_screenshot.png")
+        raise
     finally:
         browser_service.cleanup(session_id)
         print("\nSession cleaned up.")
