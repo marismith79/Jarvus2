@@ -5,6 +5,8 @@ import uuid
 from services.browser_service import BrowserService
 from services.container_service import ContainerManager
 
+VNC_URL = "http://localhost:6090/vnc.html?host=localhost&port=6090"
+
 router = APIRouter()
 browser_service = BrowserService()
 
@@ -26,7 +28,7 @@ async def create_session(container_manager: ContainerManager = Depends()):
         
         return SessionResponse(
             session_id=session_id,
-            vnc_url=f"http://localhost:6080/vnc.html?host=localhost&port=6080&path=websockify"
+            vnc_url=VNC_URL
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

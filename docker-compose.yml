@@ -1,19 +1,13 @@
 version: '3'
-
 services:
   selenium-mcp:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: .
     ports:
       - "8010:8000"  # FastAPI
-      - "6090:6079"  # noVNC
+      - "6090:6081"  # noVNC (mapped from container's 6081 to host's 6090)
       - "5910:5900"  # VNC
     environment:
-      - DISPLAY=:99
-      - PYTHONUNBUFFERED=1
+      - DISPLAY=:1
     volumes:
       - .:/app
-    shm_size: '2gb'
-    privileged: true
     restart: unless-stopped 

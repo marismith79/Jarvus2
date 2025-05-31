@@ -1,11 +1,18 @@
-FROM selenium/standalone-firefox:latest
+FROM --platform=linux/amd64 dorowu/ubuntu-desktop-lxde-vnc:focal
 
 # Install Python and pip
 USER root
-RUN apt-get update && apt-get install -y \
-    python3 \
-    python3-pip \
+RUN rm -f /etc/apt/sources.list.d/google-chrome.list \
+    && apt-get update \
+    && apt-get install -y python3 python3-pip wget chromium-browser chromium-chromedriver \
     && rm -rf /var/lib/apt/lists/*
+
+# Install geckodriver
+RUN wget https://github.com/mozilla/geckodriver/releases/download/v0.33.0/geckodriver-v0.33.0-linux64.tar.gz \
+    && tar -xvzf geckodriver-v0.33.0-linux64.tar.gz \
+    && chmod +x geckodriver \
+    && mv geckodriver /usr/local/bin/ \
+    && rm geckodriver-v0.33.0-linux64.tar.gz
 
 # Set working directory
 WORKDIR /app
@@ -15,12 +22,30 @@ COPY requirements.txt .
 
 # Install Python dependencies
 RUN pip3 install --no-cache-dir -r requirements.txt
+RUN pip3 install --no-cache-dir websockify
 
 # Copy application code
 COPY . .
 
-# Expose port
-EXPOSE 8000
+# Copy supervisord config
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-# Run the application
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"] 
+# Expose ports
+EXPOSE 8000 6080 5900
+
+# Create supervisor config for FastAPI
+RUN echo '[program:fastapi]\n\
+command=python3 -m uvicorn app:app --host 0.0.0.0 --port 8000\n\
+directory=/app\n\
+autostart=true\n\
+autorestart=true\n\
+stderr_logfile=/var/log/fastapi.err.log\n\
+stdout_logfile=/var/log/fastapi.out.log\n\
+' > /etc/supervisor/conf.d/fastapi.conf
+
+# Add healthcheck
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/docs || exit 1
+
+# The base image already has a startup script that runs supervisord
+CMD ["/startup.sh"] 

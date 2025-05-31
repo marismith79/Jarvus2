@@ -37,9 +37,9 @@ class ContainerManager:
             
             # Configure Firefox options
             options = Options()
-            options.add_argument('--headless')
-            options.add_argument('--no-sandbox')
-            options.add_argument('--disable-dev-shm-usage')
+            options.add_argument('--width=1280')
+            options.add_argument('--height=1024')
+            options.add_argument('--display=:99')
             options.binary_location = '/usr/bin/firefox'
             logger.info("Firefox options configured")
             

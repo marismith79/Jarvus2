@@ -18,9 +18,9 @@ class BrowserService:
     def create_driver(self, session_id: str) -> webdriver.Firefox:
         """Create a new Firefox WebDriver instance"""
         firefox_options = Options()
-        firefox_options.add_argument('--headless')
         firefox_options.add_argument('--width=1280')
         firefox_options.add_argument('--height=1024')
+        firefox_options.add_argument('--display=:99')
 
         service = Service('/usr/local/bin/geckodriver')
         driver = webdriver.Firefox(service=service, options=firefox_options)
