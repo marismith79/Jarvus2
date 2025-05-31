@@ -7,13 +7,18 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8010:8000"  # FastAPI
-      - "6090:6079"  # noVNC
-      - "5910:5900"  # VNC
     environment:
-      - DISPLAY=:99
       - PYTHONUNBUFFERED=1
     volumes:
       - .:/app
     shm_size: '2gb'
     privileged: true
+    depends_on:
+      - selenium
     restart: unless-stopped 
+
+  selenium:
+    image: seleniarm/standalone-chromium:latest
+    ports:
+      - "4444:4444"
+    shm_size: 2gb 

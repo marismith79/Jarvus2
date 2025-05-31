@@ -1,33 +1,38 @@
 from selenium import webdriver
-from selenium.webdriver.firefox.options import Options
-from selenium.webdriver.firefox.service import Service
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.relative_locator import locate_with
 import logging
 import json
 from typing import Dict, Any, Optional
+import time
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class BrowserService:
     def __init__(self):
-        self.drivers: Dict[str, webdriver.Firefox] = {}
+        self.drivers: Dict[str, webdriver.Chrome] = {}
+        self.performance_metrics: Dict[str, Dict[str, float]] = {}
 
-    def create_driver(self, session_id: str) -> webdriver.Firefox:
-        """Create a new Firefox WebDriver instance"""
-        firefox_options = Options()
-        firefox_options.add_argument('--width=1280')
-        firefox_options.add_argument('--height=1024')
-        firefox_options.add_argument('--display=:99')
-
-        service = Service('/usr/local/bin/geckodriver')
-        driver = webdriver.Firefox(service=service, options=firefox_options)
+    def create_driver(self, session_id: str) -> webdriver.Chrome:
+        """Create a new Chromium WebDriver instance in headless mode"""
+        chrome_options = Options()
+        chrome_options.add_argument('--headless')
+        chrome_options.add_argument('--no-sandbox')
+        chrome_options.add_argument('--disable-dev-shm-usage')
+        chrome_options.add_argument('--window-size=1280,1024')
+        driver = webdriver.Remote(
+            command_executor='http://selenium:4444/wd/hub',
+            options=chrome_options
+        )
         self.drivers[session_id] = driver
         return driver
 
-    def get_driver(self, session_id: str) -> Optional[webdriver.Firefox]:
+    def get_driver(self, session_id: str) -> Optional[webdriver.Chrome]:
         """Get an existing WebDriver instance"""
         return self.drivers.get(session_id)
 
@@ -229,6 +234,79 @@ class BrowserService:
             elif action_type == 'screenshot':
                 screenshot = driver.get_screenshot_as_base64()
                 return {'status': 'success', 'screenshot': screenshot}
+
+            # Relative Locators
+            elif action_type == 'find_element_relative':
+                base_element = self._find_element(driver, params.get('base_by', 'css'), params.get('base_value'))
+                position = params.get('position')
+                target_by = params.get('target_by', 'css')
+                target_value = params.get('target_value')
+
+                if position == 'above':
+                    element = driver.find_element(By.CSS_SELECTOR, f"{target_value}").find_element(locate_with(By.CSS_SELECTOR, target_value).above(base_element))
+                elif position == 'below':
+                    element = driver.find_element(By.CSS_SELECTOR, f"{target_value}").find_element(locate_with(By.CSS_SELECTOR, target_value).below(base_element))
+                elif position == 'to_left_of':
+                    element = driver.find_element(By.CSS_SELECTOR, f"{target_value}").find_element(locate_with(By.CSS_SELECTOR, target_value).to_left_of(base_element))
+                elif position == 'to_right_of':
+                    element = driver.find_element(By.CSS_SELECTOR, f"{target_value}").find_element(locate_with(By.CSS_SELECTOR, target_value).to_right_of(base_element))
+                elif position == 'near':
+                    element = driver.find_element(By.CSS_SELECTOR, f"{target_value}").find_element(locate_with(By.CSS_SELECTOR, target_value).near(base_element))
+                else:
+                    raise ValueError(f"Invalid relative position: {position}")
+
+                return {'status': 'success', 'element': str(element)}
+
+            # Performance Monitoring
+            elif action_type == 'start_performance_monitoring':
+                self.performance_metrics[session_id] = {
+                    'start_time': time.time(),
+                    'metrics': {}
+                }
+                return {'status': 'success', 'message': 'Performance monitoring started'}
+
+            elif action_type == 'get_performance_metrics':
+                if session_id not in self.performance_metrics:
+                    return {'status': 'error', 'message': 'Performance monitoring not started'}
+
+                metrics = self.performance_metrics[session_id]
+                metrics['end_time'] = time.time()
+                metrics['duration'] = metrics['end_time'] - metrics['start_time']
+
+                # Get navigation timing metrics
+                navigation_timing = driver.execute_script("""
+                    var performance = window.performance || window.mozPerformance || window.msPerformance || window.webkitPerformance || {};
+                    var timing = performance.timing || {};
+                    return {
+                        'navigationStart': timing.navigationStart,
+                        'loadEventEnd': timing.loadEventEnd,
+                        'domComplete': timing.domComplete,
+                        'domInteractive': timing.domInteractive,
+                        'responseEnd': timing.responseEnd,
+                        'responseStart': timing.responseStart,
+                        'requestStart': timing.requestStart,
+                        'connectEnd': timing.connectEnd,
+                        'connectStart': timing.connectStart,
+                        'domainLookupEnd': timing.domainLookupEnd,
+                        'domainLookupStart': timing.domainLookupStart
+                    };
+                """)
+
+                metrics['navigation_timing'] = navigation_timing
+                return {'status': 'success', 'metrics': metrics}
+
+            # Network Conditions
+            elif action_type == 'set_network_conditions':
+                # Use CDP (Chrome DevTools Protocol) through execute_cdp_cmd
+                driver.execute_cdp_cmd('Network.enable', {})
+                driver.execute_cdp_cmd('Network.emulateNetworkConditions', {
+                    'offline': params.get('offline', False),
+                    'latency': params.get('latency', 0),
+                    'downloadThroughput': params.get('download_throughput', -1),
+                    'uploadThroughput': params.get('upload_throughput', -1),
+                    'connectionType': params.get('connection_type', 'none')
+                })
+                return {'status': 'success', 'message': 'Network conditions set'}
 
             else:
                 raise ValueError(f"Unknown action type: {action_type}")
