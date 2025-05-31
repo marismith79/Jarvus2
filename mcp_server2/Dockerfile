@@ -4,7 +4,7 @@ FROM --platform=linux/amd64 dorowu/ubuntu-desktop-lxde-vnc:focal
 USER root
 RUN rm -f /etc/apt/sources.list.d/google-chrome.list \
     && apt-get update \
-    && apt-get install -y python3 python3-pip wget chromium-browser chromium-chromedriver \
+    && apt-get install -y python3 python3-pip wget firefox \
     && rm -rf /var/lib/apt/lists/*
 
 # Install geckodriver
@@ -46,6 +46,17 @@ stdout_logfile=/var/log/fastapi.out.log\n\
 # Add healthcheck
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/docs || exit 1
+
+# Install Google Chrome
+RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add - \
+    && echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
+    && apt-get update \
+    && apt-get install -y google-chrome-stable \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set ENV DISPLAY=:99
+ENV DISPLAY=:99
+RUN apt-get update && apt-get install -y libpci3 libdbus-glib-1-2 && rm -rf /var/lib/apt/lists/*
 
 # The base image already has a startup script that runs supervisord
 CMD ["/startup.sh"] 

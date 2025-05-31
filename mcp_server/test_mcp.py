@@ -1,6 +1,8 @@
 import asyncio
 from mcp_server.app import mcp
 from mcp_server.services.availity import availity_service
+import time
+from mcp_server2.services.browser_service import BrowserService
 
 async def test_tools():
     # Test get_claim_status
@@ -26,6 +28,3 @@ async def test_tools():
         print("Success:", result)
     except Exception as e:
         print("Error:", str(e))
-
-if __name__ == "__main__":
-    asyncio.run(test_tools()) 
