@@ -4,25 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Jarvus - Your Profile</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
 </head>
 <body>
-    <header>
-        <div class="container">
-            <div class="logo">
-                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Jarvus Logo">
-                <span>Jarvus</span>
-            </div>
-            <nav>
-                <a href="/">Home</a>
-                <a href="{{ url_for('web.chatbot') }}">Chat</a>
-                <a href="#" class="active">Profile</a>
-                <a href="{{ url_for('auth.logout') }}" class="cta-button">Log Out</a>
-            </nav>
-        </div>
-    </header>
-
+    {% include 'shared/header.html' %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
     <section class="profile-hero">
         <div class="container">
             <h1>Welcome! {{ user.given_name if user.given_name else user.name }}</h1>

@@ -217,4 +217,121 @@ main {
     .card-body {
         padding: 16px;
     }
+}
+
+/* Common styles */
+:root {
+    --primary-color: #4F46E5;
+    --primary-hover: #4338CA;
+    --text-color: #1F2937;
+    --text-light: #6B7280;
+    --background: #FFFFFF;
+    --background-alt: #F9FAFB;
+    --border-color: #E5E7EB;
+}
+
+/* Header styles */
+header {
+    background: var(--background);
+    border-bottom: 1px solid var(--border-color);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+}
+
+header .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-color);
+    text-decoration: none;
+}
+
+.logo img {
+    height: 2rem;
+    width: auto;
+}
+
+nav {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+nav a {
+    color: var(--text-color);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+nav a:hover {
+    color: var(--primary-color);
+}
+
+nav a.active {
+    color: var(--primary-color);
+}
+
+.cta-button {
+    background: var(--primary-color);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    transition: background-color 0.2s;
+}
+
+.cta-button:hover {
+    background: var(--primary-hover);
+    color: white;
+}
+
+/* Main content spacing */
+main {
+    margin-top: 4rem; /* Account for fixed header */
+    min-height: calc(100vh - 4rem);
+}
+
+/* Container */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    header .container {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    nav {
+        flex-direction: column;
+        width: 100%;
+        gap: 0.5rem;
+    }
+
+    nav a {
+        width: 100%;
+        text-align: center;
+        padding: 0.5rem;
+    }
+
+    .cta-button {
+        width: 100%;
+    }
 } 
