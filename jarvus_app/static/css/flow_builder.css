@@ -1,0 +1,121 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Base / Reset
+   ───────────────────────────────────────────────────────────────────────────── */
+   * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+      Arial, sans-serif;
+    background-color: #f3f4f6; /* light gray page background */
+    color: #111827;           /* dark gray text */
+  }
+  
+  /* ─────────────────────────────────────────────────────────────────────────────
+     Container for the entire workflow
+     ───────────────────────────────────────────────────────────────────────────── */
+  .workflow-container {
+    max-width: 600px;
+    margin: 40px auto;
+    padding: 0 16px;
+  }
+  
+  /* ─────────────────────────────────────────────────────────────────────────────
+     Each “step” card
+     ───────────────────────────────────────────────────────────────────────────── */
+  .step {
+    background-color: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  
+  /* ─────────────────────────────────────────────────────────────────────────────
+     Step header (the “Instruction” / “Action” label + arrow)
+     ───────────────────────────────────────────────────────────────────────────── */
+  .step-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  
+  .step-type {
+    font-size: 14px;
+    font-weight: 500;
+    color: #374151; /* gray‐700 */
+  }
+  
+  .step-type .arrow {
+    font-size: 12px;
+    margin-left: 4px;
+    color: #6b7280; /* gray-500 */
+  }
+  
+  /* ─────────────────────────────────────────────────────────────────────────────
+     Step body: the main text
+     ───────────────────────────────────────────────────────────────────────────── */
+  .step-body p {
+    font-size: 16px;
+    line-height: 1.5;
+    color: #1f2937; /* gray-800 */
+    margin-bottom: 8px;
+  }
+  
+  /* Highlighted “@ something” text */
+  .highlight {
+    background-color: #d1f5d3; /* light green */
+    color: #065f46;            /* dark green text (for contrast) */
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  
+  /* ─────────────────────────────────────────────────────────────────────────────
+     Step footer: attachment icon, “Aa”, and trailing “@” icon
+     ───────────────────────────────────────────────────────────────────────────── */
+  .step-footer {
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    color: #6b7280; /* gray-500 */
+  }
+  
+  .attachment-icon {
+    cursor: pointer;
+  }
+  
+  .typing-indicator {
+    margin-left: 12px;
+    color: #6b7280;
+  }
+  
+  .mention-icon {
+    margin-left: auto; /* pushes it to the far right */
+    cursor: pointer;
+  }
+  
+  /* ─────────────────────────────────────────────────────────────────────────────
+     “Add step” button styling
+     ───────────────────────────────────────────────────────────────────────────── */
+  .add-step-btn {
+    width: 100%;
+    background-color: #3b82f6; /* blue-500 */
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+  }
+  
+  .add-step-btn:hover {
+    background-color: #2563eb; /* blue-600 */
+  }
+  
