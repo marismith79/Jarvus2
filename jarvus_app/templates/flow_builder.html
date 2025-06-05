@@ -9,57 +9,46 @@
             <h1 class="text-3xl font-bold text-gray-800">Flow Builder</h1>
             <p class="text-gray-600 mt-1">Create and manage your automation workflows</p>
         </div>
-        <button id="addStepBtn" 
-                class="add-step-btn bg-blue-500 text-white px-6 py-2.5 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center space-x-2">
+        <button id="addStepBtn" class="add-step-btn">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
             </svg>
-            <span>Add Step</span>
-        </button>
+        <span>Add Step</span>
     </div>
-
-    <div class="bg-white rounded-xl shadow-lg p-6">
-        <div class="flow-container" id="flowContainer">
-            <!-- Flow steps will be added here -->
-        </div>
+    <div class="flow-container" id="flowContainer">
+        <!-- Flow steps will be added here -->
     </div>
 </div>
 
 <!-- Step Card Template -->
 <template id="stepCardTemplate">
-    <div class="flow-card rounded-xl shadow-sm p-5 mb-10 relative" draggable="true">
-        <div class="flex justify-between items-start mb-4">
-            <div class="flex-1">
-                <input type="text" 
-                       class="step-input step-title w-full text-lg font-semibold border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg bg-transparent"
-                       placeholder="Step Title">
-                <textarea class="step-input step-description w-full mt-2 text-gray-600 border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg resize-none bg-transparent"
-                          placeholder="Step Description"
-                          rows="2"></textarea>
-            </div>
-            <div class="flex space-x-3">
-                <button class="text-gray-400 hover:text-gray-600 transition-colors">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-                    </svg>
-                </button>
-                <button class="delete-step text-red-400 hover:text-red-600 transition-colors">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                    </svg>
-                </button>
+    <div class="step flow-card" draggable="true">
+        <div class="step-header">
+            <div class="step-type">
+                <select class="step-type-select">
+                    <option value="action">Action</option>
+                    <option value="condition">Condition</option>
+                    <option value="loop">Loop</option>
+                    <option value="delay">Delay</option>
+                </select>
             </div>
         </div>
-        <div class="flex space-x-4">
-            <select class="step-type-select step-type bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none">
-                <option value="action">Action</option>
-                <option value="condition">Condition</option>
-                <option value="loop">Loop</option>
-                <option value="delay">Delay</option>
-            </select>
-            <input type="text" 
-                   class="step-input step-config flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                   placeholder="Configuration">
+        <div class="step-body">
+            <input type="text" class="step-input step-title" placeholder="Step Title">
+            <textarea class="step-input step-description" placeholder="Step Description" rows="2"></textarea>
+        </div>
+        <div class="step-footer">
+            <div class="attachment-icon">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
+            </div>
+            <span class="typing-indicator">Aa</span>
+            <div class="mention-icon">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+            </div>
         </div>
     </div>
 </template>
@@ -92,7 +81,7 @@
     // Setup event listeners for a step card
     function setupStepCardListeners(stepCard) {
         // Delete step
-        stepCard.querySelector('.delete-step').addEventListener('click', () => {
+        stepCard.querySelector('.mention-icon').addEventListener('click', () => {
             stepCard.remove();
             updateConnectors();
         });

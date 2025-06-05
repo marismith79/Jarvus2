@@ -274,7 +274,6 @@ footer {
 }
 
 .step-type-select {
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
     background-position: right 0.5rem center;
     background-repeat: no-repeat;
     background-size: 1.5em 1.5em;
@@ -781,4 +780,105 @@ main {
         max-width: 100%;
         padding: 1.2rem 0.5rem;
     }
+}
+
+/* === Flow Builder Custom Styles (updated for Tailwind look) === */
+
+/* Step card styles */
+.step.flow-card, .flow-card.step {
+    background-color: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.75rem; /* rounded-xl */
+    box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05);
+    padding: 1.25rem; /* p-5 */
+    margin-bottom: 2.5rem; /* mb-10 */
+    position: relative;
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Step header */
+.step-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.step-type {
+    font-size: 1rem;
+    font-weight: 500;
+    color: #374151;
+}
+
+.step-type .arrow {
+    font-size: 0.875rem;
+    margin-left: 0.25rem;
+    color: #6b7280;
+}
+
+/* Step body: vertical stack */
+.step-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.step-title, .step-description {
+    width: 100%;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 1rem;
+    background: #f9fafb;
+    transition: border 0.2s, box-shadow 0.2s;
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 400;
+}
+.step-title:focus, .step-description:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+}
+
+/* Step footer */
+.step-footer {
+    display: flex;
+    align-items: center;
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-top: 0.5rem;
+}
+.attachment-icon {
+    cursor: pointer;
+}
+.typing-indicator {
+    margin-left: 0.75rem;
+    color: #6b7280;
+}
+.mention-icon {
+    margin-left: auto;
+    cursor: pointer;
+}
+
+/* Add step button styling (auto width) */
+.add-step-btn {
+    background-color: #3b82f6;
+    color: #fff;
+    border: none;
+    border-radius: 0.5rem;
+    padding: 0.625rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05);
+    width: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.add-step-btn:hover {
+    background-color: #2563eb;
 } 
