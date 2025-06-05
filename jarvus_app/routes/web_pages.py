@@ -22,3 +22,10 @@ def chatbot():
         return redirect(url_for("auth.signin"))
     
     return render_template("chatbot.html", session=session)
+
+@web.route("/flow-builder")
+def flow_builder():
+    if "user" not in session:
+        return redirect(url_for("auth.signin"))
+    
+    return render_template("flow_builder.html", session=session)

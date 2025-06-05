@@ -4,7 +4,7 @@ from jarvus_app.routes.auth import auth
 from jarvus_app.routes.api import api
 from jarvus_app.routes.mcp_routes import mcp_bp
 from jarvus_app.routes.chatbot import chatbot_bp
-
+# from jarvus_app.routes.flow_builder import flow_builder_bp
 
 def create_app():
     app = Flask(__name__)
@@ -16,6 +16,7 @@ def create_app():
     app.register_blueprint(api)
     app.register_blueprint(mcp_bp, url_prefix='/mcp')
     app.register_blueprint(chatbot_bp, url_prefix='/chatbot')
+    # app.register_blueprint(flow_builder_bp, url_prefix='/flow_builder')
 
     return app
 

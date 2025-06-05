@@ -18,6 +18,7 @@
                 <a href="/">Home</a>
                 {% if session.get('user') %}
                     <a href="{{ url_for('web.chatbot') }}">Chat</a>
+                    <a href="{{ url_for('web.flow_builder') }}">Flow Builder</a>
                     <a href="{{ url_for('web.profile') }}">Profile</a>
                     <a href="{{ url_for('auth.logout') }}" class="cta-button">Log Out</a>
                 {% else %}
