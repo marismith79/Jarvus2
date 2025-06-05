@@ -1,0 +1,16 @@
+<!-- Shared Header Template -->
+<header>
+    <div class="container">
+        <div class="logo">
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Jarvus Logo">
+            <span>Jarvus</span>
+        </div>
+        <nav>
+            <a href="{{ url_for('web.landing') }}" {% if request.endpoint == 'web.landing' %}class="active"{% endif %}>Home</a>
+            <a href="{{ url_for('web.chatbot') }}" {% if request.endpoint == 'web.chatbot' %}class="active"{% endif %}>Chat</a>
+            <a href="{{ url_for('web.flow_builder') }}" {% if request.endpoint == 'web.flow_builder' %}class="active"{% endif %}>Flow Builder</a>
+            <a href="{{ url_for('web.profile') }}" {% if request.endpoint == 'web.profile' %}class="active"{% endif %}>Profile</a>
+            <a href="{{ url_for('auth.logout') }}" class="cta-button">Log Out</a>
+        </nav>
+    </div>
+</header> 
