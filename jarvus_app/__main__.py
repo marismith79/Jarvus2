@@ -18,13 +18,20 @@ def create_app():
     # 4) initialize SQLAlchemy
     db.init_app(app)
 
-    # 5) Register the auth routes first
+    # 5) Register all blueprints
     from jarvus_app.routes.auth import auth
-    app.register_blueprint(auth)
-
-    # 5) Then your existing web pages
     from jarvus_app.routes.web_pages import web
+    from jarvus_app.routes.api import api
+    from jarvus_app.routes.mcp_routes import mcp_bp
+    from jarvus_app.routes.chatbot import chatbot_bp
+    # from jarvus_app.routes.flow_builder import flow_builder_bp
+
+    app.register_blueprint(auth)
     app.register_blueprint(web)
+    app.register_blueprint(api)
+    app.register_blueprint(mcp_bp, url_prefix='/mcp')
+    app.register_blueprint(chatbot_bp, url_prefix='/chatbot')
+    # app.register_blueprint(flow_builder_bp, url_prefix='/flow_builder')
 
     return app
 

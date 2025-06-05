@@ -1,270 +1,161 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flow Builder - Jarvus</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
+{% extends "base.html" %}
 
-        .flow-card {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            cursor: move;
-            background: white;
-            border: 1px solid #e5e7eb;
-            backdrop-filter: blur(8px);
-        }
-        
-        .flow-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            border-color: #d1d5db;
-        }
+{% block title %}Flow Builder - Jarvus{% endblock %}
 
-        .flow-card.dragging {
-            opacity: 0.5;
-            transform: scale(1.02);
-        }
-
-        .flow-container {
-            min-height: 200px;
-            background: linear-gradient(to bottom, #f8fafc, #f1f5f9);
-            border: 2px dashed #cbd5e1;
-            border-radius: 1rem;
-            padding: 1.5rem;
-            margin: 1rem 0;
-            transition: all 0.3s ease;
-        }
-
-        .flow-container:hover {
-            border-color: #94a3b8;
-        }
-
-        .step-connector {
-            position: absolute;
-            left: 50%;
-            bottom: -24px;
-            width: 2px;
-            height: 24px;
-            background: linear-gradient(to bottom, #94a3b8, #cbd5e1);
-            transition: all 0.3s ease;
-        }
-
-        .step-connector::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: -4px;
-            width: 10px;
-            height: 10px;
-            background: #94a3b8;
-            border-radius: 50%;
-            box-shadow: 0 0 0 4px rgba(148, 163, 184, 0.1);
-            transition: all 0.3s ease;
-        }
-
-        .step-type-select {
-            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-            background-position: right 0.5rem center;
-            background-repeat: no-repeat;
-            background-size: 1.5em 1.5em;
-            padding-right: 2.5rem;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-        }
-
-        .step-input {
-            transition: all 0.2s ease;
-        }
-
-        .step-input:focus {
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-        }
-
-        .delete-step {
-            transition: all 0.2s ease;
-        }
-
-        .delete-step:hover {
-            transform: scale(1.1);
-        }
-
-        .add-step-btn {
-            transition: all 0.3s ease;
-        }
-
-        .add-step-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .flow-card {
-            animation: fadeIn 0.3s ease-out;
-        }
-    </style>
-</head>
-<body class="bg-gray-50">
-    <div class="container mx-auto px-4 py-8 max-w-6xl">
-        <div class="flex justify-between items-center mb-8">
-            <div>
-                <h1 class="text-3xl font-bold text-gray-800">Flow Builder</h1>
-                <p class="text-gray-600 mt-1">Create and manage your automation workflows</p>
-            </div>
-            <button id="addStepBtn" 
-                    class="add-step-btn bg-blue-500 text-white px-6 py-2.5 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center space-x-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                </svg>
-                <span>Add Step</span>
-            </button>
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-6xl">
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-800">Flow Builder</h1>
+            <p class="text-gray-600 mt-1">Create and manage your automation workflows</p>
         </div>
-
-        <div class="bg-white rounded-xl shadow-lg p-6">
-            <div class="flow-container" id="flowContainer">
-                <!-- Flow steps will be added here -->
-            </div>
-        </div>
+        <button id="addStepBtn" 
+                class="add-step-btn bg-blue-500 text-white px-6 py-2.5 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center space-x-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+            </svg>
+            <span>Add Step</span>
+        </button>
     </div>
 
-    <!-- Step Card Template -->
-    <template id="stepCardTemplate">
-        <div class="flow-card rounded-xl shadow-sm p-5 mb-10 relative" draggable="true">
-            <div class="flex justify-between items-start mb-4">
-                <div class="flex-1">
-                    <input type="text" 
-                           class="step-input step-title w-full text-lg font-semibold border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg bg-transparent"
-                           placeholder="Step Title">
-                    <textarea class="step-input step-description w-full mt-2 text-gray-600 border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg resize-none bg-transparent"
-                              placeholder="Step Description"
-                              rows="2"></textarea>
-                </div>
-                <div class="flex space-x-3">
-                    <button class="text-gray-400 hover:text-gray-600 transition-colors">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-                        </svg>
-                    </button>
-                    <button class="delete-step text-red-400 hover:text-red-600 transition-colors">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                        </svg>
-                    </button>
-                </div>
-            </div>
-            <div class="flex space-x-4">
-                <select class="step-type-select step-type bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none">
-                    <option value="action">Action</option>
-                    <option value="condition">Condition</option>
-                    <option value="loop">Loop</option>
-                    <option value="delay">Delay</option>
-                </select>
+    <div class="bg-white rounded-xl shadow-lg p-6">
+        <div class="flow-container" id="flowContainer">
+            <!-- Flow steps will be added here -->
+        </div>
+    </div>
+</div>
+
+<!-- Step Card Template -->
+<template id="stepCardTemplate">
+    <div class="flow-card rounded-xl shadow-sm p-5 mb-10 relative" draggable="true">
+        <div class="flex justify-between items-start mb-4">
+            <div class="flex-1">
                 <input type="text" 
-                       class="step-input step-config flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                       placeholder="Configuration">
+                       class="step-input step-title w-full text-lg font-semibold border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg bg-transparent"
+                       placeholder="Step Title">
+                <textarea class="step-input step-description w-full mt-2 text-gray-600 border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg resize-none bg-transparent"
+                          placeholder="Step Description"
+                          rows="2"></textarea>
+            </div>
+            <div class="flex space-x-3">
+                <button class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+                <button class="delete-step text-red-400 hover:text-red-600 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                </button>
             </div>
         </div>
-    </template>
+        <div class="flex space-x-4">
+            <select class="step-type-select step-type bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none">
+                <option value="action">Action</option>
+                <option value="condition">Condition</option>
+                <option value="loop">Loop</option>
+                <option value="delay">Delay</option>
+            </select>
+            <input type="text" 
+                   class="step-input step-config flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                   placeholder="Configuration">
+        </div>
+    </div>
+</template>
+{% endblock %}
 
-    <script>
-        let stepCounter = 0;
+{% block extra_js %}
+<script>
+    let stepCounter = 0;
 
-        // Add new step
-        document.getElementById('addStepBtn').addEventListener('click', () => {
-            const template = document.getElementById('stepCardTemplate');
-            const flowContainer = document.getElementById('flowContainer');
-            
-            const stepCard = template.content.cloneNode(true);
-            const stepElement = stepCard.querySelector('.flow-card');
-            stepElement.id = `step-${stepCounter++}`;
-            
-            // Add connector if not the first step
-            if (flowContainer.children.length > 0) {
-                const connector = document.createElement('div');
-                connector.className = 'step-connector';
-                stepElement.appendChild(connector);
-            }
-            
-            flowContainer.appendChild(stepElement);
-            setupStepCardListeners(stepElement);
-        });
-
-        // Setup event listeners for a step card
-        function setupStepCardListeners(stepCard) {
-            // Delete step
-            stepCard.querySelector('.delete-step').addEventListener('click', () => {
-                stepCard.remove();
-                updateConnectors();
-            });
-
-            // Drag and drop functionality
-            stepCard.addEventListener('dragstart', (e) => {
-                stepCard.classList.add('dragging');
-                e.dataTransfer.setData('text/plain', stepCard.id);
-            });
-
-            stepCard.addEventListener('dragend', () => {
-                stepCard.classList.remove('dragging');
-            });
-        }
-
-        // Update connectors after drag and drop
-        function updateConnectors() {
-            const steps = document.querySelectorAll('.flow-card');
-            steps.forEach((step, index) => {
-                // Remove existing connector
-                const existingConnector = step.querySelector('.step-connector');
-                if (existingConnector) {
-                    existingConnector.remove();
-                }
-                
-                // Add connector if not the last step
-                if (index < steps.length - 1) {
-                    const connector = document.createElement('div');
-                    connector.className = 'step-connector';
-                    step.appendChild(connector);
-                }
-            });
-        }
-
-        // Drag and drop container setup
+    // Add new step
+    document.getElementById('addStepBtn').addEventListener('click', () => {
+        const template = document.getElementById('stepCardTemplate');
         const flowContainer = document.getElementById('flowContainer');
         
-        flowContainer.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            const draggingCard = document.querySelector('.dragging');
-            const cards = [...flowContainer.querySelectorAll('.flow-card:not(.dragging)')];
-            
-            const closestCard = cards.reduce((closest, card) => {
-                const box = card.getBoundingClientRect();
-                const offset = e.clientY - (box.top + box.height / 2);
-                
-                if (offset < 0 && offset > closest.offset) {
-                    return { offset, element: card };
-                } else {
-                    return closest;
-                }
-            }, { offset: Number.NEGATIVE_INFINITY }).element;
-            
-            if (closestCard) {
-                flowContainer.insertBefore(draggingCard, closestCard);
-            } else {
-                flowContainer.appendChild(draggingCard);
-            }
-        });
+        const stepCard = template.content.cloneNode(true);
+        const stepElement = stepCard.querySelector('.flow-card');
+        stepElement.id = `step-${stepCounter++}`;
+        
+        // Add connector if not the first step
+        if (flowContainer.children.length > 0) {
+            const connector = document.createElement('div');
+            connector.className = 'step-connector';
+            stepElement.appendChild(connector);
+        }
+        
+        flowContainer.appendChild(stepElement);
+        setupStepCardListeners(stepElement);
+    });
 
-        flowContainer.addEventListener('drop', (e) => {
-            e.preventDefault();
+    // Setup event listeners for a step card
+    function setupStepCardListeners(stepCard) {
+        // Delete step
+        stepCard.querySelector('.delete-step').addEventListener('click', () => {
+            stepCard.remove();
             updateConnectors();
         });
-    </script>
-</body>
-</html>
+
+        // Drag and drop functionality
+        stepCard.addEventListener('dragstart', (e) => {
+            stepCard.classList.add('dragging');
+            e.dataTransfer.setData('text/plain', stepCard.id);
+        });
+
+        stepCard.addEventListener('dragend', () => {
+            stepCard.classList.remove('dragging');
+        });
+    }
+
+    // Update connectors after drag and drop
+    function updateConnectors() {
+        const steps = document.querySelectorAll('.flow-card');
+        steps.forEach((step, index) => {
+            // Remove existing connector
+            const existingConnector = step.querySelector('.step-connector');
+            if (existingConnector) {
+                existingConnector.remove();
+            }
+            
+            // Add connector if not the last step
+            if (index < steps.length - 1) {
+                const connector = document.createElement('div');
+                connector.className = 'step-connector';
+                step.appendChild(connector);
+            }
+        });
+    }
+
+    // Drag and drop container setup
+    const flowContainer = document.getElementById('flowContainer');
+    
+    flowContainer.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        const draggingCard = document.querySelector('.dragging');
+        const cards = [...flowContainer.querySelectorAll('.flow-card:not(.dragging)')];
+        
+        const closestCard = cards.reduce((closest, card) => {
+            const box = card.getBoundingClientRect();
+            const offset = e.clientY - (box.top + box.height / 2);
+            
+            if (offset < 0 && offset > closest.offset) {
+                return { offset, element: card };
+            } else {
+                return closest;
+            }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+        
+        if (closestCard) {
+            flowContainer.insertBefore(draggingCard, closestCard);
+        } else {
+            flowContainer.appendChild(draggingCard);
+        }
+    });
+
+    flowContainer.addEventListener('drop', (e) => {
+        e.preventDefault();
+        updateConnectors();
+    });
+</script>
+{% endblock %}

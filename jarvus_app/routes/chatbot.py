@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, jsonify
+from flask import Blueprint, render_template, request, jsonify, session, redirect, url_for
 from ..services.mcp_service import mcp_service
 
 chatbot_bp = Blueprint('chatbot', __name__)
@@ -6,7 +6,10 @@ chatbot_bp = Blueprint('chatbot', __name__)
 @chatbot_bp.route('/')
 def chat_page():
     """Render the chatbot interface."""
-    return render_template('chatbot.html')
+    user = session.get('user')
+    if not user:
+        return redirect(url_for('auth.signin'))
+    return render_template('chatbot.html', user=user)
 
 @chatbot_bp.route('/send', methods=['POST'])
 def send_message():

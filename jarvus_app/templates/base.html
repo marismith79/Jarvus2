@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Jarvus{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="logo">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Jarvus Logo">
+                <span>Jarvus</span>
+            </div>
+            <nav>
+                <a href="/" {% if request.endpoint == 'web.landing' %}class="active"{% endif %}>Home</a>
+                {% if session.get('user') %}
+                    <a href="{{ url_for('web.chatbot') }}" {% if request.endpoint == 'web.chatbot' %}class="active"{% endif %}>Chat</a>
+                    <a href="{{ url_for('web.flow_builder') }}" {% if request.endpoint == 'web.flow_builder' %}class="active"{% endif %}>Flow Builder</a>
+                    <a href="{{ url_for('web.profile') }}" {% if request.endpoint == 'web.profile' %}class="active"{% endif %}>Profile</a>
+                    <a href="{{ url_for('auth.logout') }}" class="cta-button">Log Out</a>
+                {% else %}
+                    <a href="/signin" class="cta-button">Sign In</a>
+                {% endif %}
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        <div class="container">
+            <div class="footer-links">
+                <a href="#terms">Terms</a>
+                <a href="#privacy">Privacy</a>
+                <a href="#contact">Contact</a>
+            </div>
+            <div class="copyright">
+                &copy; 2025 Jarvus. All rights reserved.
+            </div>
+        </div>
+    </footer>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html> 
