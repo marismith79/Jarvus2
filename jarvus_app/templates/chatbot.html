@@ -11,18 +11,18 @@
     <section class="chatbot-card">
         <!-- Greeting -->
         <div class="greeting-section">
-            <h1 class="greeting-title">Hello, {{ user.given_name or user.name }}</h1>
+            <h1 class="greeting-title">Hello, Tetsu</h1>
             <p class="greeting-subtitle">How can I help you today?</p>
         </div>
 
         <!-- Suggestions header -->
-        <div class="suggestions-header">
+        <div class="suggestions-header" id="suggestions-header">
             <span class="suggestions-label">Suggestions</span>
             <button class="dropdown-btn">▾</button>
         </div>
 
         <!-- Suggestion cards -->
-        <div class="suggestions-cards-wrapper">
+        <div class="suggestions-cards-wrapper" id="suggestions-wrapper">
             <div class="suggestions-cards">
                 <!-- Card 1 -->
                 <div class="card">
@@ -107,6 +107,19 @@
     // Grab DOM nodes
     const inputEl = document.getElementById('chat-input');
     const sendBtn = document.getElementById('send-btn');
+    const suggestionsWrapper = document.getElementById('suggestions-wrapper');
+    const suggestionsHeader = document.getElementById('suggestions-header');
+
+    // Handle input focus events
+    inputEl.addEventListener('focus', () => {
+        suggestionsWrapper.style.display = 'none';
+        suggestionsHeader.style.display = 'none';
+    });
+
+    inputEl.addEventListener('blur', () => {
+        suggestionsWrapper.style.display = 'block';
+        suggestionsHeader.style.display = 'block';
+    });
 
     // When user clicks "send" or presses Enter
     function sendCommand() {
