@@ -29,3 +29,10 @@ def flow_builder():
         return redirect(url_for("auth.signin"))
     
     return render_template("flow_builder.html", session=session)
+
+@web.route("/dashboard")
+def dashboard():
+    if "user" not in session:
+        return redirect(url_for("auth.signin"))
+    
+    return render_template("dashboard.html", session=session)

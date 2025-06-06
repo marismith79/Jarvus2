@@ -1,0 +1,474 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<main class="container">
+  <!-- Page Header -->
+  <h1 class="mt-4">Dashboard</h1>
+
+  <!-- ────────────────────────────────────────────────────────────────────────
+     1. Completed Tasks (Pending Review)
+     ──────────────────────────────────────────────────────────────────────── -->
+  <section class="mt-8">
+    <h2>Pending Reviews</h2>
+
+    <!-- Container for task cards -->
+    <div id="pendingTasksContainer" class="mt-4 space-y-4">
+      <!-- ── Example Task Card #1 ───────────────────────────────────────────────── -->
+      <div class="card flex flex-col p-4 border rounded shadow-sm bg-bg-secondary">
+        <div class="flex justify-between items-start">
+          <div class="flex-1">
+            <h3 class="task-title font-medium">Organize Inbox by Priority Labels</h3>
+            <p class="task-info text-sm text-gray-600">Completed on June 4, 2025</p>
+          </div>
+          <div class="flex-shrink-0 flex space-x-2">
+            <button class="cta-button" onclick="alert('Task accepted!')">Accept</button>
+            <button class="cta-button" style="background: var(--error-color)" onclick="alert('Task rejected.')">Reject</button>
+          </div>
+        </div>
+
+        <!-- Inline result preview for static example -->
+        <div class="task-result mt-4 bg-white border rounded p-3 overflow-auto" style="max-height: 200px;">
+          <strong>Changes to Review:</strong>
+          <ul class="mt-2 list-disc list-inside text-sm text-text-primary">
+            <li>
+              Moved 120 messages from “Inbox” → “High Priority” label.
+              <div class="ml-4 text-xs text-text-secondary">Emailed “boss@example.com” flagged items.</div>
+            </li>
+            <li>Created new label “Follow Up” and applied to 25 messages older than 2 weeks.</li>
+            <li>Archived all messages with “newsletter@example.com” sender.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- ── Example Task Card #2 ───────────────────────────────────────────────── -->
+      <div class="card flex flex-col p-4 border rounded shadow-sm bg-bg-secondary">
+        <div class="flex justify-between items-start">
+          <div class="flex-1">
+            <h3 class="task-title font-medium">Archive Last Quarter’s Slack Messages</h3>
+            <p class="task-info text-sm text-gray-600">Completed on June 3, 2025</p>
+          </div>
+          <div class="flex-shrink-0 flex space-x-2">
+            <button class="cta-button" onclick="alert('Task accepted!')">Accept</button>
+            <button class="cta-button" style="background: var(--error-color)" onclick="alert('Task rejected.')">Reject</button>
+          </div>
+        </div>
+
+        <!-- Inline result preview for static example -->
+        <div class="task-result mt-4 bg-white border rounded p-3 overflow-auto" style="max-height: 200px;">
+          <strong>Changes to Review:</strong>
+          <ul class="mt-2 list-disc list-inside text-sm text-text-primary">
+            <li>
+              Archived 3,250 messages from #general (Jan–Mar 2025).
+              <div class="ml-4 text-xs text-text-secondary">Stored ZIP file: “slack_archive_Q1_2025.zip”.</div>
+            </li>
+            <li>Moved all pinned messages in #announcements to folder “Q1_Archives” in Google Drive.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- ── Dynamic Task Cards (populated via JavaScript) ──────────────────────────── -->
+      <!-- JS will append additional <div class="card …"> elements here -->
+    </div>
+  </section>
+
+  <!-- ────────────────────────────────────────────────────────────────────────
+     2. Recently Completed Workflows (with Integrated Feedback)
+     ──────────────────────────────────────────────────────────────────────── -->
+  <section class="mt-12">
+    <h2>Recently Completed Workflows</h2>
+    <div class="workflows-grid mt-4" id="recentWorkflowsGrid">
+      <!-- ── Example Workflow Card #1 ───────────────────────────────────────────── -->
+      <div class="workflow-card">
+        <div class="workflow-card-content">
+          <h3 class="workflow-title">Monthly Sales Report</h3>
+          <p class="workflow-description">
+            Gathers last month’s sales data, generates a PDF report, and emails stakeholders.
+          </p>
+          <div class="workflow-meta">
+            <span class="workflow-steps">5 steps</span>
+            <span class="workflow-type">Reporting</span>
+          </div>
+          <p class="workflow-result mt-2">
+            <strong>Last Run Result:</strong> Generated “Sales_Report_Apr_2025.pdf” and emailed to the sales team.
+          </p>
+          <div class="mt-2 space-x-2">
+            <!-- Notice we call openExamplePlayback for the static example -->
+            <button class="cta-button" onclick="openExamplePlayback('monthlySales')">
+              View Playback
+            </button>
+            <button class="cta-button" style="background: var(--success-color)"
+                    onclick="giveWorkflowFeedback('monthlySales')">
+              Give Workflow Feedback
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Example Workflow Card #2 ───────────────────────────────────────────── -->
+      <div class="workflow-card">
+        <div class="workflow-card-content">
+          <h3 class="workflow-title">Social Media Analytics</h3>
+          <p class="workflow-description">
+            Fetches last week’s social metrics from Slack and Google Sheets, compiles into a summary.
+          </p>
+          <div class="workflow-meta">
+            <span class="workflow-steps">4 steps</span>
+            <span class="workflow-type">Analytics</span>
+          </div>
+          <p class="workflow-result mt-2">
+            <strong>Last Run Result:</strong> Posted “Weekly_Social_Summary.docx” link in Slack #marketing.
+          </p>
+          <div class="mt-2 space-x-2">
+            <!-- Call openExamplePlayback for the second static example -->
+            <button class="cta-button" onclick="openExamplePlayback('socialMediaReport')">
+              View Playback
+            </button>
+            <button class="cta-button" style="background: var(--success-color)"
+                    onclick="giveWorkflowFeedback('socialMediaReport')">
+              Give Workflow Feedback
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Dynamic Workflow Cards (populated via API) ──────────────────────────── -->
+      <!-- JS will append additional cards below if available -->
+    </div>
+  </section>
+</main>
+
+<!-- ────────────────────────────────────────────────────────────────────────────────
+     Playback & Step Feedback Modal (hidden by default)
+     ──────────────────────────────────────────────────────────────────────────────── -->
+<div id="playbackModal" class="modal hidden" style="
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  ">
+  <div class="modal-content" style="
+      background: var(--bg-primary);
+      padding: 2rem;
+      border-radius: 0.5rem;
+      max-width: 600px;
+      width: 90%;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+      position: relative;
+    ">
+    <button id="modalCloseBtn" class="cta-button" style="
+        background: transparent;
+        color: var(--text-primary);
+        font-size: 1.25rem;
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+      ">✕</button>
+    <h3 id="modalTitle" class="mt-0">Playback</h3>
+    <div id="modalBody" class="mt-4">
+      <!-- Playback steps and feedback buttons will be injected here -->
+    </div>
+    <button id="workflowFeedbackBtn" class="cta-button mt-4" style="background: var(--success-color)">
+      Give Feedback on Entire Workflow
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // ──────────────────────────────────────────────────────────────────────────
+    // 0. Hardcoded example playback data (for the two static workflows)
+    // ──────────────────────────────────────────────────────────────────────────
+    const examplePlaybacks = {
+      monthlySales: {
+        title: "Monthly Sales Report",
+        steps: [
+          "Step 1: Logged into Google Sheets and pulled “April 2025 Sales” data.",
+          "Step 2: Processed data in Python: calculated totals and generated charts.",
+          "Step 3: Created a PDF named “Sales_Report_Apr_2025.pdf.”",
+          "Step 4: Uploaded PDF to Google Drive.",
+          "Step 5: Sent an email via Gmail API to sales-team@example.com with the PDF attached."
+        ]
+      },
+      socialMediaReport: {
+        title: "Social Media Analytics",
+        steps: [
+          "Step 1: Queried Slack API for messages in #social-media from last week.",
+          "Step 2: Extracted engagement metrics (likes, comments) from those messages.",
+          "Step 3: Opened Google Sheets and wrote metrics into “Weekly_Social_Data” sheet.",
+          "Step 4: Generated a summary document “Weekly_Social_Summary.docx” and posted the link to Slack #marketing."
+        ]
+      }
+    };
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // 1. Function to open modal for static example playback
+    // ──────────────────────────────────────────────────────────────────────────
+    window.openExamplePlayback = function(exampleKey) {
+      const modal = document.getElementById('playbackModal');
+      const modalTitle = document.getElementById('modalTitle');
+      const modalBody = document.getElementById('modalBody');
+      const workflowFeedbackBtn = document.getElementById('workflowFeedbackBtn');
+
+      const data = examplePlaybacks[exampleKey];
+      modalTitle.textContent = `Playback: ${data.title}`;
+      modalBody.innerHTML = '<ol id="stepListExample"></ol>';
+
+      const stepList = document.getElementById('stepListExample');
+      data.steps.forEach((stepText, idx) => {
+        const li = document.createElement('li');
+        li.style.marginBottom = '0.5rem';
+        li.innerHTML = `
+          <span>${stepText}</span>
+          <button class="cta-button" style="background: var(--primary-hover); font-size: 0.85rem; margin-left: 0.5rem;"
+                  onclick="giveStepFeedback('${exampleKey}', ${idx})">
+            Feedback
+          </button>
+        `;
+        stepList.appendChild(li);
+      });
+
+      // Bind workflow-level feedback for the example
+      workflowFeedbackBtn.onclick = () => giveWorkflowFeedback(exampleKey);
+
+      modal.style.display = 'flex';
+    };
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // 2. Populate dynamic task cards (API: GET /api/completed_tasks)
+    // ──────────────────────────────────────────────────────────────────────────
+    fetch('/api/completed_tasks')
+      .then(res => res.json())
+      .then(data => {
+        const container = document.getElementById('pendingTasksContainer');
+
+        data.tasks.forEach(task => {
+          // Skip the hardcoded static examples by ID if necessary
+          if (task.id === 'exampleTask1' || task.id === 'exampleTask2') return;
+
+          const card = document.createElement('div');
+          card.classList.add('card', 'flex', 'flex-col', 'p-4', 'border', 'rounded', 'shadow-sm', 'bg-bg-secondary');
+
+          // Now render the “result_preview” inline instead of a link
+          const resultHtml = task.result_preview
+            ? task.result_preview
+            : '<p class="text-text-secondary text-sm">No preview available.</p>';
+
+          card.innerHTML = `
+            <div class="flex justify-between items-start">
+              <div class="flex-1">
+                <h3 class="task-title font-medium">${task.title}</h3>
+                <p class="task-info text-sm text-gray-600">Completed on ${task.completed_at}</p>
+              </div>
+              <div class="flex-shrink-0 flex space-x-2">
+                <button class="cta-button" onclick="acceptTask('${task.id}')">Accept</button>
+                <button class="cta-button" style="background: var(--error-color)" onclick="rejectTask('${task.id}')">Reject</button>
+              </div>
+            </div>
+            <div class="task-result mt-4 bg-white border rounded p-3 overflow-auto" style="max-height: 200px;">
+              <strong>Changes to Review:</strong>
+              <div class="mt-2">${resultHtml}</div>
+            </div>
+          `;
+
+          container.appendChild(card);
+        });
+      })
+      .catch(err => console.error('Error loading tasks:', err));
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // 3. Populate dynamic workflow cards (API: GET /api/recent_workflows)
+    // ──────────────────────────────────────────────────────────────────────────
+    fetch('/api/recent_workflows')
+      .then(res => res.json())
+      .then(data => {
+        const grid = document.getElementById('recentWorkflowsGrid');
+
+        data.workflows.forEach(wf => {
+          // Skip the two hardcoded static examples by ID
+          if (wf.id === 'monthlySales' || wf.id === 'socialMediaReport') return;
+
+          const card = document.createElement('div');
+          card.classList.add('workflow-card');
+
+          // Build a small <details> block that lists steps with per-step “Feedback” buttons
+          let stepsHtml = '';
+          if (Array.isArray(wf.steps)) {
+            stepsHtml = '<details class="mt-2"><summary>Steps (' + wf.steps.length + ')</summary><ol>';
+            wf.steps.forEach((stepText, idx) => {
+              stepsHtml += `
+                <li style="margin-bottom: 0.3rem;">
+                  ${stepText}
+                  <button class="cta-button" style="background: var(--primary-hover); font-size: 0.8rem; margin-left: 0.5rem;"
+                          onclick="giveStepFeedback('${wf.id}', ${idx})">
+                    Feedback
+                  </button>
+                </li>`;
+            });
+            stepsHtml += '</ol></details>';
+          }
+
+          card.innerHTML = `
+            <div class="workflow-card-content">
+              <h3 class="workflow-title">${wf.title}</h3>
+              <p class="workflow-description">${wf.description}</p>
+              <div class="workflow-meta">
+                <span class="workflow-steps">${wf.steps.length} steps</span>
+                <span class="workflow-type">${wf.type || ''}</span>
+              </div>
+              <p class="workflow-result mt-2">
+                <strong>Last Run Result:</strong> ${wf.last_result || 'No result available'}
+              </p>
+              ${stepsHtml}
+              <div class="mt-2 space-x-2">
+                <!-- For dynamic workflows, call viewDynamicPlayback -->
+                <button class="cta-button" onclick="viewDynamicPlayback('${wf.id}')">
+                  View Playback
+                </button>
+                <button class="cta-button" style="background: var(--success-color)"
+                        onclick="giveWorkflowFeedback('${wf.id}')">
+                  Give Workflow Feedback
+                </button>
+              </div>
+            </div>
+          `;
+          grid.appendChild(card);
+        });
+      })
+      .catch(err => console.error('Error loading workflows:', err));
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 4. Function to open modal for dynamic workflows
+  // ─────────────────────────────────────────────────────────────────────────────
+  function viewDynamicPlayback(workflowId) {
+    fetch(`/api/workflows/${workflowId}/playback_steps`)
+      .then(res => res.json())
+      .then(data => {
+        const modal = document.getElementById('playbackModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalBody = document.getElementById('modalBody');
+        const workflowFeedbackBtn = document.getElementById('workflowFeedbackBtn');
+
+        modalTitle.textContent = `Playback: ${data.title || 'Workflow'}`;
+        modalBody.innerHTML = '<ol id="stepListDynamic"></ol>';
+
+        const stepList = document.getElementById('stepListDynamic');
+        if (Array.isArray(data.steps)) {
+          data.steps.forEach((stepText, idx) => {
+            const li = document.createElement('li');
+            li.style.marginBottom = '0.5rem';
+            li.innerHTML = `
+              <span>${stepText}</span>
+              <button class="cta-button" style="background: var(--primary-hover); font-size: 0.85rem; margin-left: 0.5rem;"
+                      onclick="giveStepFeedback('${workflowId}', ${idx})">
+                Feedback
+              </button>
+            `;
+            stepList.appendChild(li);
+          });
+        } else {
+          modalBody.innerHTML = '<p>No playback steps available.</p>';
+        }
+
+        workflowFeedbackBtn.onclick = () => giveWorkflowFeedback(workflowId);
+        modal.style.display = 'flex';
+      })
+      .catch(err => {
+        console.error('Error fetching playback data:', err);
+        alert('⚠️ Error: could not load playback.');
+      });
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 5. Feedback helpers (step-level and workflow-level via prompt)
+  // ─────────────────────────────────────────────────────────────────────────────
+  function giveWorkflowFeedback(workflowId) {
+    const feedbackText = window.prompt('Enter feedback for the workflow:');
+    if (!feedbackText) return;
+
+    fetch('/api/submit_feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        workflow_id: workflowId,
+        feedback: feedbackText,
+        step_index: null
+      })
+    })
+      .then(res => {
+        if (!res.ok) throw new Error('Network response was not OK');
+        alert('Workflow feedback submitted—thank you!');
+      })
+      .catch(err => {
+        console.error('Error submitting workflow feedback:', err);
+        alert('⚠️ Error: could not submit feedback.');
+      });
+  }
+
+  function giveStepFeedback(workflowId, stepIndex) {
+    const feedbackText = window.prompt('Enter feedback for this step:');
+    if (!feedbackText) return;
+
+    fetch('/api/submit_feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        workflow_id: workflowId,
+        feedback: feedbackText,
+        step_index: stepIndex
+      })
+    })
+      .then(res => {
+        if (!res.ok) throw new Error('Network response was not OK');
+        alert('Step feedback submitted—thank you!');
+      })
+      .catch(err => {
+        console.error('Error submitting step feedback:', err);
+        alert('⚠️ Error: could not submit feedback.');
+      });
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 6. Placeholder: acceptTask and rejectTask for dynamic tasks
+  // ─────────────────────────────────────────────────────────────────────────────
+  function acceptTask(taskId) {
+    fetch(`/api/accept_task/${taskId}`, { method: 'POST' })
+      .then(res => {
+        if (!res.ok) throw new Error('Network response was not OK');
+        location.reload();
+      })
+      .catch(err => console.error('Error accepting task:', err));
+  }
+
+  function rejectTask(taskId) {
+    fetch(`/api/reject_task/${taskId}`, { method: 'POST' })
+      .then(res => {
+        if (!res.ok) throw new Error('Network response was not OK');
+        location.reload();
+      })
+      .catch(err => console.error('Error rejecting task:', err));
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 7. Close playback modal logic
+  // ─────────────────────────────────────────────────────────────────────────────
+  document.getElementById('modalCloseBtn').addEventListener('click', () => {
+    document.getElementById('playbackModal').style.display = 'none';
+  });
+  document.getElementById('playbackModal').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('playbackModal')) {
+      document.getElementById('playbackModal').style.display = 'none';
+    }
+  });
+</script>
+{% endblock %}
