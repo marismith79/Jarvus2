@@ -1270,3 +1270,65 @@ main {
     padding: var(--spacing-md);
   }
 }
+
+.input-buttons {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.tool-selector {
+    position: relative;
+}
+
+.tool-dropdown {
+    display: none;
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    min-width: 200px;
+    margin-bottom: 8px;
+    z-index: 1000;
+}
+
+.tool-dropdown.show {
+    display: block;
+}
+
+.tool-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.tool-item:hover {
+    background-color: #f3f4f6;
+}
+
+.tool-icon {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+}
+
+.input-at {
+    font-weight: bold;
+    color: #3B82F6;
+    background: none;
+    border: none;
+    padding: 8px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.input-at:hover {
+    background-color: #f3f4f6;
+    border-radius: 4px;
+}
