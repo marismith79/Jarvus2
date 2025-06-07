@@ -25,7 +25,7 @@ def profile():
         zoom_connected=zoom_connected
     )
 
-@web.route("/chatbot")
+@web.route("/chatbot", strict_slashes=False)
 @login_required
 def chatbot():
     return render_template("chatbot.html")

@@ -1,5 +1,7 @@
 from flask import Blueprint, render_template, request, jsonify, session, redirect, url_for
 from ..services.mcp_service import mcp_service
+from ..llm.client import OpenAIClient
+import requests
 
 chatbot_bp = Blueprint('chatbot', __name__)
 
@@ -21,5 +23,24 @@ def send_message():
             'error': 'Missing message in request'
         }), 400
     
-    result = mcp_service.process_with_azure_openai(data['message'])
-    return jsonify(result) 
+    # Fetch the user's available tools
+    tools_response = requests.get('http://localhost:5001/api/get_user_tools')
+    if tools_response.status_code != 200:
+        return jsonify({
+            'success': False,
+            'error': 'Failed to fetch user tools'
+        }), 500
+    tools = tools_response.json()
+    
+    # Use the LLM client to generate a response
+    llm_client = OpenAIClient()
+    messages = [
+        llm_client.format_message("system", "You are a helpful assistant."),
+        llm_client.format_message("user", data['message'])
+    ]
+    response = llm_client.create_chat_completion(messages, tools=tools)
+    
+    return jsonify({
+        'success': True,
+        'reply': response.choices[0].message.content
+    }) 

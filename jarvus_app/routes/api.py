@@ -1,6 +1,8 @@
 from flask import Blueprint, request, jsonify
 # from jarvus_app.middleware.validate_intent import is_valid_intent
 # from jarvus_app.middleware.route_intent import dispatch_intent
+from flask_login import current_user, login_required
+from jarvus_app.models.user_tool import UserTool
 
 api = Blueprint("api", __name__)
 
@@ -30,3 +32,10 @@ def handle_signup():
 #         return jsonify({"result": response})
 #     except Exception as e:
 #         return jsonify({"error": str(e)}), 500
+
+@login_required
+def get_user_tools():
+    """Return the list of tools the currently logged-in user is allowed to use."""
+    user_tools = UserTool.query.filter_by(user_id=current_user.id, is_active=True).all()
+    tools = [tool.tool_name for tool in user_tools]
+    return jsonify(tools)
