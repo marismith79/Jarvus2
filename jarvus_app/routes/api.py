@@ -1,7 +1,6 @@
 from flask import Blueprint, request, jsonify
 # from jarvus_app.middleware.validate_intent import is_valid_intent
 # from jarvus_app.middleware.route_intent import dispatch_intent
-from jarvus_app.models.email_signup import EmailSignup
 
 api = Blueprint("api", __name__)
 
@@ -18,13 +17,6 @@ def handle_signup():
     if "@" not in email or "." not in email:
         return jsonify({"error": "Invalid email format"}), 400
     
-    # Save the email
-    success = EmailSignup.save_email(email)
-    
-    if success:
-        return jsonify({"success": True, "message": "Email registered successfully"})
-    else:
-        return jsonify({"success": False, "message": "Email already registered"})
 
 # @api.route("/api/handle_intent", methods=["POST"])
 # def handle_intent():

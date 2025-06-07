@@ -1,4 +1,5 @@
 servers:
+  # Availity server
   availity:
     command: python
     args:
@@ -9,4 +10,16 @@ servers:
       AVAILITY_CLIENT_SECRET: ${AVAILITY_CLIENT_SECRET}
       AVAILITY_PAYER_ID: ${AVAILITY_PAYER_ID}
       AVAILITY_TOKEN_URL: ${AVAILITY_TOKEN_URL}
-      AVAILITY_API_BASE_URL: ${AVAILITY_API_BASE_URL} 
+      AVAILITY_API_BASE_URL: ${AVAILITY_API_BASE_URL}
+
+  # Gmail server 
+  gmail:
+    command: python
+    args:
+      - -m
+      - google_workspace_mcp_server
+    env:
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI}
+      GOOGLE_SCOPES: "https://www.googleapis.com/auth/gmail.readonly,https://www.googleapis.com/auth/gmail.send"

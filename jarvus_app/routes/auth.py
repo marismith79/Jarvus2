@@ -4,6 +4,8 @@ import os
 from flask import Blueprint, session, redirect, url_for, request, render_template
 from dotenv import load_dotenv
 import msal
+from flask_login import login_user
+from jarvus_app.models.user import User
 
 load_dotenv()
 
@@ -27,6 +29,9 @@ print("→ SCOPE:", SCOPE)
 @auth.route("/signin")
 def signin():
     """Redirect to Azure B2C for authentication."""
+    next_url = request.args.get('next')
+    if next_url:
+        session['next_url'] = next_url
     msal_app = msal.ConfidentialClientApplication(
         CLIENT_ID, authority=AUTHORITY, client_credential=CLIENT_SECRET
     )
@@ -48,8 +53,17 @@ def authorized():
     )
 
     if "id_token_claims" in result:
-        session["user"] = result["id_token_claims"]  # store the token claims
-        return redirect(url_for("web.landing"))
+        print("ID Token Claims:", result["id_token_claims"])
+        user_id = result["id_token_claims"].get("sub")
+        # Store all user claims by user_id in the session
+        user_claims = session.get("user_claims", {})
+        user_claims[user_id] = result["id_token_claims"]
+        session["user_claims"] = user_claims
+        user = User(user_id, result["id_token_claims"])
+        login_user(user, remember=True)
+        print("Session after login:", dict(session))
+        next_url = session.pop('next_url', None)
+        return redirect(next_url or url_for("web.landing"))
 
     # on error, show the sign‑in page with an error message
     error = result.get("error_description") or result.get("error")
