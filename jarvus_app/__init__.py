@@ -11,12 +11,16 @@ from jarvus_app.routes.oauth import oauth_bp
 import os
 from dotenv import load_dotenv
 from jarvus_app.config import Config
-from jarvus_app.db import db
+from .models.user import User
+from .db import db  # Use the shared db instance
 
 # Load .env early so Config (or your routes) can pick up env vars
 load_dotenv()
 
-db = SQLAlchemy()
+# Allow OAuth2 to work over HTTP in development
+os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+
+# Remove local db = SQLAlchemy()
 login_manager = LoginManager()
 
 def create_app():
@@ -26,27 +30,18 @@ def create_app():
 
     # Load config
     app.config.from_object(Config)
-    app.config.from_mapping(
-        SQLALCHEMY_DATABASE_URI=os.getenv('DATABASE_URL', 'sqlite:///jarvus.db'),
-        SQLALCHEMY_TRACK_MODIFICATIONS=False,
-        OAUTHLIB_INSECURE_TRANSPORT=os.getenv('FLASK_ENV') == 'development'
-    )
-
+    print("Database URI:", app.config['SQLALCHEMY_DATABASE_URI'])
+    
     # Initialize extensions
     db.init_app(app)
     login_manager.init_app(app)
     login_manager.login_view = 'auth.signin'
 
     # Register user_loader
-    from jarvus_app.models.user import User
     @login_manager.user_loader
     def load_user(user_id):
-        from flask import session
-        claims_dict = session.get("user_claims", {})
-        claims = claims_dict.get(user_id)
-        if claims:
-            return User(user_id, claims)
-        return None
+        # The user is now loaded from the database
+        return User.query.get(user_id)
 
     # Register blueprints
     app.register_blueprint(web)
@@ -57,9 +52,12 @@ def create_app():
     app.register_blueprint(oauth_bp)
     # app.register_blueprint(flow_builder_bp, url_prefix='/flow_builder')
 
-    # Create database tables
+    # Create tables
     with app.app_context():
+        from .models.oauth import OAuthCredentials
+        from .models.user import User
         db.create_all()
+        print("Database tables created.")
 
     return app
 

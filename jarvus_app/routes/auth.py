@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 import msal
 from flask_login import login_user
 from jarvus_app.models.user import User
+from ..db import db
 
 load_dotenv()
 
@@ -53,13 +54,25 @@ def authorized():
     )
 
     if "id_token_claims" in result:
-        print("ID Token Claims:", result["id_token_claims"])
-        user_id = result["id_token_claims"].get("sub")
-        # Store all user claims by user_id in the session
+        claims = result["id_token_claims"]
+        user_id = claims.get("sub")
+
+        # Find user in DB or create a new one
+        user = User.query.get(user_id)
+        if not user:
+            user = User(
+                id=user_id,
+                name=claims.get("name"),
+                email=claims.get("preferred_username") # Common claim for email in B2C
+            )
+            db.session.add(user)
+            db.session.commit()
+
+        # Store all user claims by user_id in the session for compatibility
         user_claims = session.get("user_claims", {})
-        user_claims[user_id] = result["id_token_claims"]
+        user_claims[user_id] = claims
         session["user_claims"] = user_claims
-        user = User(user_id, result["id_token_claims"])
+
         login_user(user, remember=True)
         print("Session after login:", dict(session))
         next_url = session.pop('next_url', None)

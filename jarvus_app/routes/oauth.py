@@ -2,7 +2,7 @@ from flask import Blueprint, redirect, request, url_for, current_app, session, j
 from google_auth_oauthlib.flow import Flow
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
-# from ..models.oauth import OAuthCredentials  # Commented out for now
+from ..models.oauth import OAuthCredentials  # Uncommented
 from flask_login import current_user, login_required
 import json
 import os
@@ -65,8 +65,10 @@ def connect_service(service):
 @login_required
 def disconnect_service(service):
     """Disconnect the specified service"""
-    # Stubbed out for now
-    return jsonify({'success': True, 'stub': True})
+    if service in ['gmail', 'notion', 'slack', 'zoom']:
+        success = OAuthCredentials.remove_credentials(current_user.id, service)
+        return jsonify({'success': success})
+    return jsonify({'success': False, 'error': 'Invalid service'})
 
 def connect_gmail():
     """Initiate Gmail OAuth flow"""
@@ -102,15 +104,14 @@ def oauth2callback():
     )
     
     credentials = flow.credentials
-    # Stub: Print credentials to console for now
-    print('Gmail OAuth credentials:', credentials.to_json())
-    # OAuthCredentials.store_credentials(
-    #     current_user.id,
-    #     'gmail',
-    #     credentials.to_json()
-    # )
+    # Store credentials in database
+    OAuthCredentials.store_credentials(
+        current_user.id,
+        'gmail',
+        credentials.to_json()
+    )
     
-    return redirect(url_for('profile'))
+    return redirect(url_for('web.profile'))
 
 def connect_notion():
     """Initiate Notion OAuth flow"""
