@@ -68,5 +68,5 @@ Go to:
   - http://localhost:5001/api/v1/product/3
 
 
-> **Note**: You can also use `flask run --port=5001` to run the application. 
+> **Note**: You can do `flask run --port=5001` to run the application. 
 > **Note**: You can also do `python run_dev.py` to run the application with automatic rendering.
