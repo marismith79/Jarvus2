@@ -33,6 +33,7 @@ def handle_signup():
 #     except Exception as e:
 #         return jsonify({"error": str(e)}), 500
 
+@api.route("/api/get_user_tools")
 @login_required
 def get_user_tools():
     """Return the list of tools the currently logged-in user is allowed to use."""

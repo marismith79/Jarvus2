@@ -9,13 +9,23 @@ from jarvus_app.routes.chatbot import chatbot_bp
 from jarvus_app.routes.oauth import oauth_bp
 # from jarvus_app.routes.flow_builder import flow_builder_bp
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 from jarvus_app.config import Config
 from .models.user import User
 from .db import db  # Use the shared db instance
 
+# Get the project root directory
+project_root = Path(__file__).parent.parent
+env_path = project_root / '.env'
+
 # Load .env early so Config (or your routes) can pick up env vars
-load_dotenv()
+print(f"Loading .env file from: {env_path}")
+if env_path.exists():
+    load_dotenv(env_path)
+    print("Environment variables loaded from .env")
+else:
+    print("Warning: .env file not found at", env_path)
 
 # Allow OAuth2 to work over HTTP in development
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'

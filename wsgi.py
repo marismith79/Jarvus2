@@ -1,3 +1,3 @@
-from jarvus_app import create_app_wsgi
+from jarvus_app import create_app
 
-app = application = create_app_wsgi()  # noqa
+app = application = create_app()  # noqa

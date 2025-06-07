@@ -1,7 +1,8 @@
 # app/routes/web_pages.py
-from flask import Blueprint, render_template
+from flask import Blueprint, render_template, request
 from flask_login import login_required, current_user
 from ..models.oauth import OAuthCredentials
+from .chatbot import handle_chat_message
 
 web = Blueprint("web", __name__)
 
@@ -29,6 +30,11 @@ def profile():
 @login_required
 def chatbot():
     return render_template("chatbot.html")
+
+@web.route("/chatbot/send", methods=['POST'])
+@login_required
+def send_chat_message():
+    return handle_chat_message()
 
 @web.route("/flow-builder")
 @login_required
