@@ -60,6 +60,3 @@ def create_app():
         print("Database tables created.")
 
     return app
-
-def create_app_wsgi():
-    return create_app()

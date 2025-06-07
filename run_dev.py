@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import os
 from dotenv import load_dotenv
-from jarvus_app.__main__ import create_app
+from jarvus_app import create_app
 
 # Load environment variables
 load_dotenv()
