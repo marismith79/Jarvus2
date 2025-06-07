@@ -15,5 +15,4 @@ google-auth-oauthlib==1.2.2
 google-api-python-client==2.171.0
 azure-identity==1.23.0
 azure-keyvault-secrets==4.9.0
-azure-storage-blob==12.25.1
 openai>=0.27.0
