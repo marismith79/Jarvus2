@@ -102,6 +102,8 @@
 
         history.appendChild(wrapper);
         history.scrollTop = history.scrollHeight;
+        
+        return wrapper;
     }
 
     // Grab DOM nodes
@@ -131,6 +133,9 @@
         inputEl.value = '';
         inputEl.focus();
 
+        // Show "thinking" message
+        const thinkingMsg = appendMessage('bot', '🤔 Processing...');
+
         // POST to Flask endpoint
         fetch('/chatbot/send', {
             method: 'POST',
@@ -144,10 +149,22 @@
             return res.json();
         })
         .then((data) => {
+            // Remove thinking message
+            thinkingMsg.remove();
+            
+            if (data.tool_executed) {
+                // Show tool execution status
+                appendMessage('bot', '🛠️ Executing command...');
+                // Show tool result
+                appendMessage('bot', `📊 Result: ${JSON.stringify(data.tool_result, null, 2)}`);
+            }
+            
+            // Show final response
             appendMessage('bot', data.reply);
         })
         .catch((err) => {
             console.error('Error sending command:', err);
+            thinkingMsg.remove();
             appendMessage('bot', '⚠️ Error: could not reach server.');
         });
     }

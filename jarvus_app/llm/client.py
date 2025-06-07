@@ -11,15 +11,6 @@ import openai
 class OpenAIClient:
     def __init__(self):
         """Initialize the OpenAI client with API key from environment variables."""
-        print("\n=== OpenAI Client Initialization ===")
-        
-        # Debug: Print all environment variables that might contain the API key
-        print("\nEnvironment variables:")
-        for key in os.environ:
-            if 'OPENAI' in key:
-                value = os.environ[key]
-                masked = f"{value[:4]}...{value[-4:]}" if len(value) > 8 else "***"
-                print(f"  {key}: {masked}")
         
         # Get the API key
         self.api_key = os.getenv('OPENAI_API_KEY')
