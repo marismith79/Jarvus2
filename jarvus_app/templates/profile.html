@@ -1,18 +1,16 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jarvus - Your Profile</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
-</head>
-<body>
-    {% include 'shared/header.html' %}
-    
+{% extends "base.html" %}
+
+{% block title %}Jarvus - Your Profile{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
+{% endblock %}
+
+{% block content %}
+<main>
     <section class="profile-hero">
         <div class="container">
-            <h1>Welcome! {{ current_user.claims.get('given_name') or current_user.claims.get('name') or 'User' }}</h1>
+            <h1>Welcome! {{ current_user.name or 'User' }}</h1>
             <p>Manage your profile and connected services</p>
         </div>
     </section>
@@ -26,313 +24,115 @@
                     <form class="profile-form" id="basic-info-form">
                         <div class="form-group">
                             <label for="name">Full Name</label>
-                            <input type="text" id="name" name="name" value="{{ current_user.claims.get('name', '') }}" placeholder="Your name">
+                            <input type="text" id="name" name="name" value="{{ current_user.name or '' }}" placeholder="Your name">
                         </div>
                         <div class="form-group">
                             <label for="email">Email Address</label>
-                            <input type="email" id="email" name="email" value="{{ current_user.claims.get('email', '') }}" placeholder="Your email">
+                            <input type="email" id="email" name="email" value="{{ current_user.email or '' }}" placeholder="Your email">
                         </div>
                         <div class="form-group">
                             <label for="phone">Phone Number</label>
-                            <input type="tel" id="phone" name="phone" placeholder="Your phone">
+                            <input type="tel" id="phone" name="phone" value="" placeholder="Your phone">
                         </div>
                         <button type="submit" class="cta-button">Save Changes</button>
                     </form>
                 </div>
 
-                <!-- Document Upload Section -->
+                <!-- Integrations Section -->
                 <div class="profile-card">
-                    <h2>Documents</h2>
-                    <div class="document-upload-area">
-                        <form class="upload-form" id="document-upload-form">
-                            <div class="upload-dropzone" id="upload-dropzone">
-                                <div class="upload-icon">📄</div>
-                                <p>Drag and drop files here or</p>
-                                <label for="file-upload" class="upload-button">Choose Files</label>
-                                <input type="file" id="file-upload" multiple hidden>
+                    <h2>Your Connections</h2>
+                    <div class="integrations-grid">
+                        <!-- Gmail Integration -->
+                        <div class="integration-card">
+                            <div class="integration-header">
+                                <img src="{{ url_for('static', filename='images/gmail-logo.png') }}" alt="Gmail Logo" class="integration-logo">
+                                <span class="integration-name">Gmail</span>
                             </div>
-                            <div class="uploaded-files" id="uploaded-files">
-                                <!-- Uploaded files will be listed here -->
+                            {% if gmail_connected %}
+                                <button class="cta-button secondary" onclick="disconnectGmail()">Disconnect</button>
+                            {% else %}
+                                <button class="cta-button" onclick="connectGmail()">Connect</button>
+                            {% endif %}
+                        </div>
+
+                        <!-- Notion Integration -->
+                        <div class="integration-card">
+                            <div class="integration-header">
+                                <img src="{{ url_for('static', filename='images/notion-logo.png') }}" alt="Notion Logo" class="integration-logo">
+                                <span class="integration-name">Notion</span>
                             </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Integrations Section -->
-            <div class="integrations-section">
-                <h2>Integrations</h2>
-                <div class="integrations-grid">
-                    <!-- Gmail Integration -->
-                    <div class="integration-card">
-                        <div class="integration-header">
-                            <img src="{{ url_for('static', filename='images/gmail-logo.png') }}" alt="Gmail Logo" class="integration-logo">
-                            <span class="integration-name">Gmail</span>
+                            {% if notion_connected %}
+                                <button class="cta-button secondary" onclick="disconnectNotion()">Disconnect</button>
+                            {% else %}
+                                <button class="cta-button" onclick="connectNotion()">Connect</button>
+                            {% endif %}
                         </div>
-                        {% if gmail_connected %}
-                            <button class="cta-button secondary" onclick="disconnectGmail()">Disconnect</button>
-                        {% else %}
-                            <button class="cta-button" onclick="connectGmail()">Connect</button>
-                        {% endif %}
-                    </div>
 
-                    <!-- Notion Integration -->
-                    <div class="integration-card">
-                        <div class="integration-header">
-                            <img src="{{ url_for('static', filename='images/notion-logo.png') }}" alt="Notion Logo" class="integration-logo">
-                            <span class="integration-name">Notion</span>
+                        <!-- Slack Integration -->
+                        <div class="integration-card">
+                            <div class="integration-header">
+                                <img src="{{ url_for('static', filename='images/slack-logo.png') }}" alt="Slack Logo" class="integration-logo">
+                                <span class="integration-name">Slack</span>
+                            </div>
+                            {% if slack_connected %}
+                                <button class="cta-button secondary" onclick="disconnectSlack()">Disconnect</button>
+                            {% else %}
+                                <button class="cta-button" onclick="connectSlack()">Connect</button>
+                            {% endif %}
                         </div>
-                        {% if notion_connected %}
-                            <button class="cta-button secondary" onclick="disconnectNotion()">Disconnect</button>
-                        {% else %}
-                            <button class="cta-button" onclick="connectNotion()">Connect</button>
-                        {% endif %}
-                    </div>
 
-                    <!-- Slack Integration -->
-                    <div class="integration-card">
-                        <div class="integration-header">
-                            <img src="{{ url_for('static', filename='images/slack-logo.png') }}" alt="Slack Logo" class="integration-logo">
-                            <span class="integration-name">Slack</span>
+                        <!-- Zoom Integration -->
+                        <div class="integration-card">
+                            <div class="integration-header">
+                                <img src="{{ url_for('static', filename='images/zoom-logo.png') }}" alt="Zoom Logo" class="integration-logo">
+                                <span class="integration-name">Zoom</span>
+                            </div>
+                            {% if zoom_connected %}
+                                <button class="cta-button secondary" onclick="disconnectZoom()">Disconnect</button>
+                            {% else %}
+                                <button class="cta-button" onclick="connectZoom()">Connect</button>
+                            {% endif %}
                         </div>
-                        {% if slack_connected %}
-                            <button class="cta-button secondary" onclick="disconnectSlack()">Disconnect</button>
-                        {% else %}
-                            <button class="cta-button" onclick="connectSlack()">Connect</button>
-                        {% endif %}
-                    </div>
-
-                    <!-- Zoom Integration -->
-                    <div class="integration-card">
-                        <div class="integration-header">
-                            <img src="{{ url_for('static', filename='images/zoom-logo.png') }}" alt="Zoom Logo" class="integration-logo">
-                            <span class="integration-name">Zoom</span>
-                        </div>
-                        {% if zoom_connected %}
-                            <button class="cta-button secondary" onclick="disconnectZoom()">Disconnect</button>
-                        {% else %}
-                            <button class="cta-button" onclick="connectZoom()">Connect</button>
-                        {% endif %}
                     </div>
                 </div>
             </div>
         </div>
     </section>
+</main>
+{% endblock %}
 
-    <footer>
-        <div class="container">
-            <div class="footer-links">
-                <a href="#terms">Terms</a>
-                <a href="#privacy">Privacy</a>
-                <a href="#contact">Contact</a>
-            </div>
-            <div class="copyright">
-                &copy; 2025 Jarvus. All rights reserved.
-            </div>
-        </div>
-    </footer>
+{% block extra_js %}
+<script>
+    // Connection handling
+    function connectGmail() { window.location.href = '/connect/gmail'; }
+    function connectNotion() { window.location.href = '/connect/notion'; }
+    function connectSlack() { window.location.href = '/connect/slack'; }
+    function connectZoom() { window.location.href = '/connect/zoom'; }
 
-    <script>
-        // Document upload handling
-        const dropzone = document.getElementById('upload-dropzone');
-        const fileInput = document.getElementById('file-upload');
-        const uploadedFiles = document.getElementById('uploaded-files');
+    function disconnectGmail() { disconnectService('gmail'); }
+    function disconnectNotion() { disconnectService('notion'); }
+    function disconnectSlack() { disconnectService('slack'); }
+    function disconnectZoom() { disconnectService('zoom'); }
 
-        // Prevent default drag behaviors
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dropzone.addEventListener(eventName, preventDefaults, false);
-            document.body.addEventListener(eventName, preventDefaults, false);
+    function disconnectService(service) {
+        fetch(`/disconnect/${service}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert('Failed to disconnect service.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while trying to disconnect.');
         });
-
-        // Highlight drop zone when item is dragged over it
-        ['dragenter', 'dragover'].forEach(eventName => {
-            dropzone.addEventListener(eventName, highlight, false);
-        });
-
-        ['dragleave', 'drop'].forEach(eventName => {
-            dropzone.addEventListener(eventName, unhighlight, false);
-        });
-
-        // Handle dropped files
-        dropzone.addEventListener('drop', handleDrop, false);
-        fileInput.addEventListener('change', handleFiles, false);
-
-        function preventDefaults (e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-
-        function highlight(e) {
-            dropzone.classList.add('highlight');
-        }
-
-        function unhighlight(e) {
-            dropzone.classList.remove('highlight');
-        }
-
-        function handleDrop(e) {
-            const dt = e.dataTransfer;
-            const files = dt.files;
-            handleFiles({ target: { files: files } });
-        }
-
-        function handleFiles(e) {
-            const files = [...e.target.files];
-            files.forEach(uploadFile);
-        }
-
-        function uploadFile(file) {
-            const formData = new FormData();
-            formData.append('file', file);
-
-            fetch('/api/upload-document', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    addFileToList(file, data.fileId);
-                } else {
-                    showError('Failed to upload file');
-                }
-            })
-            .catch(error => {
-                showError('Error uploading file');
-                console.error('Error:', error);
-            });
-        }
-
-        function addFileToList(file, fileId) {
-            const fileElement = document.createElement('div');
-            fileElement.className = 'uploaded-file';
-            fileElement.innerHTML = `
-                <span class="file-name">${file.name}</span>
-                <button class="delete-file" onclick="deleteFile('${fileId}')">×</button>
-            `;
-            uploadedFiles.appendChild(fileElement);
-        }
-
-        function deleteFile(fileId) {
-            fetch(`/api/delete-document/${fileId}`, {
-                method: 'DELETE'
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    const fileElement = document.querySelector(`[data-file-id="${fileId}"]`);
-                    if (fileElement) {
-                        fileElement.remove();
-                    }
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-            });
-        }
-
-        function showError(message) {
-            // Implement error notification
-            console.error(message);
-        }
-
-        // Integration connection handling
-        function connectGmail() {
-            window.location.href = '/connect/gmail';
-        }
-
-        function disconnectGmail() {
-            fetch('/disconnect/gmail', {
-                method: 'POST'
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    window.location.reload();
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-            });
-        }
-
-        function connectNotion() {
-            window.location.href = '/connect/notion';
-        }
-
-        function disconnectNotion() {
-            fetch('/disconnect/notion', {
-                method: 'POST'
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    window.location.reload();
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-            });
-        }
-
-        function connectSlack() {
-            window.location.href = '/connect/slack';
-        }
-
-        function disconnectSlack() {
-            fetch('/disconnect/slack', {
-                method: 'POST'
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    window.location.reload();
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-            });
-        }
-
-        function connectZoom() {
-            window.location.href = '/connect/zoom';
-        }
-
-        function disconnectZoom() {
-            fetch('/disconnect/zoom', {
-                method: 'POST'
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    window.location.reload();
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-            });
-        }
-
-        // Basic info form handling
-        document.getElementById('basic-info-form').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const formData = new FormData(this);
-            
-            fetch('/api/update-profile', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Show success message
-                    console.log('Profile updated successfully');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-            });
-        });
-    </script>
-</body>
-</html>
+    }
+</script>
+{% endblock %}
