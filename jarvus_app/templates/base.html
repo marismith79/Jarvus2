@@ -18,9 +18,9 @@
             <nav>
                 <a href="{{ url_for('web.landing') }}" {% if request.endpoint == 'web.landing' %}class="active"{% endif %}>Home</a>
                 {% if current_user.is_authenticated %}
-                    <span style="margin-right: 1rem; color: #333; font-weight: 500;">{{ current_user.claims.get('email', current_user.claims.get('sub', 'User')) }}</span>
                     <a href="{{ url_for('web.chatbot') }}" {% if request.endpoint == 'web.chatbot' %}class="active"{% endif %}>Chat</a>
                     <a href="{{ url_for('web.flow_builder') }}" {% if request.endpoint == 'web.flow_builder' %}class="active"{% endif %}>Flow Builder</a>
+                    <a href="{{ url_for('web.dashboard') }}" {% if request.endpoint == 'web.dashboard' %}class="active"{% endif %}>Dashboard</a>
                     <a href="{{ url_for('web.profile') }}" {% if request.endpoint == 'web.profile' %}class="active"{% endif %}>Profile</a>
                     <a href="{{ url_for('auth.logout') }}" class="cta-button">Log Out</a>
                 {% else %}

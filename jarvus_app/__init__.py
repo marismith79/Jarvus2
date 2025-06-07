@@ -8,6 +8,7 @@ from jarvus_app.routes.mcp_routes import mcp_bp
 from jarvus_app.routes.chatbot import chatbot_bp
 from jarvus_app.routes.oauth import oauth_bp
 # from jarvus_app.routes.flow_builder import flow_builder_bp
+from jarvus_app.models.user import User
 import os
 
 db = SQLAlchemy()
@@ -27,7 +28,16 @@ def create_app():
     # Initialize extensions
     db.init_app(app)
     login_manager.init_app(app)
-    login_manager.login_view = 'auth.login'
+    login_manager.login_view = 'auth.signin'
+    
+    @login_manager.user_loader
+    def load_user(user_id):
+        from flask import session
+        claims_dict = session.get("user_claims", {})
+        claims = claims_dict.get(user_id)
+        if claims:
+            return User(user_id, claims)
+        return None
     
     # Register blueprints
     app.register_blueprint(web)
