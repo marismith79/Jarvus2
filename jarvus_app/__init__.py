@@ -62,11 +62,4 @@ def create_app():
     app.register_blueprint(oauth_bp)
     # app.register_blueprint(flow_builder_bp, url_prefix='/flow_builder')
 
-    # Create tables
-    with app.app_context():
-        from .models.oauth import OAuthCredentials
-        from .models.user import User
-        db.create_all()
-        print("Database tables created.")
-
     return app
