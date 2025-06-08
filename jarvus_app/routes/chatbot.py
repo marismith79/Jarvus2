@@ -1,6 +1,5 @@
 from flask import Blueprint, request, jsonify
 from flask_login import current_user, login_required
-from ..services.mcp_service import mcp_service
 from ..services.mcp_client import mcp_client
 from ..llm.client import OpenAIClient
 from ..models.user_tool import UserTool
