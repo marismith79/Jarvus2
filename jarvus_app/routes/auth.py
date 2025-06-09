@@ -4,7 +4,7 @@ import os
 from flask import Blueprint, session, redirect, url_for, request, render_template
 from dotenv import load_dotenv
 import msal
-from flask_login import login_user
+from flask_login import login_user, logout_user
 from jarvus_app.models.user import User
 from ..db import db
 
@@ -84,8 +84,12 @@ def authorized():
 
 @auth.route("/logout")
 def logout():
+    # Clear the session
     session.clear()
-
+    
+    # Log out from Flask-Login
+    logout_user()
+    
     post_logout = url_for("web.landing", _external=True)
     logout_url = (
         f"https://{TENANT_NAME}.b2clogin.com/{TENANT_DOMAIN}/{SIGNIN_FLOW}"
