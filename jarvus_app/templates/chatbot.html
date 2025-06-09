@@ -11,7 +11,7 @@
     <section class="chatbot-card">
         <!-- Greeting -->
         <div class="greeting-section">
-            <h1 class="greeting-title">Hello, Tetsu</h1>
+            <h1 class="greeting-title">Hello, {{ current_user.name or 'User' }}</h1>
             <p class="greeting-subtitle">How can I help you today?</p>
         </div>
 
@@ -80,7 +80,22 @@
 
         <!-- Chat input bar -->
         <form class="chat-input-bar" onsubmit="event.preventDefault(); sendCommand();">
-            <button type="button" class="icon-btn input-plus">+</button>
+            <div class="input-buttons">
+                <button type="button" class="icon-btn input-plus">+</button>
+                <div class="tool-selector">
+                    <button type="button" class="icon-btn input-at" id="atButton">@</button>
+                    <div class="tool-dropdown" id="toolDropdown">
+                        <div class="tool-item" onclick="insertTool('gmail')">
+                            <img src="{{ url_for('static', filename='images/gmail-logo.png') }}" alt="Gmail" class="tool-icon">
+                            <span>Gmail</span>
+                        </div>
+                        <div class="tool-item" onclick="insertTool('slack')">
+                            <img src="{{ url_for('static', filename='images/slack-logo.png') }}" alt="Slack" class="tool-icon">
+                            <span>Slack</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <input type="text" id="chat-input" class="chat-input" placeholder="Ask or search for anything..." autocomplete="off">
             <button type="submit" class="icon-btn send-btn" id="send-btn">➔</button>
         </form>
@@ -111,6 +126,8 @@
     const sendBtn = document.getElementById('send-btn');
     const suggestionsWrapper = document.getElementById('suggestions-wrapper');
     const suggestionsHeader = document.getElementById('suggestions-header');
+    const toolDropdown = document.getElementById('toolDropdown');
+    const atButton = document.getElementById('atButton');
 
     // Handle input focus events
     inputEl.addEventListener('focus', () => {
@@ -122,6 +139,38 @@
         suggestionsWrapper.style.display = 'block';
         suggestionsHeader.style.display = 'block';
     });
+
+    // Tool selection handling
+    atButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const dropdown = document.getElementById('toolDropdown');
+        dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        const dropdown = document.getElementById('toolDropdown');
+        const toolSelector = document.querySelector('.tool-selector');
+        if (!toolSelector.contains(e.target)) {
+            dropdown.style.display = 'none';
+        }
+    });
+
+    function insertTool(tool) {
+        const toolText = `@${tool}`;
+        const input = document.getElementById('chat-input');
+        const start = input.selectionStart;
+        const end = input.selectionEnd;
+        const text = input.value;
+        const before = text.substring(0, start);
+        const after = text.substring(end);
+        
+        input.value = before + toolText + ' ' + after;
+        input.focus();
+        input.selectionStart = input.selectionEnd = start + toolText.length + 1;
+        document.getElementById('toolDropdown').style.display = 'none';
+    }
 
     // When user clicks "send" or presses Enter
     function sendCommand() {
