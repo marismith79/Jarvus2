@@ -16,3 +16,4 @@ google-api-python-client==2.171.0
 azure-identity==1.23.0
 azure-keyvault-secrets==4.9.0
 openai>=0.27.0
+flake8==7.2.0
