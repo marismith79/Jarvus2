@@ -14,8 +14,8 @@ def profile():
     zoom_connected = OAuthCredentials.get_credentials(current_user.id, 'zoom') is not None
     
     return render_template('profile.html',
-                         user=current_user,
-                         gmail_connected=gmail_connected,
-                         notion_connected=notion_connected,
-                         slack_connected=slack_connected,
-                         zoom_connected=zoom_connected) 
+        user=current_user,
+        gmail_connected=gmail_connected,
+        notion_connected=notion_connected,
+        slack_connected=slack_connected,
+        zoom_connected=zoom_connected) 

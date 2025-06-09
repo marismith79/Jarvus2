@@ -16,14 +16,16 @@ auth = Blueprint("auth", __name__)
 CLIENT_ID     = os.getenv("B2C_CLIENT_ID")
 CLIENT_SECRET = os.getenv("B2C_CLIENT_SECRET")
 SIGNIN_FLOW   = os.getenv("B2C_SIGNIN_FLOW")
+PASSWORDRESET_FLOW = os.getenv("B2C_PASSWORDRESET_FLOW")
 REDIRECT_URI  = os.getenv("B2C_REDIRECT_URI")
 SCOPE         = [ os.getenv("B2C_SCOPE") ]
 TENANT_NAME   = os.getenv("B2C_TENANT_NAME")
 TENANT_DOMAIN = os.getenv("B2C_TENANT_DOMAIN")
-AUTHORITY     = f"https://{TENANT_NAME}.b2clogin.com/{TENANT_DOMAIN}/{SIGNIN_FLOW}"
+SIGNIN_AUTHORITY     = f"https://{TENANT_NAME}.b2clogin.com/{TENANT_DOMAIN}/{SIGNIN_FLOW}"
+RESET_AUTHORITY = f"https://{TENANT_NAME}.b2clogin.com/{TENANT_DOMAIN}/{PASSWORDRESET_FLOW}"
 
-
-print("→ AUTHORITY:", AUTHORITY)
+print("→ SIGNIN_AUTHORITY:", SIGNIN_AUTHORITY)
+print("→ RESET_AUTHORITY:", RESET_AUTHORITY)
 print("→ REDIRECT_URI:", REDIRECT_URI)
 print("→ SCOPE:", SCOPE)
 
@@ -34,7 +36,7 @@ def signin():
     if next_url:
         session['next_url'] = next_url
     msal_app = msal.ConfidentialClientApplication(
-        CLIENT_ID, authority=AUTHORITY, client_credential=CLIENT_SECRET
+        CLIENT_ID, authority=SIGNIN_AUTHORITY, client_credential=CLIENT_SECRET
     )
     auth_url = msal_app.get_authorization_request_url(
         scopes=SCOPE,
@@ -45,9 +47,20 @@ def signin():
 @auth.route("/getAToken")
 def authorized():
     """Callback endpoint for B2C to redirect back with code."""
+    error = request.args.get("error")
+    error_description = request.args.get("error_description")
+
+    # Handle "forgot password" error from B2C
+    if error == "access_denied" and error_description and "AADB2C90118" in error_description:
+        return redirect(url_for("auth.forgot_password"))
+
     code = request.args.get("code")
+    if not code:
+        # If user cancels or code is missing, redirect to sign-in page
+        return redirect(url_for("auth.signin"))
+
     msal_app = msal.ConfidentialClientApplication(
-        CLIENT_ID, authority=AUTHORITY, client_credential=CLIENT_SECRET
+        CLIENT_ID, authority=SIGNIN_AUTHORITY, client_credential=CLIENT_SECRET
     )
     result = msal_app.acquire_token_by_authorization_code(
         code, scopes=SCOPE, redirect_uri=REDIRECT_URI
@@ -98,3 +111,14 @@ def logout():
     )
     return redirect(logout_url)
 
+@auth.route("/forgot_password")
+def forgot_password():
+    """Redirect to Azure B2C for password reset."""
+    msal_app = msal.ConfidentialClientApplication(
+        CLIENT_ID, authority=RESET_AUTHORITY, client_credential=CLIENT_SECRET
+    )
+    auth_url = msal_app.get_authorization_request_url(
+        scopes=SCOPE,
+        redirect_uri=REDIRECT_URI
+    )
+    return redirect(auth_url)
