@@ -17,7 +17,3 @@ azure-identity==1.23.0
 azure-keyvault-secrets==4.9.0
 openai>=0.27.0
 flake8==7.2.0
-opentelemetry-api 
-opentelemetry-sdk 
-opentelemetry-instrumentation-flask 
-opentelemetry-exporter-otlp
