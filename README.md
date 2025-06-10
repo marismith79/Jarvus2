@@ -1,15 +1,6 @@
-# Flask Project Template
-
-A full feature Flask project template.
-
-See also 
-- [Python-Project-Template](https://github.com/rochacbruno/python-project-template/) for a lean, low dependency Python app.
-- [FastAPI-Project-Template](https://github.com/rochacbruno/fastapi-project-template/) The base to start an openapi project featuring: SQLModel, Typer, FastAPI, JWT Token Auth, Interactive Shell, Management Commands.
-
-<!--  DELETE THE LINES ABOVE THIS AND WRITE YOUR PROJECT README BELOW -->
 
 ---
-# jarvus2 Flask Application
+# Jarvus Flask Application
 
 Awesome jarvus2 created by marismith79
 
@@ -18,16 +9,13 @@ Awesome jarvus2 created by marismith79
 From source:
 
 ```bash
-git clone https://github.com/marismith79/Jarvus2 jarvus2
-cd jarvus2
+git clone https://github.com/marismith79/Jarvus2 jarvus
+cd jarvus
+make virtualenv
+source .venv/bin/activate
 make install
 ```
 
-From pypi:
-
-```bash
-pip install jarvus2
-```
 
 ## Executing
 
@@ -36,13 +24,13 @@ This application has a CLI interface that extends the Flask CLI.
 Just run:
 
 ```bash
-$ jarvus2
+$ jarvus
 ```
 
 or
 
 ```bash
-$ python -m jarvus2
+$ python -m jarvus
 ```
 
 To see the help message and usage instructions.
@@ -50,10 +38,10 @@ To see the help message and usage instructions.
 ## First run
 
 ```bash
-jarvus2 create-db   # run once
-jarvus2 populate-db  # run once (optional)
-jarvus2 add-user -u admin -p 1234  # ads a user
-jarvus2 run
+jarvus create-db   # run once
+jarvus populate-db  # run once (optional)
+jarvus add-user -u admin -p 1234  # ads a user
+jarvus run
 ```
 
 Go to:
