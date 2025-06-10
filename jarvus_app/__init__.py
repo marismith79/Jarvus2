@@ -14,6 +14,13 @@ from dotenv import load_dotenv
 from jarvus_app.config import Config
 from .models.user import User
 from .db import db  # Use the shared db instance
+# Add these imports for OpenTelemetry
+from opentelemetry import trace
+from opentelemetry.instrumentation.flask import FlaskInstrumentor
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 
 # Get the project root directory
 project_root = Path(__file__).parent.parent
@@ -37,6 +44,14 @@ def create_app():
     app = Flask(__name__)
     # Secret key for session encryption
     app.secret_key = os.getenv("FLASK_SECRET_KEY", os.getenv('SECRET_KEY', 'dev'))
+
+    # Set up OpenTelemetry
+    is_telemetry_enabled = setup_telemetry()
+    print("OpenTelemetry enabled:", is_telemetry_enabled)
+    if is_telemetry_enabled:
+        # Instrument Flask with OpenTelemetry
+        FlaskInstrumentor().instrument_app(app)
+        app.logger.info("OpenTelemetry instrumentation enabled for Azure monitoring")
 
     # Load config
     app.config.from_object(Config)
@@ -63,3 +78,27 @@ def create_app():
     # app.register_blueprint(flow_builder_bp, url_prefix='/flow_builder')
 
     return app
+
+def setup_telemetry():
+    """Configure OpenTelemetry for Azure App Service"""
+    # Check if running on Azure App Service
+    if 'WEBSITE_SITE_NAME' in os.environ:
+        # Set up the tracer provider
+        resource = Resource(attributes={
+            SERVICE_NAME: os.environ.get('WEBSITE_SITE_NAME', 'jarvus-app')
+        })
+        
+        trace.set_tracer_provider(TracerProvider(resource=resource))
+        
+        # Set up the OTLP exporter for Azure Monitor
+        otlp_exporter = OTLPSpanExporter(
+            endpoint=os.environ.get("APPLICATIONINSIGHTS_CONNECTION_STRING", "")
+        )
+        
+        # Add the exporter to the tracer provider
+        trace.get_tracer_provider().add_span_processor(
+            BatchSpanProcessor(otlp_exporter)
+        )
+        
+        return True
+    return False
