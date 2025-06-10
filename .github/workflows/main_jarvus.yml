@@ -2,7 +2,7 @@
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 # More info on Python, GitHub Actions, and Azure App Service: https://aka.ms/python-webapps-actions
 
-name: Build and deploy Python app to Azure Web App - Jarvus
+name: Build and deploy Python app to Azure Web App - jarvus
 
 on:
   push:
@@ -68,14 +68,14 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_D6D131F38D514EEC8FB7E3C4E3EB81C4 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_A01AD636C4A94499879E1F3B1435DAE4 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_F6A7B718C5FD4B18ACED4AE9816DC09C }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_647DB2C64D5C487FAF9D18E70BE01E7B }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_29FB7DFBD2D24F35B858FC0968E277A0 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_AAC653AA072541399BE9772A48CC9E0C }}
 
       - name: 'Deploy to Azure Web App'
         uses: azure/webapps-deploy@v3
         id: deploy-to-webapp
         with:
-          app-name: 'Jarvus'
+          app-name: 'jarvus'
           slot-name: 'Production'
           
