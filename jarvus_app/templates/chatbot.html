@@ -24,46 +24,22 @@
         <!-- Suggestion cards -->
         <div class="suggestions-cards-wrapper" id="suggestions-wrapper">
             <div class="suggestions-cards">
-                <!-- Card 1 -->
-                <div class="card">
-                    <div class="card-text">
-                        Recap yesterday's all-hands meeting
+                <div class="card card-gmail">
+                    <div class="card-text gmail-text">
+                        Check my recent emails
                     </div>
-                    <div class="card-avatar">
-                        <img src="https://via.placeholder.com/100" alt="Person">
-                    </div>
-                    <div class="card-meta">
-                        Acme All-hands · Before lunch
+                    <div class="card-meta gmail-meta">
+                        Last checked <br><span class="time">2 hours ago</span>
                     </div>
                 </div>
-
-                <!-- Card 2 -->
-                <div class="card">
-                    <div class="card-text">
-                        Ask "What needs to be addressed in this request for proposal?"
+                <div class="card card-calendar">
+                    <div class="card-text calendar-text">
+                        Show my upcoming events
                     </div>
-                    <div class="card-image">
-                        <img src="https://via.placeholder.com/100x100?text=Docs" alt="Documents">
-                    </div>
-                    <div class="card-meta">
-                        <span class="icon">📄</span> 3 files · This morning
+                    <div class="card-meta calendar-meta">
+                        Next event <br><span class="time">in 30 mins</span>
                     </div>
                 </div>
-
-                <!-- Card 3 -->
-                <div class="card">
-                    <div class="card-text">
-                        Recap yesterday's all-hands meeting
-                    </div>
-                    <div class="card-avatar">
-                        <img src="https://via.placeholder.com/100" alt="Person">
-                    </div>
-                    <div class="card-meta">
-                        AcmeCo all-hands · This morning
-                    </div>
-                </div>
-
-                <!-- Card 4 (Salesforce) -->
                 <div class="card card-salesforce">
                     <div class="card-text salesforce-text">
                         Update the opportunity to Signed
@@ -85,14 +61,7 @@
                 <div class="tool-selector">
                     <button type="button" class="icon-btn input-at" id="atButton">@</button>
                     <div class="tool-dropdown" id="toolDropdown">
-                        <div class="tool-item" onclick="insertTool('gmail')">
-                            <img src="{{ url_for('static', filename='images/gmail-logo.png') }}" alt="Gmail" class="tool-icon">
-                            <span>Gmail</span>
-                        </div>
-                        <div class="tool-item" onclick="insertTool('slack')">
-                            <img src="{{ url_for('static', filename='images/slack-logo.png') }}" alt="Slack" class="tool-icon">
-                            <span>Slack</span>
-                        </div>
+                        <!-- Tool items will be populated dynamically -->
                     </div>
                 </div>
             </div>
@@ -128,6 +97,35 @@
     const suggestionsHeader = document.getElementById('suggestions-header');
     const toolDropdown = document.getElementById('toolDropdown');
     const atButton = document.getElementById('atButton');
+
+    // Load available tools
+    async function loadAvailableTools() {
+        try {
+            const response = await fetch('/chatbot/available_tools');
+            if (!response.ok) throw new Error('Failed to load tools');
+            const tools = await response.json();
+            
+            // Clear existing tools
+            toolDropdown.innerHTML = '';
+            
+            // Add tools to dropdown
+            for (const toolName of Object.keys(tools)) {
+                const toolItem = document.createElement('div');
+                toolItem.classList.add('tool-item');
+                toolItem.innerHTML = `
+                    <img src="{{ url_for('static', filename='images/${toolName}-logo.png') }}" alt="${toolName}" class="tool-icon">
+                    <span>${toolName.charAt(0).toUpperCase() + toolName.slice(1)}</span>
+                `;
+                toolItem.onclick = () => insertTool(toolName);
+                toolDropdown.appendChild(toolItem);
+            }
+        } catch (error) {
+            console.error('Error loading tools:', error);
+        }
+    }
+
+    // Load tools when page loads
+    loadAvailableTools();
 
     // Handle input focus events
     inputEl.addEventListener('focus', () => {

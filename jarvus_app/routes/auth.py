@@ -65,6 +65,8 @@ def authorized():
     result = msal_app.acquire_token_by_authorization_code(
         code, scopes=SCOPE, redirect_uri=REDIRECT_URI
     )
+    
+    print("[AUTH DEBUG] result[\"id_token_claims\"]:", result["id_token_claims"])
 
     if "id_token_claims" in result:
         claims = result["id_token_claims"]
@@ -73,13 +75,22 @@ def authorized():
         # Find user in DB or create a new one
         user = User.query.get(user_id)
         if not user:
-            user = User(
-                id=user_id,
-                name=claims.get("name"),
-                email=claims.get("preferred_username") # Common claim for email in B2C
-            )
-            db.session.add(user)
-            db.session.commit()
+            # Get name and email from claims, with fallbacks
+            name = claims.get("name") or claims.get("given_name") or "Unknown User"
+            email = claims.get("preferred_username") or claims.get("email")
+            
+            # Only create user if we have an email
+            if email:
+                user = User(
+                    id=user_id,
+                    name=name,
+                    email=email
+                )
+                db.session.add(user)
+                db.session.commit()
+            else:
+                # If no email is available, redirect to sign-in with error
+                return render_template("signin.html", error="Required user information is missing. Please try signing in again.")
 
         # Store all user claims by user_id in the session for compatibility
         user_claims = session.get("user_claims", {})
