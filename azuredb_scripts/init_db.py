@@ -1,0 +1,20 @@
+#!/usr/bin/env python
+from jarvus_app import create_app
+from jarvus_app.db import db
+import os
+from dotenv import load_dotenv
+
+def init_db():
+    load_dotenv()
+    app = create_app()
+    with app.app_context():
+        print("Creating database tables...")
+        try:
+            db.create_all()
+            print("Database tables created successfully!")
+        except Exception as e:
+            print(f"Error creating database tables: {str(e)}")
+            raise
+
+if __name__ == "__main__":
+    init_db() 

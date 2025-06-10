@@ -1,6 +1,6 @@
 """
-OpenAI client implementation for handling LLM interactions.
-This module provides a clean interface for communicating with OpenAI's API
+Azure OpenAI client implementation for handling LLM interactions.
+This module provides a clean interface for communicating with Azure OpenAI's API
 and managing conversation state.
 """
 
@@ -10,26 +10,29 @@ import openai
 
 class OpenAIClient:
     def __init__(self):
-        """Initialize the OpenAI client with API key from environment variables."""
+        """Initialize the Azure OpenAI client with configuration from environment variables."""
         
-        # Get the API key
-        self.api_key = os.getenv('OPENAI_API_KEY')
-        print(f"\nAPI Key found: {'Yes' if self.api_key else 'No'}")
+        # Get the Azure OpenAI configuration
+        self.api_key = os.getenv('AZURE_OPENAI_API_KEY')
+        self.api_base = os.getenv('AZURE_OPENAI_ENDPOINT')
+        self.api_version = os.getenv('AZURE_OPENAI_API_VERSION')
+        self.deployment_name = os.getenv('AZURE_OPENAI_DEPLOYMENT_NAME')
         
-        if not self.api_key:
-            raise ValueError("OPENAI_API_KEY environment variable is not set")
+        print(f"\nAzure OpenAI Configuration:")
+        print(f"API Key found: {'Yes' if self.api_key else 'No'}")
+        print(f"API Base: {self.api_base}")
+        print(f"API Version: {self.api_version}")
+        print(f"Deployment Name: {self.deployment_name}")
         
-        # Debug: Print first 4 and last 4 characters of the API key
-        masked_key = f"{self.api_key[:4]}...{self.api_key[-4:]}" if len(self.api_key) > 8 else "***"
-        print(f"Loading OpenAI API key: {masked_key}")
-        print("API key starts with 'sk-':", self.api_key.startswith('sk-'))
+        if not all([self.api_key, self.api_base, self.api_version, self.deployment_name]):
+            raise ValueError("Missing required Azure OpenAI configuration. Please check your environment variables.")
         
-        # Set the API key and ensure we're using the standard OpenAI API
+        # Set the Azure OpenAI configuration
         openai.api_key = self.api_key
-        openai.api_base = "https://api.openai.com/v1"  # Standard OpenAI endpoint
-        openai.api_version = None  # Remove any version header
-        self.model = "gpt-4-turbo-preview"  # Default model, can be configured
-        print("=== OpenAI Client Initialization Complete ===\n")
+        openai.api_base = self.api_base
+        openai.api_version = self.api_version
+        self.model = self.deployment_name
+        print("=== Azure OpenAI Client Initialization Complete ===\n")
     
     def create_chat_completion(
         self,
@@ -39,7 +42,7 @@ class OpenAIClient:
         max_tokens: Optional[int] = None
     ) -> Dict[str, Any]:
         """
-        Create a chat completion using OpenAI's API.
+        Create a chat completion using Azure OpenAI's API.
         
         Args:
             messages: List of message dictionaries with 'role' and 'content'
@@ -60,12 +63,12 @@ class OpenAIClient:
             )
             return response
         except Exception as e:
-            print(f"OpenAI API Error: {str(e)}")  # Add detailed error logging
+            print(f"Azure OpenAI API Error: {str(e)}")  # Add detailed error logging
             raise Exception(f"Error creating chat completion: {str(e)}")
     
     def format_message(self, role: str, content: str) -> Dict[str, str]:
         """
-        Format a message for the OpenAI API.
+        Format a message for the Azure OpenAI API.
         
         Args:
             role: Message role ('system', 'user', 'assistant', or 'tool')
@@ -78,7 +81,7 @@ class OpenAIClient:
     
     def format_tool_message(self, tool_call_id: str, content: str) -> Dict[str, str]:
         """
-        Format a tool message for the OpenAI API.
+        Format a tool message for the Azure OpenAI API.
         
         Args:
             tool_call_id: ID of the tool call this message is responding to
