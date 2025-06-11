@@ -9,6 +9,11 @@ import os
 
 oauth_bp = Blueprint('oauth', __name__)
 
+# Debug environment variables
+print("\nDEBUG: Environment Variables:")
+print(f"GOOGLE_REDIRECT_URI from env: {os.getenv('GOOGLE_REDIRECT_URI')}")
+print(f"GOOGLE_CLIENT_ID from env: {os.getenv('GOOGLE_CLIENT_ID')}")
+
 # OAuth 2.0 configuration
 GOOGLE_CLIENT_CONFIG = {
     "web": {
@@ -24,6 +29,11 @@ GOOGLE_CLIENT_CONFIG = {
         ]
     }
 }
+
+# Print debug info about OAuth configuration
+print("DEBUG: OAuth Configuration:")
+print(f"DEBUG: GOOGLE_CLIENT_ID: {os.getenv('GOOGLE_CLIENT_ID')}")
+print(f"DEBUG: GOOGLE_REDIRECT_URI: {os.getenv('GOOGLE_REDIRECT_URI')}")
 
 NOTION_CLIENT_CONFIG = {
     "client_id": os.getenv('NOTION_CLIENT_ID'),
@@ -59,7 +69,7 @@ def connect_service(service):
     elif service == 'zoom':
         return connect_zoom()
     else:
-        return redirect(url_for('profile'))
+        return redirect(url_for('web.profile'))
 
 @oauth_bp.route('/disconnect/<service>', methods=['POST'])
 @login_required
@@ -72,10 +82,15 @@ def disconnect_service(service):
 
 def connect_gmail():
     """Initiate Gmail OAuth flow"""
+    print("DEBUG: Starting Gmail OAuth flow")
+    redirect_uri = GOOGLE_CLIENT_CONFIG['web']['redirect_uris'][0]
+    print(f"DEBUG: Using redirect URI: {redirect_uri}")
+    print(f"DEBUG: Full GOOGLE_CLIENT_CONFIG: {json.dumps(GOOGLE_CLIENT_CONFIG, indent=2)}")
+    
     flow = Flow.from_client_config(
         GOOGLE_CLIENT_CONFIG,
         scopes=GOOGLE_CLIENT_CONFIG['web']['scopes'],
-        redirect_uri=GOOGLE_CLIENT_CONFIG['web']['redirect_uris'][0]
+        redirect_uri=redirect_uri
     )
     
     authorization_url, state = flow.authorization_url(
@@ -84,6 +99,7 @@ def connect_gmail():
         prompt='consent'
     )
     
+    print(f"DEBUG: Generated authorization URL: {authorization_url}")
     session['oauth_state'] = state
     return redirect(authorization_url)
 
@@ -91,27 +107,38 @@ def connect_gmail():
 @login_required
 def oauth2callback():
     """Handle OAuth 2.0 callback"""
-    flow = Flow.from_client_config(
-        GOOGLE_CLIENT_CONFIG,
-        scopes=GOOGLE_CLIENT_CONFIG['web']['scopes'],
-        redirect_uri=GOOGLE_CLIENT_CONFIG['web']['redirect_uris'][0],
-        state=session['oauth_state']
-    )
+    print("DEBUG: Received OAuth callback")
+    print(f"DEBUG: Callback URL: {request.url}")
     
-    flow.fetch_token(
-        authorization_response=request.url,
-        include_granted_scopes='true'
-    )
-    
-    credentials = flow.credentials
-    # Store credentials in database
-    OAuthCredentials.store_credentials(
-        current_user.id,
-        'gmail',
-        credentials.to_json()
-    )
-    
-    return redirect(url_for('web.profile'))
+    try:
+        flow = Flow.from_client_config(
+            GOOGLE_CLIENT_CONFIG,
+            scopes=GOOGLE_CLIENT_CONFIG['web']['scopes'],
+            redirect_uri=GOOGLE_CLIENT_CONFIG['web']['redirect_uris'][0],
+            state=session.get('oauth_state')
+        )
+        
+        print("DEBUG: Fetching token from callback")
+        flow.fetch_token(
+            authorization_response=request.url,
+            include_granted_scopes='true'
+        )
+        
+        credentials = flow.credentials
+        print("DEBUG: Successfully obtained credentials")
+        
+        # Store credentials in database
+        OAuthCredentials.store_credentials(
+            current_user.id,
+            'gmail',
+            credentials.to_json()
+        )
+        print("DEBUG: Stored credentials in database")
+        
+        return redirect(url_for('web.profile'))
+    except Exception as e:
+        print(f"ERROR: Failed to process OAuth callback: {str(e)}")
+        return redirect(url_for('web.profile'))
 
 def connect_notion():
     """Initiate Notion OAuth flow"""
