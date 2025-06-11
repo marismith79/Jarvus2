@@ -4,6 +4,6 @@ This module provides a clean interface for communicating with OpenAI's API
 and managing conversation state.
 """
 
-from .client import OpenAIClient
+from .client import JarvusAIClient
 
-__all__ = ['OpenAIClient'] 
+__all__ = ['JarvusAIClient'] 
