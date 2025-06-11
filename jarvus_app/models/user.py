@@ -5,8 +5,8 @@ class User(UserMixin, db.Model):
     __tablename__ = 'users'
 
     id = db.Column(db.String(50), primary_key=True)
-    name = db.Column(db.String(100), nullable=True)
-    email = db.Column(db.String(100), unique=True, nullable=True)
+    name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(100), unique=True, nullable=False)
 
     # The __init__ is now handled by SQLAlchemy.
     # We will create User instances by passing keyword arguments, e.g., User(id=..., name=...)

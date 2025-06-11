@@ -68,27 +68,56 @@ def authorized():
 
     if "id_token_claims" in result:
         claims = result["id_token_claims"]
+        print("Received claims from Azure B2C:", claims)  # Debug log
         user_id = claims.get("sub")
+        print("User ID (sub):", user_id)  # Debug log
 
-        # # Find user in DB or create a new one
-        # user = User.query.get(user_id)
-        # if not user:
-        #     # Get name and email from claims, with fallbacks
-        #     name = claims.get("name") or claims.get("given_name") or "Unknown User"
-        #     email = claims.get("preferred_username") or claims.get("email")
+        if not user_id:
+            print("No user ID (sub) found in claims")  # Debug log
+            return render_template("signin.html", error="User ID not found in authentication response. Please try signing in again.")
+
+        # Find user in DB or create a new one
+        user = User.query.get(user_id)
+        if not user:
+            # Try multiple possible claim fields for name and email
+            name = (
+                claims.get("name") or 
+                claims.get("given_name") or 
+                claims.get("displayName") or 
+                claims.get("upn") or 
+                claims.get("emails", [None])[0] or 
+                "Unknown User"
+            )
             
-        #     # Only create user if we have an email
-        #     if email:
-        #         user = User(
-        #             id=user_id,
-        #             name=name,
-        #             email=email
-        #         )
-        #         db.session.add(user)
-        #         db.session.commit()
-        #     else:
-        #         # If no email is available, redirect to sign-in with error
-        #         return render_template("signin.html", error="Required user information is missing. Please try signing in again.")
+            email = (
+                claims.get("preferred_username") or 
+                claims.get("email") or 
+                claims.get("emails", [None])[0] or 
+                claims.get("upn")
+            )
+            
+            print("Extracted name:", name)  # Debug log
+            print("Extracted email:", email)  # Debug log
+            
+            # Only create user if we have both name and email
+            if email and name:
+                try:
+                    user = User(
+                        id=user_id,
+                        name=name,
+                        email=email
+                    )
+                    db.session.add(user)
+                    db.session.commit()
+                    print("Created new user:", user.id, user.name, user.email)  # Debug log
+                except Exception as e:
+                    print("Error creating user:", str(e))  # Debug log
+                    db.session.rollback()
+                    return render_template("signin.html", error="Error creating user account. Please try signing in again.")
+            else:
+                print("Missing required user information")  # Debug log
+                print("Available claims:", claims)  # Debug log
+                return render_template("signin.html", error="Required user information (name or email) is missing. Please try signing in again.")
 
         # Store all user claims by user_id in the session for compatibility
         user_claims = session.get("user_claims", {})
