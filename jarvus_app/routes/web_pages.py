@@ -4,6 +4,7 @@ from flask_login import login_required, current_user
 from ..models.oauth import OAuthCredentials
 from .chatbot import handle_chat_message
 from sqlalchemy.exc import ProgrammingError
+from datetime import datetime
 
 web = Blueprint("web", __name__)
 
@@ -52,3 +53,8 @@ def flow_builder():
 @web.route("/dashboard")
 def dashboard():
     return render_template("dashboard.html")
+
+@web.route('/privacy-policy')
+def privacy_policy():
+    """Render the privacy policy page"""
+    return render_template('privacy_policy.html', last_updated=datetime.now().strftime("%B %d, %Y"))
