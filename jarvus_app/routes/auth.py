@@ -68,17 +68,21 @@ def authorized():
 
     if "id_token_claims" in result:
         claims = result["id_token_claims"]
-        print("Received claims from Azure B2C:", claims)  # Debug log
+        print("DEBUG: Full result from Azure B2C:", result)  # Debug log
+        print("DEBUG: Claims from Azure B2C:", claims)  # Debug log
         user_id = claims.get("sub")
-        print("User ID (sub):", user_id)  # Debug log
+        print("DEBUG: User ID (sub):", user_id)  # Debug log
 
         if not user_id:
-            print("No user ID (sub) found in claims")  # Debug log
+            print("DEBUG: No user ID (sub) found in claims")  # Debug log
             return render_template("signin.html", error="User ID not found in authentication response. Please try signing in again.")
 
         # Find user in DB or create a new one
         user = User.query.get(user_id)
+        print("DEBUG: Existing user found:", user)  # Debug log
+        
         if not user:
+            print("DEBUG: No existing user found, creating new user")  # Debug log
             # Try multiple possible claim fields for name and email
             name = (
                 claims.get("name") or 
@@ -96,8 +100,8 @@ def authorized():
                 claims.get("upn")
             )
             
-            print("Extracted name:", name)  # Debug log
-            print("Extracted email:", email)  # Debug log
+            print("DEBUG: Extracted name:", name)  # Debug log
+            print("DEBUG: Extracted email:", email)  # Debug log
             
             # Only create user if we have both name and email
             if email and name:
@@ -109,14 +113,14 @@ def authorized():
                     )
                     db.session.add(user)
                     db.session.commit()
-                    print("Created new user:", user.id, user.name, user.email)  # Debug log
+                    print("DEBUG: Created new user:", user.id, user.name, user.email)  # Debug log
                 except Exception as e:
-                    print("Error creating user:", str(e))  # Debug log
+                    print("DEBUG: Error creating user:", str(e))  # Debug log
                     db.session.rollback()
                     return render_template("signin.html", error="Error creating user account. Please try signing in again.")
             else:
-                print("Missing required user information")  # Debug log
-                print("Available claims:", claims)  # Debug log
+                print("DEBUG: Missing required user information")  # Debug log
+                print("DEBUG: Available claims:", claims)  # Debug log
                 return render_template("signin.html", error="Required user information (name or email) is missing. Please try signing in again.")
 
         # Store all user claims by user_id in the session for compatibility
@@ -124,10 +128,14 @@ def authorized():
         user_claims[user_id] = claims
         session["user_claims"] = user_claims
 
-        login_user(user, remember=True)
-        print("Session after login:", dict(session))
-        next_url = session.pop('next_url', None)
-        return redirect(next_url or url_for("web.landing"))
+        if user:  # Add this check
+            login_user(user, remember=True)
+            print("DEBUG: User logged in successfully:", user.id)  # Debug log
+            next_url = session.pop('next_url', None)
+            return redirect(next_url or url_for("web.landing"))
+        else:
+            print("DEBUG: User object is None after creation/retrieval")  # Debug log
+            return render_template("signin.html", error="Failed to create or retrieve user account. Please try signing in again.")
 
     # on error, show the sign‑in page with an error message
     error = result.get("error_description") or result.get("error")
