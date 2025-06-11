@@ -31,9 +31,10 @@ GOOGLE_CLIENT_CONFIG = {
 }
 
 # Print debug info about OAuth configuration
-print("DEBUG: OAuth Configuration:")
+print("\nDEBUG: OAuth Configuration:")
 print(f"DEBUG: GOOGLE_CLIENT_ID: {os.getenv('GOOGLE_CLIENT_ID')}")
 print(f"DEBUG: GOOGLE_REDIRECT_URI: {os.getenv('GOOGLE_REDIRECT_URI')}")
+print(f"DEBUG: Full GOOGLE_CLIENT_CONFIG: {json.dumps(GOOGLE_CLIENT_CONFIG, indent=2)}")
 
 NOTION_CLIENT_CONFIG = {
     "client_id": os.getenv('NOTION_CLIENT_ID'),
@@ -82,7 +83,7 @@ def disconnect_service(service):
 
 def connect_gmail():
     """Initiate Gmail OAuth flow"""
-    print("DEBUG: Starting Gmail OAuth flow")
+    print("\nDEBUG: Starting Gmail OAuth flow")
     redirect_uri = GOOGLE_CLIENT_CONFIG['web']['redirect_uris'][0]
     print(f"DEBUG: Using redirect URI: {redirect_uri}")
     print(f"DEBUG: Full GOOGLE_CLIENT_CONFIG: {json.dumps(GOOGLE_CLIENT_CONFIG, indent=2)}")
@@ -107,8 +108,9 @@ def connect_gmail():
 @login_required
 def oauth2callback():
     """Handle OAuth 2.0 callback"""
-    print("DEBUG: Received OAuth callback")
+    print("\nDEBUG: Received OAuth callback")
     print(f"DEBUG: Callback URL: {request.url}")
+    print(f"DEBUG: Expected redirect URI: {GOOGLE_CLIENT_CONFIG['web']['redirect_uris'][0]}")
     
     try:
         flow = Flow.from_client_config(
@@ -138,6 +140,7 @@ def oauth2callback():
         return redirect(url_for('web.profile'))
     except Exception as e:
         print(f"ERROR: Failed to process OAuth callback: {str(e)}")
+        print(f"ERROR: Full error details: {repr(e)}")
         return redirect(url_for('web.profile'))
 
 def connect_notion():
