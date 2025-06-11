@@ -8,7 +8,7 @@ import requests
 from typing import Any, Dict, List, Optional
 
 # Force the URL to be port 4100
-MCP_SERVER_URL = "http://localhost:8000"
+MCP_SERVER_URL = "http://localhost:4100"
 print(f"\nMCP Server URL set to: {MCP_SERVER_URL}")
 
 class MCPClient:
