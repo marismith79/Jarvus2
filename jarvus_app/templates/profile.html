@@ -95,15 +95,32 @@
         </div>
     </section>
 </main>
+
+<!-- Coming Soon Popup -->
+<div id="comingSoonPopup" class="coming-soon-popup">
+    <div class="coming-soon-content">
+        <span>Coming Soon...</span>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
     // Connection handling
     function connectGmail() { window.location.href = '/connect/gmail'; }
-    function connectNotion() { window.location.href = '/connect/notion'; }
-    function connectSlack() { window.location.href = '/connect/slack'; }
-    function connectZoom() { window.location.href = '/connect/zoom'; }
+    
+    // Show coming soon popup for other services
+    function connectNotion() { showComingSoon(); }
+    function connectSlack() { showComingSoon(); }
+    function connectZoom() { showComingSoon(); }
+
+    function showComingSoon() {
+        const popup = document.getElementById('comingSoonPopup');
+        popup.classList.add('show');
+        setTimeout(() => {
+            popup.classList.remove('show');
+        }, 2000); // Hide after 2 seconds
+    }
 
     function disconnectGmail() { disconnectService('gmail'); }
     function disconnectNotion() { disconnectService('notion'); }

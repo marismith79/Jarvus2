@@ -1,40 +1,6 @@
 /*─────────────────────────────────────────────────────────────────────────────
   1. Root Variables
 ─────────────────────────────────────────────────────────────────────────────*/
-:root {
-    /* Primary Light Mode Colors */
-    --background-outer: #ffffff;
-    --sidebar-bg: #f8f9fa;
-    --sidebar-text: #1a1a1a;
-    --main-bg: #ffffff;
-    --text-primary: #1a1a1a;
-    --text-secondary: #666666;
-    --divider-color: #e0e0e0;
-  
-    /* Card Colors */
-    --card-bg: #ffffff;
-    --card-text: #1a1a1a;
-    --card-meta: #666666;
-  
-    /* Salesforce-style card */
-    --card-salesforce-bg: #21e51e;
-    --card-salesforce-text: #000000;
-  
-    /* Accent Colors (for dots in collections) */
-    --pink: #E91E63;
-    --purple: #9C27B0;
-    --orange: #FF9800;
-    --green: #4CAF50;
-    --blue: #2196F3;
-  
-    /* Input Bar */
-    --input-bg: #ffffff;
-    --input-text: #1a1a1a;
-    --input-placeholder: #999999;
-  
-    /* Border & Divider */
-    --border-color: #e0e0e0;
-  }
   
   /*─────────────────────────────────────────────────────────────────────────────
     2. Global Resets
@@ -306,12 +272,13 @@
   .suggestions-cards-wrapper {
     padding: 8px 16px;
     overflow-x: auto;
+    align-items: center;
   }
   
   .suggestions-cards {
     display: flex;
-    gap: 16px;
-    padding-left: 16px;
+    justify-content: center;
+    max-width: 100%;
   }
   
   /* Individual Card */
