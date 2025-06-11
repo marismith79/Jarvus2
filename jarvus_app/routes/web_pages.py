@@ -36,11 +36,11 @@ def chatbot():
 def send_chat_message():
     return handle_chat_message()
 
-@web.route("/flow-builder")
-@login_required
-def flow_builder():
-    return render_template("flow_builder.html")
+# @web.route("/flow-builder")
+# @login_required
+# def flow_builder():
+#     return render_template("flow_builder.html")
 
-@web.route("/dashboard")
-def dashboard():
-    return render_template("dashboard.html")
+# @web.route("/dashboard")
+# def dashboard():
+#     return render_template("dashboard.html")

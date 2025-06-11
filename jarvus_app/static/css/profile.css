@@ -210,32 +210,6 @@ nav a.active {
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-/* Buttons */
-.cta-button {
-    background: #3b82f6;
-    color: white;
-    padding: 0.5rem 1rem;
-    border-radius: 6px;
-    border: none;
-    font-weight: 500;
-    font-size: 0.875rem;
-    cursor: pointer;
-    transition: background 0.3s ease;
-}
-
-.cta-button:hover {
-    background: #2563eb;
-}
-
-.cta-button.secondary {
-    background: #f3f4f6;
-    color: #4b5563;
-}
-
-.cta-button.secondary:hover {
-    background: #e5e7eb;
-}
-
 /* Responsive Adjustments */
 @media (max-width: 768px) {
     .profile-grid {
