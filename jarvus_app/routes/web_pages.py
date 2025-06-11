@@ -10,7 +10,7 @@ web = Blueprint("web", __name__)
 
 @web.route("/")
 def landing():
-    return render_template("landing.html", now=datetime.now())
+    return render_template("landing.html")
 
 @web.route("/profile")
 @login_required
