@@ -38,9 +38,26 @@ def init_db(app):
     # Create tables only if they don't exist
     with app.app_context():
         try:
-            # This will only create tables that don't exist
+            # Import all models to ensure they are registered with SQLAlchemy
+            from .models.user import User
+            from .models.oauth import OAuthCredentials
+            from .models.tool_permission import ToolPermission
+            
+            # This will create all tables that don't exist
             db.create_all()
             print("Database tables verified/created successfully.")
+            
+            # Verify that all required tables exist
+            inspector = db.inspect(db.engine)
+            required_tables = ['users', 'google_oauth_credentials', 'tool_permissions']
+            existing_tables = inspector.get_table_names()
+            
+            missing_tables = [table for table in required_tables if table not in existing_tables]
+            if missing_tables:
+                print(f"Warning: The following tables are missing: {missing_tables}")
+                print("Attempting to create missing tables...")
+                db.create_all()
+                
         except Exception as e:
             print(f"Error during database initialization: {str(e)}")
             # Don't raise the exception - we want the app to start even if table creation fails
