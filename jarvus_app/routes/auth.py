@@ -96,45 +96,20 @@ def authorized():
         
         if not user:
             print("DEBUG: No existing user found, creating new user", flush=True)
-            # Try multiple possible claim fields for name and email
-            name = (
-                claims.get("name") or 
-                claims.get("given_name") or 
-                claims.get("displayName") or 
-                claims.get("upn") or 
-                claims.get("emails", [None])[0] or 
-                "Unknown User"
-            )
-            
-            email = (
-                claims.get("preferred_username") or 
-                claims.get("email") or 
-                claims.get("emails", [None])[0] or 
-                claims.get("upn")
-            )
-            
-            print(f"DEBUG: Extracted name: {name}", flush=True)
-            print(f"DEBUG: Extracted email: {email}", flush=True)
-            
-            # Only create user if we have both name and email
-            if email and name:
-                try:
-                    user = User(
-                        id=user_id,
-                        name=name,
-                        email=email
-                    )
-                    db.session.add(user)
-                    db.session.commit()
-                    print(f"DEBUG: Created new user: {user.id}, {user.name}, {user.email}", flush=True)
-                except Exception as e:
-                    print(f"DEBUG: Error creating user: {str(e)}", flush=True)
-                    db.session.rollback()
-                    return render_template("signin.html", error="Error creating user account. Please try signing in again.")
-            else:
-                print("DEBUG: Missing required user information", flush=True)
-                print(f"DEBUG: Available claims: {claims}", flush=True)
-                return render_template("signin.html", error="Required user information (name or email) is missing. Please try signing in again.")
+            try:
+                # Use the sub claim as both ID and name, and generate a temporary email
+                user = User(
+                    id=user_id,
+                    name=f"User_{user_id[:8]}",  # Use first 8 chars of ID as name
+                    email=f"user_{user_id}@temp.jarvus.com"  # Generate temporary email
+                )
+                db.session.add(user)
+                db.session.commit()
+                print(f"DEBUG: Created new user: {user.id}, {user.name}, {user.email}", flush=True)
+            except Exception as e:
+                print(f"DEBUG: Error creating user: {str(e)}", flush=True)
+                db.session.rollback()
+                return render_template("signin.html", error="Error creating user account. Please try signing in again.")
 
         # Store all user claims by user_id in the session for compatibility
         user_claims = session.get("user_claims", {})
