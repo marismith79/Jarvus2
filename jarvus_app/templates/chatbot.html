@@ -4,9 +4,6 @@
 
 {% block content %}
 <div class="chatbot-layout">
-    <!-- Workspace Sidebar (empty for now) -->
-    <aside class="workspace-sidebar"></aside>
-
     <!-- Chat Main Area -->
     <section class="chatbot-card">
         <!-- Greeting -->
@@ -24,15 +21,15 @@
         <!-- Suggestion cards -->
         <div class="suggestions-cards-wrapper" id="suggestions-wrapper">
             <div class="suggestions-cards">
-                <div class="card card-gmail">
+                <div class="card card-gmail" onclick="insertSuggestion('Check my recent emails')">
                     <div class="card-text gmail-text">
-                        Check my recent emails
+                        Summarize my most recent emails this morning
                     </div>
                     <div class="card-meta gmail-meta">
                         Last checked <br><span class="time">2 hours ago</span>
                     </div>
                 </div>
-                <div class="card card-calendar">
+                <div class="card card-calendar" onclick="insertSuggestion('Show my upcoming events')">
                     <div class="card-text calendar-text">
                         Show my upcoming events
                     </div>
@@ -40,7 +37,7 @@
                         Next event <br><span class="time">in 30 mins</span>
                     </div>
                 </div>
-                <div class="card card-salesforce">
+                <div class="card card-salesforce" onclick="insertSuggestion('Update the opportunity to Signed')">
                     <div class="card-text salesforce-text">
                         Update the opportunity to Signed
                     </div>
@@ -57,7 +54,6 @@
         <!-- Chat input bar -->
         <form class="chat-input-bar" onsubmit="event.preventDefault(); sendCommand();">
             <div class="input-buttons">
-                <button type="button" class="icon-btn input-plus">+</button>
                 <div class="tool-selector">
                     <button type="button" class="icon-btn input-at" id="atButton">@</button>
                     <div class="tool-dropdown" id="toolDropdown">
@@ -74,6 +70,14 @@
 
 {% block extra_js %}
 <script>
+    // Store connection status
+    const connectedTools = {
+        gmail: {{ 'true' if gmail_connected else 'false' }},
+        notion: {{ 'true' if notion_connected else 'false' }},
+        slack: {{ 'true' if slack_connected else 'false' }},
+        zoom: {{ 'true' if zoom_connected else 'false' }}
+    };
+
     // Helper to append a message bubble into #chat-history
     function appendMessage(who, text) {
         const history = document.getElementById('chat-history');
@@ -97,52 +101,53 @@
     const suggestionsHeader = document.getElementById('suggestions-header');
     const toolDropdown = document.getElementById('toolDropdown');
     const atButton = document.getElementById('atButton');
+    const dropdownBtn = document.querySelector('.dropdown-btn');
 
     // Load available tools
-    async function loadAvailableTools() {
-        try {
-            const response = await fetch('/chatbot/available_tools');
-            if (!response.ok) throw new Error('Failed to load tools');
-            const tools = await response.json();
-            
-            // Clear existing tools
-            toolDropdown.innerHTML = '';
-            
-            // Add tools to dropdown
-            for (const toolName of Object.keys(tools)) {
+    function loadAvailableTools() {
+        // Clear existing tools
+        toolDropdown.innerHTML = '';
+        
+        // Add connected tools to dropdown
+        let hasConnectedTools = false;
+        
+        for (const [toolName, isConnected] of Object.entries(connectedTools)) {
+            if (isConnected) {
+                hasConnectedTools = true;
                 const toolItem = document.createElement('div');
                 toolItem.classList.add('tool-item');
                 toolItem.innerHTML = `
-                    <img src="{{ url_for('static', filename='images/${toolName}-logo.png') }}" alt="${toolName}" class="tool-icon">
                     <span>${toolName.charAt(0).toUpperCase() + toolName.slice(1)}</span>
+                    <span class="checkmark" style="display: none;">✓</span>
                 `;
-                toolItem.onclick = () => insertTool(toolName);
+                toolItem.onclick = (e) => {
+                    e.stopPropagation(); // Prevent dropdown from closing
+                    const checkmark = toolItem.querySelector('.checkmark');
+                    // Toggle the checkmark visibility
+                    checkmark.style.display = checkmark.style.display === 'none' ? 'inline-block' : 'none';
+                };
                 toolDropdown.appendChild(toolItem);
             }
-        } catch (error) {
-            console.error('Error loading tools:', error);
+        }
+
+        // If no tools are connected, show a message
+        if (!hasConnectedTools) {
+            const noToolsMessage = document.createElement('div');
+            noToolsMessage.classList.add('tool-item');
+            noToolsMessage.innerHTML = '<span>No tools connected</span>';
+            toolDropdown.appendChild(noToolsMessage);
         }
     }
 
     // Load tools when page loads
     loadAvailableTools();
 
-    // Handle input focus events
-    inputEl.addEventListener('focus', () => {
-        suggestionsWrapper.style.display = 'none';
-        suggestionsHeader.style.display = 'none';
-    });
-
-    inputEl.addEventListener('blur', () => {
-        suggestionsWrapper.style.display = 'block';
-        suggestionsHeader.style.display = 'block';
-    });
-
     // Tool selection handling
     atButton.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
         const dropdown = document.getElementById('toolDropdown');
+        dropdown.classList.remove('hiding');
         dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
     });
 
@@ -151,24 +156,13 @@
         const dropdown = document.getElementById('toolDropdown');
         const toolSelector = document.querySelector('.tool-selector');
         if (!toolSelector.contains(e.target)) {
-            dropdown.style.display = 'none';
+            dropdown.classList.add('hiding');
+            setTimeout(() => {
+                dropdown.style.display = 'none';
+                dropdown.classList.remove('hiding');
+            }, 150); // Match the transition duration
         }
     });
-
-    function insertTool(tool) {
-        const toolText = `@${tool}`;
-        const input = document.getElementById('chat-input');
-        const start = input.selectionStart;
-        const end = input.selectionEnd;
-        const text = input.value;
-        const before = text.substring(0, start);
-        const after = text.substring(end);
-        
-        input.value = before + toolText + ' ' + after;
-        input.focus();
-        input.selectionStart = input.selectionEnd = start + toolText.length + 1;
-        document.getElementById('toolDropdown').style.display = 'none';
-    }
 
     // When user clicks "send" or presses Enter
     function sendCommand() {
@@ -224,6 +218,23 @@
             sendCommand();
         }
     });
+
+    // Toggle suggestions visibility
+    function toggleSuggestions() {
+        const isVisible = suggestionsWrapper.style.display !== 'none';
+        suggestionsWrapper.style.display = isVisible ? 'none' : 'block';
+        dropdownBtn.style.transform = isVisible ? 'rotate(90deg)' : 'rotate(0deg)';
+    }
+    
+    // Add click handler to the dropdown button
+    dropdownBtn.addEventListener('click', toggleSuggestions);
+
+    // Add this function at the beginning of your script section
+    function insertSuggestion(text) {
+        const input = document.getElementById('chat-input');
+        input.value = text;
+        input.focus();
+    }
 </script>
 {% endblock %}
 
