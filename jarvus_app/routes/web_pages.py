@@ -10,7 +10,7 @@ web = Blueprint("web", __name__)
 
 @web.route("/")
 def landing():
-    return render_template("landing.html")
+    return render_template("landing.html", now=datetime.now())
 
 @web.route("/profile")
 @login_required
@@ -51,6 +51,7 @@ def flow_builder():
     return render_template("flow_builder.html")
 
 @web.route("/dashboard")
+@login_required
 def dashboard():
     return render_template("dashboard.html")
 
