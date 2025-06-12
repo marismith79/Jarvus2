@@ -5,8 +5,10 @@ and managing conversation state.
 """
 
 import os
-from openai import AzureOpenAI
-from typing import Dict, List, Optional, Any
+from azure.ai.inference import ChatCompletionsClient
+from azure.ai.inference.models import SystemMessage, UserMessage
+from azure.core.credentials import AzureKeyCredential
+from typing import Dict, List, Optional, Any, Generator
 
 class JarvusAIClient:
     def __init__(self):
@@ -25,49 +27,54 @@ class JarvusAIClient:
         if not all([self.api_key, self.api_base, self.api_version, self.deployment_name]):
             raise ValueError("Missing required Azure AI Foundry Models configuration. Please check your environment variables.")
 
-        self.client = AzureOpenAI(
-            api_version=self.api_version,
-            azure_endpoint=self.api_base,
-            api_key=self.api_key
+        self.client = ChatCompletionsClient(
+            endpoint=self.api_base,
+            credential=AzureKeyCredential(self.api_key),
+            api_version=self.api_version
         )
-        self.deployment_id = self.deployment_name
         print("=== Azure AI Foundry Models Client Initialization Complete ===\n")
 
     def create_chat_completion(
         self,
         messages: List[Dict[str, str]],
         tools: Optional[List[Dict[str, Any]]] = None,
-        max_tokens: Optional[int] = None
-    ) -> Any:
+        max_tokens: Optional[int] = 2048,
+        stream: bool = True
+    ) -> Generator[str, None, None]:
         """
-        Create a chat completion using Azure AI Foundry Models API.
-        Automatically merge the system prompt into the first user message if the model does not support the system role (e.g., o1-mini).
-        Do not send the 'tools' parameter if the model does not support it (e.g., o1-mini).
+        Create a chat completion using Azure AI Foundry Models API with streaming support.
+        Returns a generator that yields response chunks.
         """
         try:
-            # If using o1-mini or o1-preview or any o1* model, merge system prompt into first user message
-            o1_model = self.deployment_id and self.deployment_id.startswith("o1")
-            if o1_model:
-                if messages and messages[0]["role"] == "system":
-                    system_content = messages[0]["content"]
-                    # Find the first user message
-                    for i, msg in enumerate(messages[1:], start=1):
-                        if msg["role"] == "user":
-                            messages[i]["content"] = f"{system_content}\n\n{messages[i]['content']}"
-                            break
-                    # Remove the system message
-                    messages = [msg for msg in messages if msg["role"] != "system"]
+            # Convert messages to Azure AI Inference format
+            azure_messages = []
+            for msg in messages:
+                if msg["role"] == "system":
+                    azure_messages.append(SystemMessage(content=msg["content"]))
+                elif msg["role"] == "user":
+                    azure_messages.append(UserMessage(content=msg["content"]))
 
-            params = {
-                "messages": messages,
-                "model": self.deployment_id
-            }
-            if max_tokens is not None:
-                params["max_tokens"] = max_tokens
-            if tools is not None and not o1_model:
-                params["tools"] = tools
-            response = self.client.chat.completions.create(**params)
-            return response
+            response = self.client.complete(
+                stream=stream,
+                messages=azure_messages,
+                max_tokens=max_tokens,
+                temperature=0.8,
+                top_p=0.1,
+                presence_penalty=0.0,
+                frequency_penalty=0.0,
+                model=self.deployment_name
+            )
+
+            if stream:
+                for update in response:
+                    if update.choices:
+                        content = update.choices[0].delta.content
+                        if content:
+                            yield content
+            else:
+                if response.choices:
+                    yield response.choices[0].message.content
+
         except Exception as e:
             print(f"Azure AI Foundry Models API Error: {str(e)}")
             raise Exception(f"Error creating chat completion: {str(e)}")

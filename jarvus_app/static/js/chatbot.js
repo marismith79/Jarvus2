@@ -173,4 +173,56 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Add click handler to the dropdown button
     dropdownBtn.addEventListener('click', toggleSuggestions);
-}); 
+});
+
+function sendMessage() {
+    const messageInput = document.getElementById('message-input');
+    const message = messageInput.value.trim();
+    
+    if (!message) return;
+    
+    // Add user message to chat
+    addMessageToChat('user', message);
+    messageInput.value = '';
+    
+    // Create and add assistant message container
+    const assistantMessageId = 'msg-' + Date.now();
+    const assistantMessageDiv = document.createElement('div');
+    assistantMessageDiv.id = assistantMessageId;
+    assistantMessageDiv.className = 'message assistant-message';
+    assistantMessageDiv.innerHTML = '<div class="message-content"></div>';
+    document.querySelector('.chat-messages').appendChild(assistantMessageDiv);
+    
+    // Create EventSource for streaming
+    const eventSource = new EventSource(`/chatbot/send?message=${encodeURIComponent(message)}`);
+    let assistantResponse = '';
+    
+    eventSource.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+        if (data.error) {
+            console.error('Error:', data.error);
+            document.querySelector(`#${assistantMessageId} .message-content`).innerHTML = 
+                `<div class="error-message">Error: ${data.error}</div>`;
+            eventSource.close();
+            return;
+        }
+        
+        if (data.content) {
+            assistantResponse += data.content;
+            document.querySelector(`#${assistantMessageId} .message-content`).innerHTML = 
+                marked.parse(assistantResponse);
+        }
+    };
+    
+    eventSource.onerror = function(error) {
+        console.error('EventSource error:', error);
+        eventSource.close();
+        if (!assistantResponse) {
+            document.querySelector(`#${assistantMessageId} .message-content`).innerHTML = 
+                '<div class="error-message">Error: Failed to get response from the assistant.</div>';
+        }
+    };
+    
+    // Scroll to bottom
+    scrollToBottom();
+} 

@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, Response
 from flask_login import current_user, login_required
 from ..services.mcp_client import mcp_client
 from ..llm.client import JarvusAIClient
@@ -198,8 +198,8 @@ def handle_chat_message():
             When interacting with users:
             1. Be concise and clear in your responses
             2. Use the available tools when appropriate
-            3. If you're not sure about something, ask for clarification
-            4. Always maintain a professional and friendly tone
+            3. If you need to use a tool, explain what you're going to do first
+            4. If you can't help with something, be honest about it
             
             Available tools:
             {json.dumps(available_tools, indent=2)}
@@ -211,98 +211,20 @@ def handle_chat_message():
             4. Handle errors gracefully and inform the user if something goes wrong"""),
             llm_client.format_message("user", data['message'])
         ]
-        
-        print("\nSending request to Azure AI Foundry Models...")
-        response = llm_client.create_chat_completion(
-            messages,
-            tools=tools,
 
-        )
-        
-        # Check if the response includes tool calls
-        choice = response.choices[0]
-        tool_calls = getattr(choice.message, 'tool_calls', None)
-        if tool_calls:
-            print("\nTool calls detected:")
-            for tool_call in tool_calls:
-                print(f"Tool: {tool_call.function.name}")
-                print(f"Arguments: {tool_call.function.arguments}")
-                
-                # Execute the tool call
-                try:
-                    args = json.loads(tool_call.function.arguments)
-                    
-                    # Map tool names to MCP client methods
-                    if tool_call.function.name == "list_emails":
-                        result = mcp_client.list_emails(
-                            max_results=args.get('max_results', 10),
-                            query=args.get('query')
-                        )
-                    elif tool_call.function.name == "search_emails":
-                        result = mcp_client.search_emails(
-                            query=args['query'],
-                            max_results=args.get('max_results', 10)
-                        )
-                    elif tool_call.function.name == "send_email":
-                        result = mcp_client.send_email(
-                            to=args['to'],
-                            subject=args['subject'],
-                            body=args['body'],
-                            cc=args.get('cc'),
-                            bcc=args.get('bcc')
-                        )
-                    elif tool_call.function.name == "list_events":
-                        result = mcp_client.list_events(
-                            max_results=args.get('max_results', 10),
-                            time_min=args.get('time_min'),
-                            time_max=args.get('time_max')
-                        )
-                    elif tool_call.function.name == "create_event":
-                        result = mcp_client.create_event(
-                            summary=args['summary'],
-                            start=args['start'],
-                            end=args['end'],
-                            location=args.get('location'),
-                            description=args.get('description'),
-                            attendees=args.get('attendees')
-                        )
-                    else:
-                        raise ValueError(f"Unknown tool: {tool_call.function.name}")
-                    
-                    print(f"\nTool execution result: {result}")
-                    
-                    # Add tool response to messages
-                    messages.append(choice.message)
-                    messages.append(llm_client.format_tool_message(
-                        tool_call.id,
-                        json.dumps(result)
-                    ))
-                    
-                    # Get final response from Azure AI Foundry Models
-                    print("\nGetting final response from Azure AI Foundry Models...")
-                    final_response = llm_client.create_chat_completion(messages)
-                    return jsonify({
-                        'success': True,
-                        'reply': final_response.choices[0].message.content,
-                        'tool_executed': True,
-                        'tool_result': result
-                    })
-                except Exception as e:
-                    print(f"Error executing tool: {str(e)}")
-                    return jsonify({
-                        'success': False,
-                        'error': f'Error executing tool: {str(e)}'
-                    }), 500
-        # If no tool calls, return the direct response
-        return jsonify({
-            'success': True,
-            'reply': choice.message.content,
-            'tool_executed': False
-        })
-        
+        def generate():
+            try:
+                for chunk in llm_client.create_chat_completion(messages, tools=tools):
+                    yield f"data: {json.dumps({'content': chunk})}\n\n"
+            except Exception as e:
+                print(f"Error in generate: {str(e)}")
+                yield f"data: {json.dumps({'error': str(e)})}\n\n"
+
+        return Response(generate(), mimetype='text/event-stream')
+
     except Exception as e:
         print(f"Error in handle_chat_message: {str(e)}")
         return jsonify({
             'success': False,
-            'error': f'Error processing message: {str(e)}'
+            'error': str(e)
         }), 500 
