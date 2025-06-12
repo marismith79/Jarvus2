@@ -2,9 +2,9 @@
 
 {% block title %}Jarvus - Your Profile{% endblock %}
 
-<!--  {% block extra_css %}
+{% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
-{% endblock %} -->
+{% endblock %}
 
 {% block content %}
 <main>
@@ -23,7 +23,7 @@
                     <h2>Basic Information</h2>
                     <form class="profile-form" id="basic-info-form">
                         <div class="form-group">
-                            <label for="name">Full Name</label>
+                            <label for="name">Name</label>
                             <input type="text" id="name" name="name" value="{{ current_user.name or '' }}" placeholder="Your name">
                         </div>
                         <div class="form-group">
@@ -105,47 +105,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
-    // Connection handling
-    function connectGmail() { window.location.href = '/connect/gmail'; }
-    
-    // Show coming soon popup for other services
-    function connectNotion() { showComingSoon(); }
-    function connectSlack() { showComingSoon(); }
-    function connectZoom() { showComingSoon(); }
-
-    function showComingSoon() {
-        const popup = document.getElementById('comingSoonPopup');
-        popup.classList.add('show');
-        setTimeout(() => {
-            popup.classList.remove('show');
-        }, 2000); // Hide after 2 seconds
-    }
-
-    function disconnectGmail() { disconnectService('gmail'); }
-    function disconnectNotion() { disconnectService('notion'); }
-    function disconnectSlack() { disconnectService('slack'); }
-    function disconnectZoom() { disconnectService('zoom'); }
-
-    function disconnectService(service) {
-        fetch(`/disconnect/${service}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                window.location.reload();
-            } else {
-                alert('Failed to disconnect service.');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('An error occurred while trying to disconnect.');
-        });
-    }
-</script>
+<script src="{{ url_for('static', filename='js/profile.js') }}"></script>
 {% endblock %}
