@@ -79,8 +79,8 @@ AZURE_SQL_CONNECTION_STRING="mssql+pyodbc://<user>:<password>@<server>.database.
 # Azure AI Inference
 AZURE_AI_FOUNDRY_KEY=<your‐openai‐key>
 AZURE_AI_FOUNDRY_ENDPOINT=https://<your-resource-name>.openai.azure.com
-AZURE_AI_FOUNDRY_API_VERSION=2024-05-01-preview
-AZURE_AI_FOUNDRY_DEPLOYMENT_NAME=gpt-4o
+AZURE_AI_FOUNDRY_API_VERSION=<your-api-version>
+AZURE_AI_FOUNDRY_DEPLOYMENT_NAME=<your-model-name>
 
 # Google OAuth
 GOOGLE_CLIENT_ID=<id>

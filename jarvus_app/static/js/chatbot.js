@@ -79,37 +79,46 @@ function sendCommand() {
     // Show "thinking" message
     const thinkingMsg = appendMessage('bot', '...');
 
-    // POST to Flask endpoint
-    fetch('/chatbot/send', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ message: raw })
-    })
-    .then((res) => {
-        if (!res.ok) throw new Error('Network response was not OK');
-        return res.json();
-    })
-    .then((data) => {
-        // Remove thinking message
-        thinkingMsg.remove();
-        
-        if (data.tool_executed) {
-            // Show tool execution status
-            appendMessage('bot', '🛠️ Executing command...');
-            // Show tool result
-            appendMessage('bot', `📊 Result: ${JSON.stringify(data.tool_result, null, 2)}`);
+    // Use EventSource for streaming
+    const eventSource = new EventSource(`/chatbot/send?message=${encodeURIComponent(raw)}`);
+    let assistantResponse = '';
+
+    eventSource.onmessage = function(event) {
+        let raw = event.data;
+        if (raw.startsWith('data: ')) {
+            raw = raw.slice(6);
         }
-        
-        // Show final response
-        appendMessage('bot', data.reply);
-    })
-    .catch((err) => {
-        console.error('Error sending command:', err);
-        thinkingMsg.remove();
-        appendMessage('bot', '⚠️ Error: could not reach server.');
-    });
+        let data;
+        try {
+            data = JSON.parse(raw);
+        } catch (e) {
+            console.error('Error parsing SSE JSON:', e, raw);
+            thinkingMsg.remove();
+            appendMessage('bot', '⚠️ Error: Invalid response from server.');
+            eventSource.close();
+            return;
+        }
+        if (data.error) {
+            console.error('Error:', data.error);
+            thinkingMsg.remove();
+            appendMessage('bot', `⚠️ Error: ${data.error}`);
+            eventSource.close();
+            return;
+        }
+        if (data.content) {
+            assistantResponse += data.content;
+            thinkingMsg.innerHTML = assistantResponse;
+        }
+    };
+
+    eventSource.onerror = function(error) {
+        console.error('EventSource error:', error);
+        eventSource.close();
+        if (!assistantResponse) {
+            thinkingMsg.remove();
+            appendMessage('bot', '⚠️ Error: Failed to get response from the assistant.');
+        }
+    };
 }
 
 // Toggle suggestions visibility
@@ -198,7 +207,21 @@ function sendMessage() {
     let assistantResponse = '';
     
     eventSource.onmessage = function(event) {
-        const data = JSON.parse(event.data);
+        let raw = event.data;
+        // Remove 'data: ' prefix if present
+        if (raw.startsWith('data: ')) {
+            raw = raw.slice(6);
+        }
+        let data;
+        try {
+            data = JSON.parse(raw);
+        } catch (e) {
+            console.error('Error parsing SSE JSON:', e, raw);
+            document.querySelector(`#${assistantMessageId} .message-content`).innerHTML = 
+                `<div class="error-message">Error: Invalid response from server.</div>`;
+            eventSource.close();
+            return;
+        }
         if (data.error) {
             console.error('Error:', data.error);
             document.querySelector(`#${assistantMessageId} .message-content`).innerHTML = 
@@ -206,7 +229,6 @@ function sendMessage() {
             eventSource.close();
             return;
         }
-        
         if (data.content) {
             assistantResponse += data.content;
             document.querySelector(`#${assistantMessageId} .message-content`).innerHTML = 

@@ -3,13 +3,13 @@ Test script for verifying the OpenAI client functionality with MCP server integr
 Run this script directly to test the client: python -m jarvus_app.llm.test_client
 """
 
-from .client import OpenAIClient
+from .client import JarvusAIClient
 
 def test_basic_chat():
-    """Test basic chat functionality with the OpenAI client."""
+    """Test basic chat functionality with the JarvusAIClient."""
     try:
         # Initialize the client
-        client = OpenAIClient()
+        client = JarvusAIClient()
         
         # Create a simple conversation
         messages = [
@@ -35,7 +35,7 @@ def test_mcp_integration():
     """Test LLM's ability to use MCP server tools."""
     try:
         # Initialize the client
-        client = OpenAIClient()
+        client = JarvusAIClient()
         
         # Define available tools (MCP server endpoints)
         tools = [

@@ -15,7 +15,7 @@ class JarvusAIClient:
         """Initialize the Azure AI Inference client with configuration from environment variables."""
         self.api_key = os.getenv('AZURE_AI_FOUNDRY_KEY')
         self.api_base = os.getenv('AZURE_AI_FOUNDRY_ENDPOINT')
-        self.api_version = os.getenv('AZURE_AI_FOUNDRY_API_VERSION', '2024-05-01-preview')
+        self.api_version = os.getenv('AZURE_AI_FOUNDRY_API_VERSION')
         self.deployment_name = os.getenv('AZURE_AI_FOUNDRY_DEPLOYMENT_NAME')
 
         print(f"\nAzure AI Foundry Configuration:")
@@ -42,7 +42,9 @@ class JarvusAIClient:
         temperature: float = 0.8,
         top_p: float = 0.1,
         presence_penalty: float = 0.0,
-        frequency_penalty: float = 0.0
+        frequency_penalty: float = 0.0,
+        tools: Optional[List[dict]] = None,
+        tool_choice: Optional[str] = None
     ) -> Generator[str, None, None]:
         """
         Create a chat completion using Azure AI Foundry API with streaming support.
@@ -57,7 +59,7 @@ class JarvusAIClient:
                 else:
                     formatted_messages.append(UserMessage(content=msg["content"]))
 
-            response = self.client.complete(
+            kwargs = dict(
                 stream=stream,
                 messages=formatted_messages,
                 max_tokens=max_tokens,
@@ -67,6 +69,12 @@ class JarvusAIClient:
                 frequency_penalty=frequency_penalty,
                 model=self.deployment_name
             )
+            if tools is not None:
+                kwargs["tools"] = tools
+            if tool_choice is not None:
+                kwargs["tool_choice"] = tool_choice
+
+            response = self.client.complete(**kwargs)
 
             if stream:
                 for update in response:
