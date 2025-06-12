@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from jarvus_app import create_app
 from jarvus_app.db import db
-from sqlalchemy import inspect
+from sqlalchemy import inspect, text
 from dotenv import load_dotenv
 
 def check_db():
@@ -26,7 +26,7 @@ def check_db():
                     print(f"  - {column['name']}: {column['type']}")
                 
                 # Get row count
-                result = db.session.execute(f"SELECT COUNT(*) FROM {table}")
+                result = db.session.execute(text(f"SELECT COUNT(*) FROM {table}"))
                 count = result.scalar()
                 print(f"Row count: {count}")
                 

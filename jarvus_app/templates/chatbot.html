@@ -23,26 +23,17 @@
             <div class="suggestions-cards">
                 <div class="card card-gmail" onclick="insertSuggestion('Check my recent emails')">
                     <div class="card-text gmail-text">
-                        Summarize my most recent emails this morning
-                    </div>
-                    <div class="card-meta gmail-meta">
-                        Last checked <br><span class="time">2 hours ago</span>
+                        Summarize my most recent work emails 
                     </div>
                 </div>
                 <div class="card card-calendar" onclick="insertSuggestion('Show my upcoming events')">
                     <div class="card-text calendar-text">
-                        Show my upcoming events
-                    </div>
-                    <div class="card-meta calendar-meta">
-                        Next event <br><span class="time">in 30 mins</span>
+                        Show all my upcoming calls
                     </div>
                 </div>
                 <div class="card card-salesforce" onclick="insertSuggestion('Update the opportunity to Signed')">
                     <div class="card-text salesforce-text">
-                        Update the opportunity to Signed
-                    </div>
-                    <div class="card-meta salesforce-meta">
-                        Project ARR <br><span class="amount">$40,000</span>
+                        Create a notion database for my sales
                     </div>
                 </div>
             </div>
@@ -168,6 +159,10 @@
     function sendCommand() {
         const raw = inputEl.value.trim();
         if (!raw) return;
+
+        // Hide suggestions after first message
+        suggestionsWrapper.style.display = 'none';
+        dropdownBtn.style.transform = 'rotate(90deg)';
 
         // Append the user's message immediately
         appendMessage('user', raw);

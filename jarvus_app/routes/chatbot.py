@@ -193,8 +193,7 @@ def handle_chat_message():
         # Use the LLM client to generate a response
         llm_client = JarvusAIClient()
         messages = [
-            llm_client.format_message("system", f"""You are a helpful AI assistant powered by Azure AI Foundry Models. 
-            You have access to various tools to help users with their tasks through the MCP server at http://localhost:8000.
+            llm_client.format_message("system", f"""You are a helpful AI assistant made for task automation.
             
             When interacting with users:
             1. Be concise and clear in your responses
