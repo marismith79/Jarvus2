@@ -19,4 +19,10 @@ class Config:
     if not SQLALCHEMY_DATABASE_URI:
         raise ValueError("AZURE_SQL_CONNECTION_STRING environment variable is not set")
     
+    # Add timeout parameters to the connection string
+    if "?" in SQLALCHEMY_DATABASE_URI:
+        SQLALCHEMY_DATABASE_URI += "&timeout=60&connect_timeout=60"
+    else:
+        SQLALCHEMY_DATABASE_URI += "?timeout=60&connect_timeout=60"
+    
     SQLALCHEMY_TRACK_MODIFICATIONS = False

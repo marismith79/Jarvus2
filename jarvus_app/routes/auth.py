@@ -97,11 +97,22 @@ def authorized():
         if not user:
             print("DEBUG: No existing user found, creating new user", flush=True)
             try:
-                # Use the sub claim as both ID and name, and generate a temporary email
+                # Get email and name from claims if available
+                email = claims.get("emails", [None])[0]  # Azure AD provides email in 'emails' array
+                name = claims.get("name")  # Azure AD provides name in 'name' claim
+                
+                # If email is not available, generate a temporary one
+                if not email:
+                    email = f"user_{user_id}@temp.jarvus.com"
+                
+                # If name is not available, use a generated one
+                if not name:
+                    name = f"User_{user_id[:8]}"
+                
                 user = User(
                     id=user_id,
-                    name=f"User_{user_id[:8]}",  # Use first 8 chars of ID as name
-                    email=f"user_{user_id}@temp.jarvus.com"  # Generate temporary email
+                    name=name,
+                    email=email
                 )
                 db.session.add(user)
                 db.session.commit()
