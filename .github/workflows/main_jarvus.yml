@@ -32,8 +32,14 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
+          pip install azure-ai-inference>=1.0.0  # Install explicitly first
           pip install -r requirements.txt
           pip freeze > requirements.txt  # Update requirements with exact versions
+          
+      - name: Verify installation
+        run: |
+          source venv/bin/activate
+          python -c "import azure.ai.inference; print('Azure AI Inference package found')"
         
       # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
 
