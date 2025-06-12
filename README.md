@@ -1,4 +1,3 @@
-
 ---
 # Jarvus Flask Application
 
@@ -62,4 +61,117 @@ Go to:
 ## Azure Debugging
 
 Run this command:
-   az webapp log tail --name jarvus --resource-group <your-resource-group>
+   az webapp log tail --name jarvus --resource-group Jarvus
+
+## Environment Variables
+
+Create a `.env` file (only used locally) with at least the following keys:
+
+```
+# Flask
+FLASK_ENV=development
+SECRET_KEY=dev
+FLASK_SECRET_KEY=dev
+
+# Azure SQL
+AZURE_SQL_CONNECTION_STRING="mssql+pyodbc://<user>:<password>@<server>.database.windows.net:1433/<db>?driver=ODBC+Driver+18+for+SQL+Server&encrypt=yes&TrustServerCertificate=yes"
+
+# Azure AI Inference
+AZURE_AI_FOUNDRY_KEY=<your‐openai‐key>
+AZURE_AI_FOUNDRY_ENDPOINT=https://<your-resource-name>.openai.azure.com
+AZURE_AI_FOUNDRY_API_VERSION=2024-05-01-preview
+AZURE_AI_FOUNDRY_DEPLOYMENT_NAME=gpt-4o
+
+# Google OAuth
+GOOGLE_CLIENT_ID=<id>
+GOOGLE_CLIENT_SECRET=<secret>
+GOOGLE_REDIRECT_URI=http://localhost:5001/oauth2callback
+```
+
+When running in Azure App Service, set these same keys in the **Configuration → Application settings** blade instead of using a `.env` file.
+
+## Local Development & Debugging
+
+```bash
+# 1. Create & activate virtualenv (if you have not already)
+python -m venv .venv
+source .venv/bin/activate
+
+# 2. Install requirements
+pip install -r requirements.txt
+
+# 3. Run the dev server
+export FLASK_ENV=development  # ensures .env is loaded
+python run_dev.py  # or: flask run --port 5001 --debug
+```
+
+Live-reload & debugger are enabled, so code changes reflect automatically.
+
+### Database helpers
+
+The `azuredb_scripts` folder contains utilities to bootstrap or reset a local or remote DB:
+
+```bash
+python azuredb_scripts/init_db.py     # create tables
+python azuredb_scripts/populate_db.py # optional seed data
+python azuredb_scripts/check_db.py    # inspect tables
+python azuredb_scripts/reset_db.py    # drop & recreate
+```
+
+## Azure Deployment Pipeline
+
+Deployment is fully automated via GitHub Actions (see `.github/workflows/main_jarvus.yml`).
+A push to `main` will:
+
+1. Build the project with Python 3.11
+2. Install dependencies (incl. beta `azure-ai-inference`)
+3. Zip **source + virtualenv**
+4. Deploy to the `jarvus` Web App
+
+No manual steps required, but you can trigger a run with the UI under **Actions → _Build & Deploy_ → _Run workflow_**.
+
+## Azure CLI Cheat-Sheet
+
+Real-time logs:
+
+```bash
+az webapp log tail --name jarvus --resource-group Jarvus
+```
+
+Turn on detailed application logging:
+
+```bash
+az webapp log config --name jarvus --resource-group Jarvus \
+  --application-logging true --level information
+```
+
+Restart / browse:
+
+```bash
+az webapp restart --name jarvus --resource-group Jarvus
+az webapp browse  --name jarvus --resource-group Jarvus
+```
+
+Stream container logs (Linux App Service):
+
+```bash
+az webapp log tail --provider containerapp --name jarvus --resource-group Jarvus
+```
+
+Scale up/down:
+
+```bash
+az appservice plan update --name jarvus-plan --resource-group Jarvus --sku P1v3
+```
+
+## Troubleshooting
+
+* **`ModuleNotFoundError`** – ensure the package exists in `requirements.txt` **and** is successfully installed in the GitHub Action.
+* **SQL login time-out** – verify firewall rules & increase `connect_timeout` in the connection string (300 s works well).
+* **Env vars not picked up** – remember that `.env` is ignored in production; set keys in the portal or via
+
+```bash
+az webapp config appsettings set --name jarvus --resource-group Jarvus --settings KEY=value
+```
+
+Happy hacking! 😉

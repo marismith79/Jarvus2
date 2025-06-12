@@ -21,13 +21,16 @@ import logging
 project_root = Path(__file__).parent.parent
 env_path = project_root / '.env'
 
-# Load .env early so Config (or your routes) can pick up env vars
-print(f"Loading .env file from: {env_path}")
-if env_path.exists():
-    load_dotenv(env_path)
-    print("Environment variables loaded from .env")
+# Load .env early only in development so Config (or your routes) can pick up env vars
+if os.getenv("FLASK_ENV") == "development":
+    print(f"Development mode detected: attempting to load .env file from: {env_path}")
+    if env_path.exists():
+        load_dotenv(env_path)
+        print("Environment variables loaded from .env")
+    else:
+        print("Warning: .env file not found at", env_path)
 else:
-    print("Warning: .env file not found at", env_path)
+    print("Production mode detected: skipping .env file loading")
 
 # Allow OAuth2 to work over HTTP in development
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
