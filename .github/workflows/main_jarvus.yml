@@ -37,7 +37,6 @@ jobs:
           
       - name: Verify installation
         run: |
-          source venv/bin/activate
           python -c "import azure.ai.inference; print('Azure AI Inference package found')"
         
       # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
