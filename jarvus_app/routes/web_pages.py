@@ -62,7 +62,7 @@ def send_chat_message():
 #     return render_template("flow_builder.html")
 
 # @web.route("/dashboard")
-@login_required
+# @login_required
 # def dashboard():
 #     return render_template("dashboard.html")
 
