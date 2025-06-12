@@ -210,32 +210,6 @@ nav a.active {
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-/* Buttons */
-.cta-button {
-    background: #3b82f6;
-    color: white;
-    padding: 0.5rem 1rem;
-    border-radius: 6px;
-    border: none;
-    font-weight: 500;
-    font-size: 0.875rem;
-    cursor: pointer;
-    transition: background 0.3s ease;
-}
-
-.cta-button:hover {
-    background: #2563eb;
-}
-
-.cta-button.secondary {
-    background: #f3f4f6;
-    color: #4b5563;
-}
-
-.cta-button.secondary:hover {
-    background: #e5e7eb;
-}
-
 /* Responsive Adjustments */
 @media (max-width: 768px) {
     .profile-grid {
@@ -249,4 +223,49 @@ nav a.active {
     .integrations-grid {
         grid-template-columns: 1fr;
     }
+}
+
+/* Coming Soon Popup */
+.coming-soon-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.9);
+    background-color: #f0f0f0;
+    padding: 20px 40px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    z-index: 1000;
+}
+
+.coming-soon-popup.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.coming-soon-content {
+    color: #000000;
+    font-size: 1.2rem;
+    font-weight: 500;
+    text-align: center;
+}
+
+/* Button Styles */
+
+.cta-button:hover {
+    background: #2563eb;
+}
+
+.cta-button.secondary {
+    background: #ef4444;
+    padding: 0.5rem 1rem;
+    color: white;
+}
+
+.cta-button.secondary:hover {
+    background: #dc2626;
 } 

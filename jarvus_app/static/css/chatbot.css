@@ -1,40 +1,6 @@
 /*─────────────────────────────────────────────────────────────────────────────
   1. Root Variables
 ─────────────────────────────────────────────────────────────────────────────*/
-:root {
-    /* Primary Light Mode Colors */
-    --background-outer: #ffffff;
-    --sidebar-bg: #f8f9fa;
-    --sidebar-text: #1a1a1a;
-    --main-bg: #ffffff;
-    --text-primary: #1a1a1a;
-    --text-secondary: #666666;
-    --divider-color: #e0e0e0;
-  
-    /* Card Colors */
-    --card-bg: #ffffff;
-    --card-text: #1a1a1a;
-    --card-meta: #666666;
-  
-    /* Salesforce-style card */
-    --card-salesforce-bg: #1E88E5;
-    --card-salesforce-text: #FFFFFF;
-  
-    /* Accent Colors (for dots in collections) */
-    --pink: #E91E63;
-    --purple: #9C27B0;
-    --orange: #FF9800;
-    --green: #4CAF50;
-    --blue: #2196F3;
-  
-    /* Input Bar */
-    --input-bg: #ffffff;
-    --input-text: #1a1a1a;
-    --input-placeholder: #999999;
-  
-    /* Border & Divider */
-    --border-color: #e0e0e0;
-  }
   
   /*─────────────────────────────────────────────────────────────────────────────
     2. Global Resets
@@ -306,12 +272,13 @@
   .suggestions-cards-wrapper {
     padding: 8px 16px;
     overflow-x: auto;
+    align-items: center;
   }
   
   .suggestions-cards {
     display: flex;
-    gap: 16px;
-    padding-left: 16px;
+    justify-content: center;
+    max-width: 100%;
   }
   
   /* Individual Card */
@@ -650,4 +617,49 @@
     .message {
         max-width: 90%;
     }
+}
+
+/* Tool dropdown styles */
+.tool-dropdown {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    min-width: 160px;
+    max-width: 160px;
+    z-index: 1000;
+    display: none;
+    transition: opacity 0.15s ease-out;
+    opacity: 1;
+}
+
+.tool-dropdown.hiding {
+    opacity: 0;
+}
+
+.tool-item {
+    padding: 6px 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-size: 0.9rem;
+}
+
+.tool-item:hover {
+    background-color: #f5f5f5;
+}
+
+.tool-item .checkmark {
+    color: #2196F3;
+    font-weight: bold;
+    margin-left: 8px;
+}
+
+.tool-item span:first-child {
+    flex: 1;
 }

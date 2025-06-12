@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from flask_login import current_user, login_required
 from ..services.mcp_client import mcp_client
-from ..llm.client import OpenAIClient
+from ..llm.client import JarvusAIClient
 from ..models.user_tool import UserTool
 from ..utils.tool_permissions import TOOL_FEATURES, check_tool_access
 import json
@@ -191,9 +191,9 @@ def handle_chat_message():
                 })
         
         # Use the LLM client to generate a response
-        llm_client = OpenAIClient()
+        llm_client = JarvusAIClient()
         messages = [
-            llm_client.format_message("system", f"""You are a helpful AI assistant powered by Azure OpenAI. 
+            llm_client.format_message("system", f"""You are a helpful AI assistant powered by Azure AI Foundry Models. 
             You have access to various tools to help users with their tasks through the MCP server at http://localhost:8000.
             
             When interacting with users:
@@ -213,17 +213,19 @@ def handle_chat_message():
             llm_client.format_message("user", data['message'])
         ]
         
-        print("\nSending request to Azure OpenAI...")
+        print("\nSending request to Azure AI Foundry Models...")
         response = llm_client.create_chat_completion(
             messages,
             tools=tools,
-            temperature=0.7
+
         )
         
         # Check if the response includes tool calls
-        if hasattr(response.choices[0].message, 'tool_calls'):
+        choice = response.choices[0]
+        tool_calls = getattr(choice.message, 'tool_calls', None)
+        if tool_calls:
             print("\nTool calls detected:")
-            for tool_call in response.choices[0].message.tool_calls:
+            for tool_call in tool_calls:
                 print(f"Tool: {tool_call.function.name}")
                 print(f"Arguments: {tool_call.function.arguments}")
                 
@@ -271,14 +273,14 @@ def handle_chat_message():
                     print(f"\nTool execution result: {result}")
                     
                     # Add tool response to messages
-                    messages.append(response.choices[0].message)
+                    messages.append(choice.message)
                     messages.append(llm_client.format_tool_message(
                         tool_call.id,
                         json.dumps(result)
                     ))
                     
-                    # Get final response from Azure OpenAI
-                    print("\nGetting final response from Azure OpenAI...")
+                    # Get final response from Azure AI Foundry Models
+                    print("\nGetting final response from Azure AI Foundry Models...")
                     final_response = llm_client.create_chat_completion(messages)
                     return jsonify({
                         'success': True,
@@ -292,11 +294,10 @@ def handle_chat_message():
                         'success': False,
                         'error': f'Error executing tool: {str(e)}'
                     }), 500
-        
         # If no tool calls, return the direct response
         return jsonify({
             'success': True,
-            'reply': response.choices[0].message.content,
+            'reply': choice.message.content,
             'tool_executed': False
         })
         

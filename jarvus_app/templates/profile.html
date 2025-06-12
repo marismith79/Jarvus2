@@ -2,9 +2,9 @@
 
 {% block title %}Jarvus - Your Profile{% endblock %}
 
-{% block extra_css %}
+<!--  {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
-{% endblock %}
+{% endblock %} -->
 
 {% block content %}
 <main>
@@ -30,17 +30,13 @@
                             <label for="email">Email Address</label>
                             <input type="email" id="email" name="email" value="{{ current_user.email or '' }}" placeholder="Your email">
                         </div>
-                        <div class="form-group">
-                            <label for="phone">Phone Number</label>
-                            <input type="tel" id="phone" name="phone" value="" placeholder="Your phone">
-                        </div>
                         <button type="submit" class="cta-button">Save Changes</button>
                     </form>
                 </div>
 
                 <!-- Integrations Section -->
                 <div class="profile-card">
-                    <h2>Your Connections</h2>
+                    <h2>App Integrations</h2>
                     <div class="integrations-grid">
                         <!-- Gmail Integration -->
                         <div class="integration-card">
@@ -99,15 +95,32 @@
         </div>
     </section>
 </main>
+
+<!-- Coming Soon Popup -->
+<div id="comingSoonPopup" class="coming-soon-popup">
+    <div class="coming-soon-content">
+        <span>Coming Soon...</span>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
     // Connection handling
     function connectGmail() { window.location.href = '/connect/gmail'; }
-    function connectNotion() { window.location.href = '/connect/notion'; }
-    function connectSlack() { window.location.href = '/connect/slack'; }
-    function connectZoom() { window.location.href = '/connect/zoom'; }
+    
+    // Show coming soon popup for other services
+    function connectNotion() { showComingSoon(); }
+    function connectSlack() { showComingSoon(); }
+    function connectZoom() { showComingSoon(); }
+
+    function showComingSoon() {
+        const popup = document.getElementById('comingSoonPopup');
+        popup.classList.add('show');
+        setTimeout(() => {
+            popup.classList.remove('show');
+        }, 2000); // Hide after 2 seconds
+    }
 
     function disconnectGmail() { disconnectService('gmail'); }
     function disconnectNotion() { disconnectService('notion'); }
