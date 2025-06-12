@@ -58,3 +58,8 @@ Go to:
 
 > **Note**: You can do `flask run --port=5001` to run the application. 
 > **Note**: You can also do `python run_dev.py` to run the application with automatic rendering.
+
+## Azure Debugging
+
+Run this command:
+   az webapp log tail --name jarvus --resource-group <your-resource-group>
