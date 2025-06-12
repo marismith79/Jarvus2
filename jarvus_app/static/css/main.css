@@ -75,9 +75,10 @@ header .container {
     font-size: 1.25rem;
 }
 
-.logo img {
-    height: 32px;
-    width: auto;
+.logo-image {
+    height: 40px;
+    width: 40px;
+    object-fit: contain;
 }
 
 nav {
