@@ -6,6 +6,18 @@ document.addEventListener('DOMContentLoaded', function() {
         basicInfoForm.addEventListener('submit', handleProfileUpdate);
     }
 
+    // Handle name input changes
+    const nameInput = document.getElementById('name');
+    if (nameInput) {
+        let debounceTimer;
+        nameInput.addEventListener('input', function() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                handleProfileUpdate(new Event('submit'));
+            }, 500); // Wait 500ms after user stops typing
+        });
+    }
+
     // Connection handling
     window.connectGmail = function() { window.location.href = '/connect/gmail'; }
     window.connectNotion = function() { showComingSoon(); }
@@ -39,7 +51,10 @@ function handleProfileUpdate(e) {
         if (data.success) {
             // Update the welcome message
             document.querySelector('.profile-hero h1').textContent = `Welcome! ${name}`;
-            alert('Profile updated successfully!');
+            // Only show alert if it was a form submission (not a name input change)
+            if (e.type === 'submit') {
+                alert('Profile updated successfully!');
+            }
         } else {
             alert(data.error || 'Failed to update profile');
         }
