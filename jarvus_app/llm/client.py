@@ -40,7 +40,7 @@ class JarvusAIClient:
         self.client = ChatCompletionsClient(
             endpoint=self.api_base or "",
             credential=AzureKeyCredential(self.api_key or ""),
-            api_version=self.api_version,
+            # api_version=self.api_version,
         )
         print("=== Azure AI Foundry Client Initialization Complete ===\n")
 
