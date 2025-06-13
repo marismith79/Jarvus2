@@ -19,10 +19,6 @@ from jarvus_app.models.user import User
 
 from ..db import db
 
-# Force immediate log flushing
-sys.stdout.reconfigure(line_buffering=True)
-sys.stderr.reconfigure(line_buffering=True)
-
 load_dotenv()
 
 auth = Blueprint("auth", __name__)

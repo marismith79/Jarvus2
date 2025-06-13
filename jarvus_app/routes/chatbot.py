@@ -81,7 +81,10 @@ def handle_chat_message():
                         "type": "function",
                         "function": {
                             "name": "list_emails",
-                            "description": "List recent emails from your inbox with optional filtering",
+                            "description": (
+                                "List recent emails from your inbox with "
+                                "optional filtering"
+                            ),
                             "parameters": {
                                 "type": "object",
                                 "properties": {
@@ -106,7 +109,9 @@ def handle_chat_message():
                         "type": "function",
                         "function": {
                             "name": "send_email",
-                            "description": "Send new emails with support for CC and BCC",
+                            "description": (
+                                "Send new emails with support for CC and BCC"
+                            ),
                             "parameters": {
                                 "type": "object",
                                 "properties": {
@@ -147,7 +152,10 @@ def handle_chat_message():
                         "type": "function",
                         "function": {
                             "name": "list_events",
-                            "description": "List upcoming calendar events with date range filtering",
+                            "description": (
+                                "List upcoming calendar events with date range "
+                                "filtering"
+                            ),
                             "parameters": {
                                 "type": "object",
                                 "properties": {
@@ -157,11 +165,17 @@ def handle_chat_message():
                                     },
                                     "time_min": {
                                         "type": "string",
-                                        "description": "Start time in ISO 8601 format (e.g., 2024-01-01T00:00:00Z)",
+                                        "description": (
+                                            "Start time in ISO 8601 format "
+                                            "(e.g., 2024-01-01T00:00:00Z)"
+                                        ),
                                     },
                                     "time_max": {
                                         "type": "string",
-                                        "description": "End time in ISO 8601 format (e.g., 2024-12-31T23:59:59Z)",
+                                        "description": (
+                                            "End time in ISO 8601 format "
+                                            "(e.g., 2024-12-31T23:59:59Z)"
+                                        ),
                                     },
                                 },
                                 "required": [],
@@ -175,7 +189,9 @@ def handle_chat_message():
                         "type": "function",
                         "function": {
                             "name": "create_event",
-                            "description": "Create new calendar events with attendees",
+                            "description": (
+                                "Create new calendar events with attendees"
+                            ),
                             "parameters": {
                                 "type": "object",
                                 "properties": {
@@ -185,11 +201,17 @@ def handle_chat_message():
                                     },
                                     "start": {
                                         "type": "string",
-                                        "description": "Start time in ISO 8601 format (e.g., 2024-01-24T10:00:00Z)",
+                                        "description": (
+                                            "Start time in ISO 8601 format "
+                                            "(e.g., 2024-01-24T10:00:00Z)"
+                                        ),
                                     },
                                     "end": {
                                         "type": "string",
-                                        "description": "End time in ISO 8601 format (e.g., 2024-01-24T11:00:00Z)",
+                                        "description": (
+                                            "End time in ISO 8601 format "
+                                            "(e.g., 2024-01-24T11:00:00Z)"
+                                        ),
                                     },
                                     "location": {
                                         "type": "string",
@@ -301,7 +323,10 @@ def handle_chat_message_sse():
                         "type": "function",
                         "function": {
                             "name": "list_emails",
-                            "description": "List recent emails from your inbox with optional filtering",
+                            "description": (
+                                "List recent emails from your inbox with "
+                                "optional filtering"
+                            ),
                             "parameters": {
                                 "type": "object",
                                 "properties": {
@@ -325,7 +350,9 @@ def handle_chat_message_sse():
                         "type": "function",
                         "function": {
                             "name": "send_email",
-                            "description": "Send new emails with support for CC and BCC",
+                            "description": (
+                                "Send new emails with support for CC and BCC"
+                            ),
                             "parameters": {
                                 "type": "object",
                                 "properties": {
@@ -366,7 +393,10 @@ def handle_chat_message_sse():
                         "type": "function",
                         "function": {
                             "name": "list_events",
-                            "description": "List upcoming calendar events with date range filtering",
+                            "description": (
+                                "List upcoming calendar events with date range "
+                                "filtering"
+                            ),
                             "parameters": {
                                 "type": "object",
                                 "properties": {
@@ -376,11 +406,17 @@ def handle_chat_message_sse():
                                     },
                                     "time_min": {
                                         "type": "string",
-                                        "description": "Start time in ISO 8601 format (e.g., 2024-01-01T00:00:00Z)",
+                                        "description": (
+                                            "Start time in ISO 8601 format "
+                                            "(e.g., 2024-01-01T00:00:00Z)"
+                                        ),
                                     },
                                     "time_max": {
                                         "type": "string",
-                                        "description": "End time in ISO 8601 format (e.g., 2024-12-31T23:59:59Z)",
+                                        "description": (
+                                            "End time in ISO 8601 format "
+                                            "(e.g., 2024-12-31T23:59:59Z)"
+                                        ),
                                     },
                                 },
                                 "required": [],
@@ -393,7 +429,9 @@ def handle_chat_message_sse():
                         "type": "function",
                         "function": {
                             "name": "create_event",
-                            "description": "Create new calendar events with attendees",
+                            "description": (
+                                "Create new calendar events with attendees"
+                            ),
                             "parameters": {
                                 "type": "object",
                                 "properties": {
@@ -403,11 +441,17 @@ def handle_chat_message_sse():
                                     },
                                     "start": {
                                         "type": "string",
-                                        "description": "Start time in ISO 8601 format (e.g., 2024-01-24T10:00:00Z)",
+                                        "description": (
+                                            "Start time in ISO 8601 format "
+                                            "(e.g., 2024-01-24T10:00:00Z)"
+                                        ),
                                     },
                                     "end": {
                                         "type": "string",
-                                        "description": "End time in ISO 8601 format (e.g., 2024-01-24T11:00:00Z)",
+                                        "description": (
+                                            "End time in ISO 8601 format "
+                                            "(e.g., 2024-01-24T11:00:00Z)"
+                                        ),
                                     },
                                     "location": {
                                         "type": "string",

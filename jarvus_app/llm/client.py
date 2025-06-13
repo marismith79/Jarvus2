@@ -5,16 +5,21 @@ and managing conversation state.
 """
 
 import os
-from typing import Any, Dict, Generator, List, Optional
+from typing import Any, Dict, Generator, List, Optional, Union
 
 from azure.ai.inference import ChatCompletionsClient
-from azure.ai.inference.models import SystemMessage, UserMessage
+from azure.ai.inference.models import (
+    SystemMessage,
+    UserMessage,
+    ChatRequestMessage,
+)
 from azure.core.credentials import AzureKeyCredential
 
 
 class JarvusAIClient:
-    def __init__(self):
-        """Initialize the Azure AI Inference client with configuration from environment variables."""
+    def __init__(self) -> None:
+        """Initialize the Azure AI Inference client with configuration from
+        environment variables."""
         self.api_key = os.getenv("AZURE_AI_FOUNDRY_KEY")
         self.api_base = os.getenv("AZURE_AI_FOUNDRY_ENDPOINT")
         self.api_version = os.getenv("AZURE_AI_FOUNDRY_API_VERSION")
@@ -28,12 +33,13 @@ class JarvusAIClient:
 
         if not all([self.api_key, self.api_base, self.deployment_name]):
             raise ValueError(
-                "Missing required Azure AI Foundry configuration. Please check your environment variables."
+                "Missing required Azure AI Foundry configuration. "
+                "Please check your environment variables."
             )
 
         self.client = ChatCompletionsClient(
-            endpoint=self.api_base,
-            credential=AzureKeyCredential(self.api_key),
+            endpoint=self.api_base or "",
+            credential=AzureKeyCredential(self.api_key or ""),
             api_version=self.api_version,
         )
         print("=== Azure AI Foundry Client Initialization Complete ===\n")
@@ -56,27 +62,33 @@ class JarvusAIClient:
         """
         try:
             # Convert messages to the correct format
-            formatted_messages = []
+            formatted_messages: List[ChatRequestMessage] = []
             for msg in messages:
                 if msg["role"] == "system":
                     formatted_messages.append(
                         SystemMessage(content=msg["content"])
                     )
-                else:
+                elif msg["role"] == "user":
                     formatted_messages.append(
                         UserMessage(content=msg["content"])
                     )
+                else:
+                    formatted_messages.append(
+                        ChatRequestMessage(
+                            role=msg["role"], content=msg["content"]
+                        )
+                    )
 
-            kwargs = dict(
-                stream=stream,
-                messages=formatted_messages,
-                max_tokens=max_tokens,
-                temperature=temperature,
-                top_p=top_p,
-                presence_penalty=presence_penalty,
-                frequency_penalty=frequency_penalty,
-                model=self.deployment_name,
-            )
+            kwargs: Dict[str, Any] = {
+                "stream": stream,
+                "messages": formatted_messages,
+                "max_tokens": max_tokens,
+                "temperature": temperature,
+                "top_p": top_p,
+                "presence_penalty": presence_penalty,
+                "frequency_penalty": frequency_penalty,
+                "model": self.deployment_name,
+            }
             if tools is not None:
                 kwargs["tools"] = tools
             if tool_choice is not None:
@@ -95,7 +107,7 @@ class JarvusAIClient:
             print(f"Azure AI Foundry API Error: {str(e)}")
             raise Exception(f"Error creating chat completion: {str(e)}")
 
-    def close(self):
+    def close(self) -> None:
         """Close the client connection."""
         self.client.close()
 

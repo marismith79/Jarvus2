@@ -1,7 +1,9 @@
 import os
 import time
+from typing import Any
 
 from dotenv import load_dotenv
+from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
@@ -12,7 +14,7 @@ load_dotenv()
 db = SQLAlchemy()
 
 
-def init_db(app):
+def init_db(app: Flask) -> None:
     """Initialize the database with the app."""
     # Get the database URI from environment variable
     database_uri = os.getenv("DATABASE_URI")
@@ -23,7 +25,14 @@ def init_db(app):
             database_uri += "&"
         else:
             database_uri += "?"
-        database_uri += "timeout=60&connect_timeout=60&retry_count=3&retry_interval=10&encrypt=true&trust_server_certificate=true"
+        database_uri += (
+            "timeout=60&"
+            "connect_timeout=60&"
+            "retry_count=3&"
+            "retry_interval=10&"
+            "encrypt=true&"
+            "trust_server_certificate=true"
+        )
 
     print(f"Database URI: {database_uri}")
 
@@ -49,15 +58,17 @@ def init_db(app):
 
     # Add event listener for connection errors
     @event.listens_for(Engine, "connect")
-    def connect(dbapi_connection, connection_record):
+    def connect(dbapi_connection: Any, connection_record: Any) -> None:
         print("Database connection established")
 
     @event.listens_for(Engine, "checkout")
-    def checkout(dbapi_connection, connection_record, connection_proxy):
+    def checkout(
+        dbapi_connection: Any, connection_record: Any, connection_proxy: Any
+    ) -> None:
         print("Database connection checked out")
 
     @event.listens_for(Engine, "disconnect")
-    def disconnect(dbapi_connection, connection_record):
+    def disconnect(dbapi_connection: Any, connection_record: Any) -> None:
         print("Database connection disconnected")
 
     # Create tables only if they don't exist
@@ -92,7 +103,8 @@ def init_db(app):
                 ]
                 if missing_tables:
                     print(
-                        f"Warning: The following tables are missing: {missing_tables}"
+                        "Warning: The following tables are missing: "
+                        f"{', '.join(missing_tables)}"
                     )
                     print("Attempting to create missing tables...")
                     db.create_all()
@@ -104,13 +116,16 @@ def init_db(app):
                     attempt < max_retries - 1
                 ):  # Don't sleep on the last attempt
                     print(
-                        f"Database connection attempt {attempt + 1} failed: {str(e)}"
+                        f"Database connection attempt {attempt + 1} failed: "
+                        f"{str(e)}"
                     )
                     print(f"Retrying in {retry_delay} seconds...")
                     time.sleep(retry_delay)
                 else:
                     print(
-                        f"Error during database initialization after {max_retries} attempts: {str(e)}"
+                        "Database init failed after "
+                        f"{max_retries} attempts:"
                     )
-                    # Don't raise the exception - we want the app to start even if table creation fails
-                    # The tables might already exist
+                    print(str(e))
+                    # Don't raise the exception - we want the app to start even if table creation fails.
+                    # The tables might already exist.

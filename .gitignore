@@ -63,6 +63,8 @@ yarn-error.log*
 # Coverage files
 coverage.txt
 coverage.xml
+.coverage
+htmlcov/
 
 # Flake8 configuration
 .flake8

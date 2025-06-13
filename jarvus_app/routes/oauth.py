@@ -166,17 +166,33 @@ def oauth2callback():
 
 def connect_notion():
     """Initiate Notion OAuth flow"""
-    auth_url = f"https://api.notion.com/v1/oauth/authorize?client_id={NOTION_CLIENT_CONFIG['client_id']}&response_type=code&owner=user&redirect_uri={NOTION_CLIENT_CONFIG['redirect_uri']}"
+    auth_url = (
+        f"https://api.notion.com/v1/oauth/authorize?"
+        f"client_id={NOTION_CLIENT_CONFIG['client_id']}&"
+        f"response_type=code&owner=user&"
+        f"redirect_uri={NOTION_CLIENT_CONFIG['redirect_uri']}"
+    )
     return redirect(auth_url)
 
 
 def connect_slack():
     """Initiate Slack OAuth flow"""
-    auth_url = f"https://slack.com/oauth/v2/authorize?client_id={SLACK_CLIENT_CONFIG['client_id']}&scope={','.join(SLACK_CLIENT_CONFIG['scopes'])}&redirect_uri={SLACK_CLIENT_CONFIG['redirect_uri']}"
+    auth_url = (
+        f"https://slack.com/oauth/v2/authorize?"
+        f"client_id={SLACK_CLIENT_CONFIG['client_id']}&"
+        f"scope={','.join(SLACK_CLIENT_CONFIG['scopes'])}&"
+        f"redirect_uri={SLACK_CLIENT_CONFIG['redirect_uri']}"
+    )
     return redirect(auth_url)
 
 
 def connect_zoom():
     """Initiate Zoom OAuth flow"""
-    auth_url = f"https://zoom.us/oauth/authorize?response_type=code&client_id={ZOOM_CLIENT_CONFIG['client_id']}&redirect_uri={ZOOM_CLIENT_CONFIG['redirect_uri']}&scope={','.join(ZOOM_CLIENT_CONFIG['scopes'])}"
+    auth_url = (
+        f"https://zoom.us/oauth/authorize?"
+        f"response_type=code&"
+        f"client_id={ZOOM_CLIENT_CONFIG['client_id']}&"
+        f"redirect_uri={ZOOM_CLIENT_CONFIG['redirect_uri']}&"
+        f"scope={','.join(ZOOM_CLIENT_CONFIG['scopes'])}"
+    )
     return redirect(auth_url)

@@ -3,13 +3,13 @@ Google Workspace MCP tools registration (concise version).
 This file only defines tool metadata and registers them with the registry.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 from .mcp_client import mcp_client
 from .tool_registry import Tool, ToolCategory, ToolParameter, tool_registry
 
 # --- Tool metadata definitions ---
-TOOL_DEFS = [
+TOOL_DEFS: List[Dict[str, Any]] = [
     {
         "name": "list_emails",
         "description": "List recent emails from your inbox with optional filtering",
@@ -131,4 +131,12 @@ TOOL_DEFS = [
 
 # --- Register all tools ---
 for tool_def in TOOL_DEFS:
-    tool_registry.register(Tool(**tool_def))
+    tool = Tool(
+        name=cast(str, tool_def["name"]),
+        description=cast(str, tool_def["description"]),
+        category=cast(ToolCategory, tool_def["category"]),
+        parameters=cast(List[ToolParameter], tool_def["parameters"]),
+        function=cast(Any, tool_def["function"]),
+        requires_auth=cast(bool, tool_def["requires_auth"]),
+    )
+    tool_registry.register(tool)

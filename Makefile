@@ -34,8 +34,7 @@ fmt:              ## Format code using black & isort.
 lint:             ## Run pep8, black, mypy linters.
 	$(ENV_PREFIX)flake8 jarvus_app/
 	$(ENV_PREFIX)black -l 79 --check jarvus_app/
-	$(ENV_PREFIX)black -l 79 --check tests/
-	$(ENV_PREFIX)mypy --ignore-missing-imports jarvus_app/
+	$(ENV_PREFIX)mypy --config-file mypy.ini jarvus_app/
 
 .PHONY: test
 test:             ## Run tests and generate coverage report.

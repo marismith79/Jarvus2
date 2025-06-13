@@ -32,7 +32,10 @@ class ToolPermission(db.Model):
     )
 
     def __repr__(self):
-        return f"<ToolPermission {self.tool_name}.{self.feature}.{self.permission_type} for User {self.user_id}>"
+        return (
+            f"<ToolPermission {self.tool_name}.{self.feature}."
+            f"{self.permission_type} for User {self.user_id}>"
+        )
 
     @classmethod
     def grant_permission(
