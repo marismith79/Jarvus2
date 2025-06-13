@@ -17,7 +17,15 @@ db = SQLAlchemy()
 def init_db(app: Flask) -> None:
     """Initialize the database with the app."""
     # Get the database URI from environment variable
-    database_uri = os.getenv("DATABASE_URI")
+    raw_uri = os.getenv("DATABASE_URI")
+    print(f"Raw DATABASE_URI type: {type(raw_uri)}")
+    print(f"Raw DATABASE_URI value: {raw_uri}")
+    
+    if not raw_uri:
+        raise ValueError("DATABASE_URI environment variable is not set")
+        
+    database_uri = str(raw_uri)
+    print(f"Processed DATABASE_URI: {database_uri}")
 
     # Add additional connection parameters
     if database_uri:
