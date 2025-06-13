@@ -33,9 +33,22 @@ GOOGLE_CLIENT_CONFIG = {
         "token_uri": "https://oauth2.googleapis.com/token",
         "redirect_uris": [os.getenv("GOOGLE_REDIRECT_URI")],
         "scopes": [
-            "https://www.googleapis.com/auth/gmail.readonly",
-            "https://www.googleapis.com/auth/gmail.send",
-            "https://www.googleapis.com/auth/gmail.modify",
+            "https://www.googleapis.com/auth/gmail.readonly", # View your email messages and settings
+            "https://www.googleapis.com/auth/gmail.compose", # Manage drafts and send emails
+            "https://www.googleapis.com/auth/gmail.modify", # Read, compose and send emails from your Gmail account
+            "https://www.googleapis.com/auth/spreadsheets", # See, edit, create and delete all your Google Sheets spreadsheets
+            "https://www.googleapis.com/auth/presentations", # See, edit, create and delete all your Google Slides presentations
+            "https://www.googleapis.com/auth/drive.install", # Connect itself to your Google Drive
+            "https://www.googleapis.com/auth/activity", # View the activity history of your Google apps
+            "https://www.googleapis.com/auth/docs", # See, edit, create and delete all of your Google Drive files
+            "https://www.googleapis.com/auth/drive", # See, edit, create and delete all of your Google Drive files
+            "https://www.googleapis.com/auth/documents", # See, edit, create and delete all your Google Docs documents
+            "https://www.googleapis.com/auth/calendar", # See, edit, share and permanently delete all the calendars that you can access using Google Calendar
+            "https://www.googleapis.com/auth/meetings.space.created", # Create, edit and see information about your Google Meet conferences created by the app.	
+            "https://www.googleapis.com/meetings.space.settings", # Edit and see settings for all of your Google Meet calls. 
+            "https://www.googleapis.com/auth/meetings.space.readonly", # Read information about any of your Google Meet conferences
+            "https://www.googleapis.com/auth/meetings.space.created", # Create, edit and see information about your Google Meet conferences created by the app.	
+            "https://www.googleapis.com/auth/meetings.space.readonly", # Read information about any of your Google Meet conferences
         ],
     }
 }
