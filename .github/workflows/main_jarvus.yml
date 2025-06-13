@@ -15,6 +15,11 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read #This is required for actions/checkout
+    env:
+      FLASK_APP: jarvus_app
+      FLASK_ENV: production
+      AZURE_SQL_CONNECTION_STRING: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
+      TEST_DATABASE_URL: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
 
     steps:
       - uses: actions/checkout@v4
@@ -37,11 +42,6 @@ jobs:
           
       - name: Run database migrations
         run: |
-          # Set environment variables for Alembic
-          export FLASK_APP=jarvus_app
-          export FLASK_ENV=production
-          export AZURE_SQL_CONNECTION_STRING=${{ secrets.AZURE_SQL_CONNECTION_STRING }}
-          export TEST_DATABASE_URL=${{ secrets.TEST_DATABASE_URL }}
           # Run migrations
           alembic upgrade head
           
