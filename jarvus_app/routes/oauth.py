@@ -76,9 +76,12 @@ def connect_service(service):
 @login_required
 def disconnect_service(service):
     """Disconnect the specified service"""
+    print(f"[DEBUG] Disconnect requested for service: {service}, user: {current_user.id}")
     if service in ['gmail', 'notion', 'slack', 'zoom']:
         success = OAuthCredentials.remove_credentials(current_user.id, service)
+        print(f"[DEBUG] Removal result for {service}: {success}")
         return jsonify({'success': success})
+    print(f"[DEBUG] Invalid service disconnect attempted: {service}")
     return jsonify({'success': False, 'error': 'Invalid service'})
 
 def connect_gmail():

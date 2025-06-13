@@ -12,9 +12,6 @@ class Config:
     DEBUG = True
     
     # Use an absolute path for the database to avoid ambiguity
-    SQLALCHEMY_DATABASE_URI = f"sqlite:///{os.path.join(basedir, 'dev.db')}"
-    
-        # Azure SQL Database connection string
     SQLALCHEMY_DATABASE_URI = os.getenv("AZURE_SQL_CONNECTION_STRING")
     if not SQLALCHEMY_DATABASE_URI:
         raise ValueError("AZURE_SQL_CONNECTION_STRING environment variable is not set")

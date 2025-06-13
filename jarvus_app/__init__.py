@@ -1,5 +1,4 @@
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from jarvus_app.routes.web_pages import web
 from jarvus_app.routes.auth import auth

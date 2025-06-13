@@ -4,6 +4,7 @@ from ..services.mcp_client import mcp_client
 from ..llm.client import JarvusAIClient
 from ..models.user_tool import UserTool
 from ..utils.tool_permissions import TOOL_FEATURES, check_tool_access
+from ..utils.text_formatter import format_chat_message
 import json
 
 chatbot_bp = Blueprint('chatbot', __name__)
@@ -215,7 +216,9 @@ def handle_chat_message():
         def generate():
             try:
                 for chunk in llm_client.create_chat_completion(messages, tools=tools):
-                    yield f"data: {json.dumps({'content': chunk})}\n\n"
+                    # Format the chunk using the text formatter
+                    formatted_chunk = format_chat_message(chunk)
+                    yield f"data: {json.dumps({'content': formatted_chunk})}\n\n"
             except Exception as e:
                 print(f"Error in generate: {str(e)}")
                 yield f"data: {json.dumps({'error': str(e)})}\n\n"
@@ -398,7 +401,9 @@ def handle_chat_message_sse():
         def generate():
             try:
                 for chunk in llm_client.create_chat_completion(messages, tools=tools):
-                    yield f"data: {json.dumps({'content': chunk})}\n\n"
+                    # Format the chunk using the text formatter
+                    formatted_chunk = format_chat_message(chunk)
+                    yield f"data: {json.dumps({'content': formatted_chunk})}\n\n"
             except Exception as e:
                 print(f"Error in generate: {str(e)}")
                 yield f"data: {json.dumps({'error': str(e)})}\n\n"

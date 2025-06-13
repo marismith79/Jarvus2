@@ -64,3 +64,19 @@ def update_profile():
     except Exception as e:
         db.session.rollback()
         return jsonify({"success": False, "error": str(e)}), 500
+
+@api.route("/api/connect_tool", methods=["POST"])
+@login_required
+def connect_tool():
+    data = request.get_json()
+    if not data or "tool_name" not in data:
+        return jsonify({"success": False, "error": "Missing tool_name"}), 400
+    tool_name = data["tool_name"]
+    tool = UserTool.query.filter_by(user_id=current_user.id, tool_name=tool_name).first()
+    if tool:
+        tool.is_active = True
+    else:
+        tool = UserTool(user_id=current_user.id, tool_name=tool_name, is_active=True)
+        db.session.add(tool)
+    db.session.commit()
+    return jsonify({"success": True, "tool_name": tool_name})

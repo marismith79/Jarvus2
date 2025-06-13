@@ -3,7 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from ..db import db
 
 class OAuthCredentials(db.Model):
-    __tablename__ = 'google_oauth_credentials'
+    __tablename__ = 'oauth_credentials'
     
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.String(50), db.ForeignKey('users.id'), nullable=False)  # Link to users table
@@ -43,9 +43,16 @@ class OAuthCredentials(db.Model):
     @classmethod
     def remove_credentials(cls, user_id, service):
         """Remove OAuth credentials"""
+        print(f"[DEBUG] Attempting to remove credentials for user_id={user_id}, service={service}")
         creds = cls.get_credentials(user_id, service)
+        print(f"[DEBUG] Found creds: {creds}")
         if creds:
             db.session.delete(creds)
-            db.session.commit()
+            try:
+                db.session.commit()
+                print("[DEBUG] Commit successful")
+            except Exception as e:
+                print(f"[DEBUG] Commit failed: {e}")
             return True
+        print("[DEBUG] No credentials found to delete.")
         return False 

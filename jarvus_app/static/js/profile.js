@@ -28,6 +28,27 @@ document.addEventListener('DOMContentLoaded', function() {
     window.disconnectNotion = function() { disconnectService('notion'); }
     window.disconnectSlack = function() { disconnectService('slack'); }
     window.disconnectZoom = function() { disconnectService('zoom'); }
+
+    // Generic: For every tool marked as connected, call /api/connect_tool
+    const toolNames = ['gmail', 'notion', 'slack', 'zoom']; // Add future tools here
+    toolNames.forEach(tool => {
+        if (window[tool + 'Connected']) {
+            fetch('/api/connect_tool', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tool_name: tool })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (!data.success) {
+                    console.error(`Failed to connect ${tool} tool:`, data.error);
+                }
+            })
+            .catch(err => {
+                console.error(`Error connecting ${tool} tool:`, err);
+            });
+        }
+    });
 });
 
 function handleProfileUpdate(e) {
@@ -74,6 +95,7 @@ function showComingSoon() {
 }
 
 function disconnectService(service) {
+    console.log('Attempting to disconnect:', service);
     fetch(`/disconnect/${service}`, {
         method: 'POST',
         headers: {
@@ -82,6 +104,7 @@ function disconnectService(service) {
     })
     .then(response => response.json())
     .then(data => {
+        console.log('Disconnect API response:', data);
         if (data.success) {
             window.location.reload();
         } else {
@@ -89,7 +112,7 @@ function disconnectService(service) {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
+        console.error('Error during disconnect API call:', error);
         alert('An error occurred while trying to disconnect.');
     });
 } 
