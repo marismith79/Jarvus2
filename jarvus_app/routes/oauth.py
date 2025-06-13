@@ -87,8 +87,8 @@ ZOOM_CLIENT_CONFIG = {
 @login_required
 def connect_service(service):
     """Initiate OAuth flow for the specified service"""
-    if service == "gmail":
-        return connect_gmail()
+    if service == "google-workspace":
+        return connect_google_workspace()
     elif service == "notion":
         return connect_notion()
     elif service == "slack":
@@ -106,7 +106,7 @@ def disconnect_service(service):
     print(
         f"[DEBUG] Disconnect requested for service: {service}, user: {current_user.id}"
     )
-    if service in ["gmail", "notion", "slack", "zoom"]:
+    if service in ["google-workspace", "notion", "slack", "zoom"]:
         success = OAuthCredentials.remove_credentials(current_user.id, service)
         print(f"[DEBUG] Removal result for {service}: {success}")
         return jsonify({"success": success})
@@ -114,9 +114,9 @@ def disconnect_service(service):
     return jsonify({"success": False, "error": "Invalid service"})
 
 
-def connect_gmail():
-    """Initiate Gmail OAuth flow"""
-    print("\nDEBUG: Starting Gmail OAuth flow")
+def connect_google_workspace():
+    """Initiate Google Workspace OAuth flow"""
+    print("\nDEBUG: Starting Google Workspace OAuth flow")
     redirect_uri = GOOGLE_CLIENT_CONFIG["web"]["redirect_uris"][0]
     print(f"DEBUG: Using redirect URI: {redirect_uri}")
     print(
@@ -166,7 +166,7 @@ def oauth2callback():
 
         # Store credentials in database
         OAuthCredentials.store_credentials(
-            current_user.id, "gmail", credentials.to_json()
+            current_user.id, "google-workspace", credentials.to_json()
         )
         print("DEBUG: Stored credentials in database")
 
