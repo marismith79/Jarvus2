@@ -5,18 +5,20 @@ and managing conversation state.
 """
 
 import os
+from typing import Any, Dict, Generator, List, Optional
+
 from azure.ai.inference import ChatCompletionsClient
 from azure.ai.inference.models import SystemMessage, UserMessage
 from azure.core.credentials import AzureKeyCredential
-from typing import Dict, List, Optional, Any, Generator
+
 
 class JarvusAIClient:
     def __init__(self):
         """Initialize the Azure AI Inference client with configuration from environment variables."""
-        self.api_key = os.getenv('AZURE_AI_FOUNDRY_KEY')
-        self.api_base = os.getenv('AZURE_AI_FOUNDRY_ENDPOINT')
-        self.api_version = os.getenv('AZURE_AI_FOUNDRY_API_VERSION')
-        self.deployment_name = os.getenv('AZURE_AI_FOUNDRY_DEPLOYMENT_NAME')
+        self.api_key = os.getenv("AZURE_AI_FOUNDRY_KEY")
+        self.api_base = os.getenv("AZURE_AI_FOUNDRY_ENDPOINT")
+        self.api_version = os.getenv("AZURE_AI_FOUNDRY_API_VERSION")
+        self.deployment_name = os.getenv("AZURE_AI_FOUNDRY_DEPLOYMENT_NAME")
 
         print(f"\nAzure AI Foundry Configuration:")
         print(f"API Key found: {'Yes' if self.api_key else 'No'}")
@@ -25,12 +27,14 @@ class JarvusAIClient:
         print(f"Deployment Name: {self.deployment_name}")
 
         if not all([self.api_key, self.api_base, self.deployment_name]):
-            raise ValueError("Missing required Azure AI Foundry configuration. Please check your environment variables.")
+            raise ValueError(
+                "Missing required Azure AI Foundry configuration. Please check your environment variables."
+            )
 
         self.client = ChatCompletionsClient(
             endpoint=self.api_base,
             credential=AzureKeyCredential(self.api_key),
-            api_version=self.api_version
+            api_version=self.api_version,
         )
         print("=== Azure AI Foundry Client Initialization Complete ===\n")
 
@@ -44,7 +48,7 @@ class JarvusAIClient:
         presence_penalty: float = 0.0,
         frequency_penalty: float = 0.0,
         tools: Optional[List[dict]] = None,
-        tool_choice: Optional[str] = None
+        tool_choice: Optional[str] = None,
     ) -> Generator[str, None, None]:
         """
         Create a chat completion using Azure AI Foundry API with streaming support.
@@ -55,9 +59,13 @@ class JarvusAIClient:
             formatted_messages = []
             for msg in messages:
                 if msg["role"] == "system":
-                    formatted_messages.append(SystemMessage(content=msg["content"]))
+                    formatted_messages.append(
+                        SystemMessage(content=msg["content"])
+                    )
                 else:
-                    formatted_messages.append(UserMessage(content=msg["content"]))
+                    formatted_messages.append(
+                        UserMessage(content=msg["content"])
+                    )
 
             kwargs = dict(
                 stream=stream,
@@ -67,7 +75,7 @@ class JarvusAIClient:
                 top_p=top_p,
                 presence_penalty=presence_penalty,
                 frequency_penalty=frequency_penalty,
-                model=self.deployment_name
+                model=self.deployment_name,
             )
             if tools is not None:
                 kwargs["tools"] = tools
@@ -94,9 +102,11 @@ class JarvusAIClient:
     def format_message(self, role: str, content: str) -> Dict[str, str]:
         return {"role": role, "content": content}
 
-    def format_tool_message(self, tool_call_id: str, content: str) -> Dict[str, str]:
+    def format_tool_message(
+        self, tool_call_id: str, content: str
+    ) -> Dict[str, str]:
         return {
             "role": "tool",
             "tool_call_id": tool_call_id,
-            "content": content
-        } 
+            "content": content,
+        }

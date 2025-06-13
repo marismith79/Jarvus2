@@ -6,4 +6,4 @@ and managing conversation state.
 
 from .client import JarvusAIClient
 
-__all__ = ['JarvusAIClient'] 
+__all__ = ["JarvusAIClient"]

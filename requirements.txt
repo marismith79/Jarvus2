@@ -20,3 +20,8 @@ azure-ai-inference==1.0.0b9
 flake8==7.2.0
 pyodbc==5.1.0
 alembic==1.13.0
+
+# Development dependencies
+black==25.1.0
+mypy==1.16.0
+isort==5.13.2

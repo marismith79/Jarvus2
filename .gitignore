@@ -59,3 +59,10 @@ yarn-error.log*
 # Git
 .DS_Store
 .git/
+
+# Coverage files
+coverage.txt
+coverage.xml
+
+# Flake8 configuration
+.flake8

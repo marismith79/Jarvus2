@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  linter:
+  lint:
     strategy:
       fail-fast: false
       matrix:
@@ -22,8 +22,8 @@ jobs:
         os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install project
@@ -32,7 +32,7 @@ jobs:
         run: make lint
 
   migrations:
-    needs: linter
+    needs: lint
     strategy:
       fail-fast: false
       matrix:
@@ -40,19 +40,14 @@ jobs:
         os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install project
         run: make install
       - name: Run database migrations
-        run: |
-          # Set environment variables for Alembic
-          export FLASK_APP=jarvus_app
-          export FLASK_ENV=test
-          # Run migrations
-          alembic upgrade head
+        run: make migrations
         env:
           DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
 
@@ -65,8 +60,8 @@ jobs:
         os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install project
@@ -76,7 +71,7 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
       - name: "Upload coverage to Codecov"
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v3
 
   tests_mac:
     needs: migrations
@@ -87,8 +82,8 @@ jobs:
         os: [macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install project
@@ -107,15 +102,13 @@ jobs:
         os: [windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install Pip
-        run: pip install --user --upgrade pip
       - name: Install project
-        run: pip install -e .[test]
-      - name: run tests
-        run: pytest -s -vvvv -l --tb=long tests
+        run: make install
+      - name: Run tests
+        run: make test
         env:
           DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
