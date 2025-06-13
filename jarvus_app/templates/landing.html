@@ -12,43 +12,183 @@
         <div class="container">
             <div class="announcement-banner">
                 <span>✨ Jarvus just got better</span>
-                <a href="#launch">Explore the latest features</a>
+                <a href="#workflows">Explore our workflows</a>
             </div>
             <div class="hero-content">
                 <h1>AI Agents to Automate Anything...</h1>
                 <p>Built to learn your needs beyond repetitive tasks.</p>
-                <div class="signup-form">
-                    <input type="email" placeholder="your@email.com">
-                    <button class="cta-button">Chat With Us</button>
+                <div class="cta-buttons">
+                    {% if current_user.is_authenticated %}
+                        <a href="{{ url_for('chatbot') }}" class="cta-button">Try it out</a>
+                    {% else %}
+                        <a href="{{ url_for('signin') }}" class="cta-button">Try it out</a>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </section>
 
-    <section class="features">
+    <section id="workflows" class="workflows">
         <div class="container">
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <img src="{{ url_for('static', filename='images/feature-icon.svg') }}" alt="Feature Icon">
+            <h2>Powerful Workflows for Your Business</h2>
+            <div class="workflow-grid">
+                <div class="workflow-card">
+                    <div class="workflow-icon">
+                        <i class="fas fa-file-invoice"></i>
+                    </div>
+                    <h3>Claims Processing</h3>
+                    <p>Automate your claims processing workflow with AI agents that can:</p>
+                    <ul>
+                        <li>Track and monitor claims status</li>
+                        <li>Detect discrepancies automatically</li>
+                        <li>Generate compliant documentation</li>
+                    </ul>
                 </div>
-                <h3>Dynamically Track Claims</h3>
-                <p>Our AI-powered platform tracks claims and notices discrepencies before they happen.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <img src="{{ url_for('static', filename='images/feature-icon.svg') }}" alt="Feature Icon">
+
+                <div class="workflow-card">
+                    <div class="workflow-icon">
+                        <i class="fas fa-file-medical"></i>
+                    </div>
+                    <h3>Superbill Generation</h3>
+                    <p>Streamline your superbill creation process with:</p>
+                    <ul>
+                        <li>Automated data extraction</li>
+                        <li>Compliance verification</li>
+                        <li>Client-ready document generation</li>
+                    </ul>
                 </div>
-                <h3>Create Superbills</h3>
-                <p>Generate compliant client-ready superbills automatically with a few clicks.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <img src="{{ url_for('static', filename='images/feature-icon.svg') }}" alt="Feature Icon">
+
+                <div class="workflow-card">
+                    <div class="workflow-icon">
+                        <i class="fas fa-paper-plane"></i>
+                    </div>
+                    <h3>Insurance Claims Submission</h3>
+                    <p>Simplify your insurance claims workflow:</p>
+                    <ul>
+                        <li>Automated form filling</li>
+                        <li>Multi-carrier submission</li>
+                        <li>Real-time status tracking</li>
+                    </ul>
                 </div>
-                <h3>Submit Insurance Claims</h3>
-                <p>Seamlessly generate and submit claims to insurance companies.</p>
+
+                <div class="workflow-card">
+                    <div class="workflow-icon">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <h3>Custom Automation</h3>
+                    <p>Create your own custom workflows:</p>
+                    <ul>
+                        <li>Build custom AI agents</li>
+                        <li>Integrate with your existing tools</li>
+                        <li>Automate any repetitive task</li>
+                    </ul>
+                </div>
             </div>
         </div>
     </section>
+
+    <section class="cta-section">
+        <div class="container">
+            <h2>Ready to Transform Your Workflow?</h2>
+            <p>Join thousands of professionals who are already saving time with Jarvus</p>
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('chatbot') }}" class="cta-button">Start Automating Now</a>
+            {% else %}
+                <a href="{{ url_for('signin') }}" class="cta-button">Get Started Free</a>
+            {% endif %}
+        </div>
+    </section>
 </main>
+
+<style>
+.workflows {
+    padding: 4rem 0;
+    background-color: #f8f9fa;
+}
+
+.workflow-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.workflow-card {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+}
+
+.workflow-card:hover {
+    transform: translateY(-5px);
+}
+
+.workflow-icon {
+    font-size: 2rem;
+    color: #007bff;
+    margin-bottom: 1rem;
+}
+
+.workflow-card h3 {
+    margin-bottom: 1rem;
+    color: #333;
+}
+
+.workflow-card ul {
+    list-style-type: none;
+    padding-left: 0;
+}
+
+.workflow-card ul li {
+    margin: 0.5rem 0;
+    padding-left: 1.5rem;
+    position: relative;
+}
+
+.workflow-card ul li:before {
+    content: "✓";
+    position: absolute;
+    left: 0;
+    color: #28a745;
+}
+
+.cta-section {
+    text-align: center;
+    padding: 4rem 0;
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+}
+
+.cta-section h2 {
+    margin-bottom: 1rem;
+}
+
+.cta-section p {
+    margin-bottom: 2rem;
+    font-size: 1.2rem;
+}
+
+.cta-button {
+    display: inline-block;
+    padding: 1rem 2rem;
+    background-color: #28a745;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+}
+
+.cta-button:hover {
+    background-color: #218838;
+    color: white;
+    text-decoration: none;
+}
+
+.hero .cta-buttons {
+    margin-top: 2rem;
+}
+</style>
 {% endblock %} 
