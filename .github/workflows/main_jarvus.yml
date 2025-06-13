@@ -40,6 +40,7 @@ jobs:
           # Set environment variables for Alembic
           export FLASK_APP=jarvus_app
           export FLASK_ENV=production
+          export AZURE_SQL_CONNECTION_STRING=${{ secrets.AZURE_SQL_CONNECTION_STRING }}
           export TEST_DATABASE_URL=${{ secrets.TEST_DATABASE_URL }}
           # Run migrations
           alembic upgrade head
