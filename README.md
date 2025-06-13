@@ -109,13 +109,13 @@ Live-reload & debugger are enabled, so code changes reflect automatically.
 
 ### Database helpers
 
-The `azuredb_scripts` folder contains utilities to bootstrap or reset a local or remote DB:
+The `db_scripts` folder contains utilities to bootstrap or reset a local or remote DB:
 
 ```bash
-python azuredb_scripts/init_db.py     # create tables
-python azuredb_scripts/populate_db.py # optional seed data
-python azuredb_scripts/check_db.py    # inspect tables
-python azuredb_scripts/reset_db.py    # drop & recreate
+python db_scripts/init_db.py     # create tables
+python db_scripts/populate_db.py # optional seed data
+python db_scripts/check_db.py    # inspect tables
+python db_scripts/reset_db.py    # drop & recreate
 ```
 
 ## Azure Deployment Pipeline

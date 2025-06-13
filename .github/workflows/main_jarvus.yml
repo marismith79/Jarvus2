@@ -35,6 +35,14 @@ jobs:
           pip install -r requirements.txt
           pip freeze > requirements.txt  # Update requirements with exact versions
           
+      - name: Run database migrations
+        run: |
+          # Set environment variables for Alembic
+          export FLASK_APP=jarvus_app
+          export FLASK_ENV=production
+          # Run migrations
+          alembic upgrade head
+          
       - name: Verify installation
         run: |
           python -c "import azure.ai.inference; print('Azure AI Inference package found')"
