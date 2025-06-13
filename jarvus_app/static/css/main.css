@@ -1168,7 +1168,7 @@ main {
     content: "✓";
     position: absolute;
     left: 0;
-    color: #28a745;
+    color: var(--primary-color);
 }
 
 .cta-section {
