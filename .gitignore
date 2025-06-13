@@ -42,6 +42,7 @@ instance/
 # Flask/Dynaconf/Settings
 settings.toml
 *.ini
+!alembic.ini
 *.cfg
 
 # Azure deployment artifacts
