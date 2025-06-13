@@ -31,7 +31,7 @@ jobs:
       - name: Run database migrations
         run: make migrations
         env:
-          DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
+          TEST_DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
 
   tests_linux:
     needs: migrations
@@ -51,7 +51,7 @@ jobs:
       - name: Run tests
         run: make test
         env:
-          DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
+          TEST_DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
       - name: "Upload coverage to Codecov"
         uses: codecov/codecov-action@v3
 
@@ -73,7 +73,7 @@ jobs:
       - name: Run tests
         run: make test
         env:
-          DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
+          TEST_DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
 
   tests_win:
     needs: migrations
@@ -93,4 +93,4 @@ jobs:
       - name: Run tests
         run: make test
         env:
-          DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
+          TEST_DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
