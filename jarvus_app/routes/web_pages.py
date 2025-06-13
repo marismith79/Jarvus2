@@ -20,8 +20,8 @@ def landing():
 @login_required
 def profile():
     try:
-        gmail_connected = (
-            OAuthCredentials.get_credentials(current_user.id, "gmail")
+        google_workspace_connected = (
+            OAuthCredentials.get_credentials(current_user.id, "google-workspace")
             is not None
         )
         notion_connected = (
@@ -38,14 +38,14 @@ def profile():
         )
     except ProgrammingError:
         # If the table doesn't exist yet, assume no services are connected
-        gmail_connected = False
+        google_workspace_connected = False
         notion_connected = False
         slack_connected = False
         zoom_connected = False
 
     return render_template(
         "profile.html",
-        gmail_connected=gmail_connected,
+        google_workspace_connected=google_workspace_connected,
         notion_connected=notion_connected,
         slack_connected=slack_connected,
         zoom_connected=zoom_connected,
@@ -56,8 +56,8 @@ def profile():
 @login_required
 def chatbot():
     # Get connection status for each tool
-    gmail_connected = (
-        OAuthCredentials.get_credentials(current_user.id, "gmail") is not None
+    google_workspace_connected = (
+        OAuthCredentials.get_credentials(current_user.id, "google-workspace") is not None
     )
     notion_connected = (
         OAuthCredentials.get_credentials(current_user.id, "notion") is not None
@@ -71,7 +71,7 @@ def chatbot():
 
     return render_template(
         "chatbot.html",
-        gmail_connected=gmail_connected,
+        google_workspace_connected=google_workspace_connected,
         notion_connected=notion_connected,
         slack_connected=slack_connected,
         zoom_connected=zoom_connected,
