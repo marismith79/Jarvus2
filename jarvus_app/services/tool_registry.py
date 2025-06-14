@@ -27,6 +27,52 @@ class ToolMetadata:
     requires_auth: bool = True
     is_active: bool = True
 
+    @property
+    def openai_schema(self) -> Dict:
+        """Generate OpenAI function schema for this tool."""
+        return {
+            "type": "function",
+            "function": {
+                "name": self.name,
+                "description": self.description,
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "operation": {
+                            "type": "string",
+                            "description": f"The operation to perform with {self.name}",
+                            "enum": self._get_available_operations()
+                        },
+                        "parameters": {
+                            "type": "object",
+                            "description": "Operation-specific parameters"
+                        }
+                    },
+                    "required": ["operation"]
+                }
+            }
+        }
+
+    def _get_available_operations(self) -> List[str]:
+        """Get list of available operations for this tool."""
+        # This could be expanded to be more dynamic based on the tool type
+        if self.category == ToolCategory.EMAIL:
+            return [
+                "list_emails",
+                "search_emails",
+                "send_email",
+                "create_draft",
+                "send_draft"
+            ]
+        elif self.category == ToolCategory.CALENDAR:
+            return [
+                "list_events",
+                "create_event",
+                "update_event",
+                "delete_event"
+            ]
+        return []
+
 
 class ToolRegistry:
     """Registry for managing available tools and their metadata."""
