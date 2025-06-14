@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template
 from flask_login import current_user, login_required
 
-from ..models.oauth import OAuthCredentials
+from ..utils.tool_permissions import get_connected_services
 
 profile_bp = Blueprint("profile", __name__)
 
@@ -9,25 +9,14 @@ profile_bp = Blueprint("profile", __name__)
 @profile_bp.route("/profile")
 @login_required
 def profile():
-    # Check which services are connected
-    gmail_connected = (
-        OAuthCredentials.get_credentials(current_user.id, "gmail") is not None
-    )
-    notion_connected = (
-        OAuthCredentials.get_credentials(current_user.id, "notion") is not None
-    )
-    slack_connected = (
-        OAuthCredentials.get_credentials(current_user.id, "slack") is not None
-    )
-    zoom_connected = (
-        OAuthCredentials.get_credentials(current_user.id, "zoom") is not None
-    )
+    # Get connected services using centralized function
+    connected_services = get_connected_services(current_user.id)
 
     return render_template(
         "profile.html",
         user=current_user,
-        gmail_connected=gmail_connected,
-        notion_connected=notion_connected,
-        slack_connected=slack_connected,
-        zoom_connected=zoom_connected,
+        gmail_connected=connected_services["gmail"],
+        notion_connected=connected_services["notion"],
+        slack_connected=connected_services["slack"],
+        zoom_connected=connected_services["zoom"],
     )

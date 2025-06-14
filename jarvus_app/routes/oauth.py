@@ -86,7 +86,7 @@ def connect_service(service):
     elif service == "zoom":
         return connect_zoom()
     else:
-        return redirect(url_for("web.profile"))
+        return redirect(url_for("profile.profile"))
 
 
 @oauth_bp.route("/disconnect/<service>", methods=["POST"])
@@ -163,17 +163,7 @@ def oauth2callback():
         try:
             grant_tool_access(
                 user_id=current_user.id,
-                tool_name="gmail",
-                features=[
-                    "list_messages",
-                    "send_email",
-                    "create_draft",
-                    "get_draft",
-                    "send_draft",
-                    "get_message",
-                    "modify_labels"
-                ],
-                permission_type="read"
+                tool_name="gmail"
             )
             print("DEBUG: Granted Gmail tool permissions to user")
         except Exception as e:
@@ -202,11 +192,11 @@ def oauth2callback():
         except Exception as e:
             print(f"ERROR: Failed to print UserTool/ToolPermission records: {e}")
 
-        return redirect(url_for("web.profile"))
+        return redirect(url_for("profile.profile"))
     except Exception as e:
         print(f"ERROR: Failed to process OAuth callback: {str(e)}")
         print(f"ERROR: Full error details: {repr(e)}")
-        return redirect(url_for("web.profile"))
+        return redirect(url_for("profile.profile"))
 
 
 def connect_notion():

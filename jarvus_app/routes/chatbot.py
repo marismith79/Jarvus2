@@ -7,8 +7,7 @@ from ..llm.client import JarvusAIClient
 from ..models.user_tool import UserTool
 from ..services.mcp_client import mcp_client
 from ..utils.text_formatter import format_chat_message
-from ..utils.tool_permissions import TOOL_FEATURES, check_tool_access
-from ..services.tools import TOOL_DEFS
+from ..services.tool_registry import tool_registry
 
 chatbot_bp = Blueprint("chatbot", __name__)
 
@@ -16,22 +15,19 @@ chatbot_bp = Blueprint("chatbot", __name__)
 @chatbot_bp.route("/available_tools", methods=["GET"])
 @login_required
 def get_available_tools():
-    """Get the list of available tools and their features for the current user."""
+    """Get the list of available tools for the current user."""
     user_tools = UserTool.query.filter_by(
         user_id=current_user.id, is_active=True
     ).all()
     available_tools = {}
 
     for tool in user_tools:
-        if tool.tool_name in TOOL_FEATURES:
-            features = {}
-            for feature, description in TOOL_FEATURES[tool.tool_name].items():
-                if check_tool_access(current_user.id, tool.tool_name, feature):
-                    features[feature] = description
-            if (
-                features
-            ):  # Only include tools that have at least one accessible feature
-                available_tools[tool.tool_name] = features
+        tool_metadata = tool_registry.get_tool(tool.tool_name)
+        if tool_metadata and tool_metadata.is_active:
+            available_tools[tool.tool_name] = {
+                "description": tool_metadata.description,
+                "category": tool_metadata.category.value
+            }
 
     return jsonify(available_tools)
 

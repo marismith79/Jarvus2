@@ -57,11 +57,7 @@
                                 <img src="{{ url_for('static', filename='images/notion-logo.png') }}" alt="Notion Logo" class="integration-logo">
                                 <span class="integration-name">Notion</span>
                             </div>
-                            {% if notion_connected %}
-                                <button class="cta-button secondary" onclick="disconnectNotion()">Disconnect</button>
-                            {% else %}
-                                <button class="cta-button" onclick="connectNotion()">Connect</button>
-                            {% endif %}
+                            <button class="cta-button" onclick="showComingSoon()">Coming Soon</button>
                         </div>
 
                         <!-- Slack Integration -->
@@ -70,11 +66,7 @@
                                 <img src="{{ url_for('static', filename='images/slack-logo.png') }}" alt="Slack Logo" class="integration-logo">
                                 <span class="integration-name">Slack</span>
                             </div>
-                            {% if slack_connected %}
-                                <button class="cta-button secondary" onclick="disconnectSlack()">Disconnect</button>
-                            {% else %}
-                                <button class="cta-button" onclick="connectSlack()">Connect</button>
-                            {% endif %}
+                            <button class="cta-button" onclick="showComingSoon()">Coming Soon</button>
                         </div>
 
                         <!-- Zoom Integration -->
@@ -83,11 +75,7 @@
                                 <img src="{{ url_for('static', filename='images/zoom-logo.png') }}" alt="Zoom Logo" class="integration-logo">
                                 <span class="integration-name">Zoom</span>
                             </div>
-                            {% if zoom_connected %}
-                                <button class="cta-button secondary" onclick="disconnectZoom()">Disconnect</button>
-                            {% else %}
-                                <button class="cta-button" onclick="connectZoom()">Connect</button>
-                            {% endif %}
+                            <button class="cta-button" onclick="showComingSoon()">Coming Soon</button>
                         </div>
                     </div>
                 </div>

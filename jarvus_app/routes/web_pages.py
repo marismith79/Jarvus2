@@ -5,7 +5,7 @@ from flask import Blueprint, render_template, request
 from flask_login import current_user, login_required
 from sqlalchemy.exc import ProgrammingError
 
-from ..models.oauth import OAuthCredentials
+from ..utils.tool_permissions import get_connected_services
 from .chatbot import handle_chat_message
 
 web = Blueprint("web", __name__)
@@ -16,65 +16,18 @@ def landing():
     return render_template("landing.html")
 
 
-@web.route("/profile")
-@login_required
-def profile():
-    try:
-        gmail_connected = (
-            OAuthCredentials.get_credentials(current_user.id, "gmail")
-            is not None
-        )
-        notion_connected = (
-            OAuthCredentials.get_credentials(current_user.id, "notion")
-            is not None
-        )
-        slack_connected = (
-            OAuthCredentials.get_credentials(current_user.id, "slack")
-            is not None
-        )
-        zoom_connected = (
-            OAuthCredentials.get_credentials(current_user.id, "zoom")
-            is not None
-        )
-    except ProgrammingError:
-        # If the table doesn't exist yet, assume no services are connected
-        gmail_connected = False
-        notion_connected = False
-        slack_connected = False
-        zoom_connected = False
-
-    return render_template(
-        "profile.html",
-        gmail_connected=gmail_connected,
-        notion_connected=notion_connected,
-        slack_connected=slack_connected,
-        zoom_connected=zoom_connected,
-    )
-
-
 @web.route("/chatbot", strict_slashes=False)
 @login_required
 def chatbot():
-    # Get connection status for each tool
-    gmail_connected = (
-        OAuthCredentials.get_credentials(current_user.id, "gmail") is not None
-    )
-    notion_connected = (
-        OAuthCredentials.get_credentials(current_user.id, "notion") is not None
-    )
-    slack_connected = (
-        OAuthCredentials.get_credentials(current_user.id, "slack") is not None
-    )
-    zoom_connected = (
-        OAuthCredentials.get_credentials(current_user.id, "zoom") is not None
-    )
+    # Get connection status for each tool using centralized function
+    connected_services = get_connected_services(current_user.id)
 
     return render_template(
         "chatbot.html",
-        gmail_connected=gmail_connected,
-        notion_connected=notion_connected,
-        slack_connected=slack_connected,
-        zoom_connected=zoom_connected,
+        gmail_connected=connected_services["gmail"],
+        notion_connected=connected_services["notion"],
+        slack_connected=connected_services["slack"],
+        zoom_connected=connected_services["zoom"],
     )
 
 
