@@ -42,6 +42,7 @@ class Tool:
     function: Callable
     requires_auth: bool = False
     is_active: bool = True
+    result_formatter: Callable[[Any], str] = lambda x: str(x)
 
 
 class ToolRegistry:
@@ -66,6 +67,10 @@ class ToolRegistry:
         """Get a tool by name."""
         return self._tools.get(tool_name)
 
+    def has_tool(self, tool_name: str) -> bool:
+        """Check if a tool exists in the registry."""
+        return tool_name in self._tools
+
     def get_all_tools(self) -> List[Tool]:
         """Get all registered tools."""
         return list(self._tools.values())
@@ -80,8 +85,8 @@ class ToolRegistry:
             tool for tool in self._tools.values() if tool.category == category
         ]
 
-    def execute_tool(self, tool_name: str, **kwargs) -> Any:
-        """Execute a tool with the given parameters."""
+    def execute_tool(self, tool_name: str, **kwargs) -> str:
+        """Execute a tool with the given parameters and return formatted result."""
         tool = self.get_tool(tool_name)
         if not tool:
             raise ValueError(f"Tool '{tool_name}' not found")
@@ -98,8 +103,9 @@ class ToolRegistry:
                         f"Required parameter '{param.name}' not provided"
                     )
 
-        # Execute the tool
-        return tool.function(**kwargs)
+        # Execute the tool and format the result
+        result = tool.function(**kwargs)
+        return tool.result_formatter(result)
 
     def get_tool_schema(self, tool_name: str) -> Dict[str, Any]:
         """Get the JSON schema for a tool."""

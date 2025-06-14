@@ -16,6 +16,9 @@ from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 
 from ..models.oauth import OAuthCredentials  # Uncommented
+from ..utils.tool_permissions import grant_tool_access
+from ..models.user_tool import UserTool
+from ..db import db
 
 oauth_bp = Blueprint("oauth", __name__)
 
@@ -131,9 +134,8 @@ def oauth2callback():
     """Handle OAuth 2.0 callback"""
     print("\nDEBUG: Received OAuth callback")
     print(f"DEBUG: Callback URL: {request.url}")
-    print(
-        f"DEBUG: Expected redirect URI: {GOOGLE_CLIENT_CONFIG['web']['redirect_uris'][0]}"
-    )
+    print(f"DEBUG: Expected redirect URI: {GOOGLE_CLIENT_CONFIG['web']['redirect_uris'][0]}")
+    print(f"DEBUG: Current user in OAuth callback: {getattr(current_user, 'id', None)}")
 
     try:
         flow = Flow.from_client_config(
@@ -156,6 +158,49 @@ def oauth2callback():
             current_user.id, "gmail", credentials.to_json()
         )
         print("DEBUG: Stored credentials in database")
+
+        # Grant Gmail tool permissions after successful OAuth
+        try:
+            grant_tool_access(
+                user_id=current_user.id,
+                tool_name="gmail",
+                features=[
+                    "list_messages",
+                    "send_email",
+                    "create_draft",
+                    "get_draft",
+                    "send_draft",
+                    "get_message",
+                    "modify_labels"
+                ],
+                permission_type="read"
+            )
+            print("DEBUG: Granted Gmail tool permissions to user")
+        except Exception as e:
+            print(f"ERROR: Failed to grant tool permissions: {e}")
+
+        # Ensure UserTool record for Gmail exists
+        try:
+            user_tool = UserTool.query.filter_by(user_id=current_user.id, tool_name="gmail").first()
+            if not user_tool:
+                user_tool = UserTool(user_id=current_user.id, tool_name="gmail", is_active=True)
+                db.session.add(user_tool)
+                db.session.commit()
+                print("DEBUG: Created UserTool for Gmail")
+            else:
+                print("DEBUG: UserTool for Gmail already exists")
+        except Exception as e:
+            print(f"ERROR: Failed to create UserTool: {e}")
+
+        # Print out all UserTool and ToolPermission records for this user
+        try:
+            all_tools = UserTool.query.filter_by(user_id=current_user.id).all()
+            print("DEBUG: All UserTool records for user after OAuth:", all_tools)
+            from ..models.tool_permission import ToolPermission
+            all_perms = ToolPermission.get_user_permissions(current_user.id, "gmail")
+            print("DEBUG: All ToolPermission records for user after OAuth:", all_perms)
+        except Exception as e:
+            print(f"ERROR: Failed to print UserTool/ToolPermission records: {e}")
 
         return redirect(url_for("web.profile"))
     except Exception as e:

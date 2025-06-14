@@ -8,6 +8,7 @@ from ..models.user_tool import UserTool
 from ..services.mcp_client import mcp_client
 from ..utils.text_formatter import format_chat_message
 from ..utils.tool_permissions import TOOL_FEATURES, check_tool_access
+from ..services.tools import TOOL_DEFS
 
 chatbot_bp = Blueprint("chatbot", __name__)
 
@@ -70,168 +71,19 @@ def handle_chat_message():
 
         print(f"Available tools: {available_tools}")
 
-        # Define the available tools with their full specifications
+        # Build tools list from TOOL_DEFS based on available_tools
         tools = []
-
-        # Add Gmail tools if available
-        if "gmail" in available_tools:
-            if "list_messages" in available_tools["gmail"]:
-                tools.append(
-                    {
-                        "type": "function",
-                        "function": {
-                            "name": "list_emails",
-                            "description": (
-                                "List recent emails from your inbox with "
-                                "optional filtering"
-                            ),
-                            "parameters": {
-                                "type": "object",
-                                "properties": {
-                                    "max_results": {
-                                        "type": "integer",
-                                        "description": "Maximum number of emails to return",
-                                    },
-                                    "query": {
-                                        "type": "string",
-                                        "description": "Gmail query syntax for filtering emails",
-                                    },
-                                },
-                                "required": [],
-                            },
-                        },
-                    }
-                )
-
-            if "send_email" in available_tools["gmail"]:
-                tools.append(
-                    {
-                        "type": "function",
-                        "function": {
-                            "name": "send_email",
-                            "description": (
-                                "Send new emails with support for CC and BCC"
-                            ),
-                            "parameters": {
-                                "type": "object",
-                                "properties": {
-                                    "to": {
-                                        "type": "string",
-                                        "description": "Recipient email address",
-                                    },
-                                    "subject": {
-                                        "type": "string",
-                                        "description": "Email subject",
-                                    },
-                                    "body": {
-                                        "type": "string",
-                                        "description": "Email body content",
-                                    },
-                                    "cc": {
-                                        "type": "string",
-                                        "description": "CC email address",
-                                        "required": False,
-                                    },
-                                    "bcc": {
-                                        "type": "string",
-                                        "description": "BCC email address",
-                                        "required": False,
-                                    },
-                                },
-                                "required": ["to", "subject", "body"],
-                            },
-                        },
-                    }
-                )
-
-        # Add Calendar tools if available
-        if "calendar" in available_tools:
-            if "events" in available_tools["calendar"]:
-                tools.append(
-                    {
-                        "type": "function",
-                        "function": {
-                            "name": "list_events",
-                            "description": (
-                                "List upcoming calendar events with date range "
-                                "filtering"
-                            ),
-                            "parameters": {
-                                "type": "object",
-                                "properties": {
-                                    "max_results": {
-                                        "type": "integer",
-                                        "description": "Maximum number of events to return",
-                                    },
-                                    "time_min": {
-                                        "type": "string",
-                                        "description": (
-                                            "Start time in ISO 8601 format "
-                                            "(e.g., 2024-01-01T00:00:00Z)"
-                                        ),
-                                    },
-                                    "time_max": {
-                                        "type": "string",
-                                        "description": (
-                                            "End time in ISO 8601 format "
-                                            "(e.g., 2024-12-31T23:59:59Z)"
-                                        ),
-                                    },
-                                },
-                                "required": [],
-                            },
-                        },
-                    }
-                )
-
-                tools.append(
-                    {
-                        "type": "function",
-                        "function": {
-                            "name": "create_event",
-                            "description": (
-                                "Create new calendar events with attendees"
-                            ),
-                            "parameters": {
-                                "type": "object",
-                                "properties": {
-                                    "summary": {
-                                        "type": "string",
-                                        "description": "Event title",
-                                    },
-                                    "start": {
-                                        "type": "string",
-                                        "description": (
-                                            "Start time in ISO 8601 format "
-                                            "(e.g., 2024-01-24T10:00:00Z)"
-                                        ),
-                                    },
-                                    "end": {
-                                        "type": "string",
-                                        "description": (
-                                            "End time in ISO 8601 format "
-                                            "(e.g., 2024-01-24T11:00:00Z)"
-                                        ),
-                                    },
-                                    "location": {
-                                        "type": "string",
-                                        "description": "Event location",
-                                    },
-                                    "description": {
-                                        "type": "string",
-                                        "description": "Event description",
-                                    },
-                                    "attendees": {
-                                        "type": "array",
-                                        "description": "List of attendee email addresses",
-                                        "items": {"type": "string"},
-                                    },
-                                },
-                                "required": ["summary", "start", "end"],
-                            },
-                        },
-                    }
-                )
+        for tool_def in TOOL_DEFS:
+            tool_name = tool_def["name"]
+            # Map tool_def name to available_tools features
+            if tool_name == "list_emails" and "gmail" in available_tools and "list_messages" in available_tools["gmail"]:
+                tools.append(tool_def["openai_schema"])
+            elif tool_name == "send_email" and "gmail" in available_tools and "send_email" in available_tools["gmail"]:
+                tools.append(tool_def["openai_schema"])
+            elif tool_name == "list_events" and "calendar" in available_tools and "events" in available_tools["calendar"]:
+                tools.append(tool_def["openai_schema"])
+            elif tool_name == "create_event" and "calendar" in available_tools and "events" in available_tools["calendar"]:
+                tools.append(tool_def["openai_schema"])
 
         # Use the LLM client to generate a response
         llm_client = JarvusAIClient()
@@ -312,166 +164,19 @@ def handle_chat_message_sse():
 
         print(f"Available tools: {available_tools}")
 
-        # Define the available tools with their full specifications
+        # Build tools list from TOOL_DEFS based on available_tools
         tools = []
-
-        # Add Gmail tools if available
-        if "gmail" in available_tools:
-            if "list_messages" in available_tools["gmail"]:
-                tools.append(
-                    {
-                        "type": "function",
-                        "function": {
-                            "name": "list_emails",
-                            "description": (
-                                "List recent emails from your inbox with "
-                                "optional filtering"
-                            ),
-                            "parameters": {
-                                "type": "object",
-                                "properties": {
-                                    "max_results": {
-                                        "type": "integer",
-                                        "description": "Maximum number of emails to return",
-                                    },
-                                    "query": {
-                                        "type": "string",
-                                        "description": "Gmail query syntax for filtering emails",
-                                    },
-                                },
-                                "required": [],
-                            },
-                        },
-                    }
-                )
-            if "send_email" in available_tools["gmail"]:
-                tools.append(
-                    {
-                        "type": "function",
-                        "function": {
-                            "name": "send_email",
-                            "description": (
-                                "Send new emails with support for CC and BCC"
-                            ),
-                            "parameters": {
-                                "type": "object",
-                                "properties": {
-                                    "to": {
-                                        "type": "string",
-                                        "description": "Recipient email address",
-                                    },
-                                    "subject": {
-                                        "type": "string",
-                                        "description": "Email subject",
-                                    },
-                                    "body": {
-                                        "type": "string",
-                                        "description": "Email body content",
-                                    },
-                                    "cc": {
-                                        "type": "string",
-                                        "description": "CC email address",
-                                        "required": False,
-                                    },
-                                    "bcc": {
-                                        "type": "string",
-                                        "description": "BCC email address",
-                                        "required": False,
-                                    },
-                                },
-                                "required": ["to", "subject", "body"],
-                            },
-                        },
-                    }
-                )
-
-        # Add Calendar tools if available
-        if "calendar" in available_tools:
-            if "events" in available_tools["calendar"]:
-                tools.append(
-                    {
-                        "type": "function",
-                        "function": {
-                            "name": "list_events",
-                            "description": (
-                                "List upcoming calendar events with date range "
-                                "filtering"
-                            ),
-                            "parameters": {
-                                "type": "object",
-                                "properties": {
-                                    "max_results": {
-                                        "type": "integer",
-                                        "description": "Maximum number of events to return",
-                                    },
-                                    "time_min": {
-                                        "type": "string",
-                                        "description": (
-                                            "Start time in ISO 8601 format "
-                                            "(e.g., 2024-01-01T00:00:00Z)"
-                                        ),
-                                    },
-                                    "time_max": {
-                                        "type": "string",
-                                        "description": (
-                                            "End time in ISO 8601 format "
-                                            "(e.g., 2024-12-31T23:59:59Z)"
-                                        ),
-                                    },
-                                },
-                                "required": [],
-                            },
-                        },
-                    }
-                )
-                tools.append(
-                    {
-                        "type": "function",
-                        "function": {
-                            "name": "create_event",
-                            "description": (
-                                "Create new calendar events with attendees"
-                            ),
-                            "parameters": {
-                                "type": "object",
-                                "properties": {
-                                    "summary": {
-                                        "type": "string",
-                                        "description": "Event title",
-                                    },
-                                    "start": {
-                                        "type": "string",
-                                        "description": (
-                                            "Start time in ISO 8601 format "
-                                            "(e.g., 2024-01-24T10:00:00Z)"
-                                        ),
-                                    },
-                                    "end": {
-                                        "type": "string",
-                                        "description": (
-                                            "End time in ISO 8601 format "
-                                            "(e.g., 2024-01-24T11:00:00Z)"
-                                        ),
-                                    },
-                                    "location": {
-                                        "type": "string",
-                                        "description": "Event location",
-                                    },
-                                    "description": {
-                                        "type": "string",
-                                        "description": "Event description",
-                                    },
-                                    "attendees": {
-                                        "type": "array",
-                                        "description": "List of attendee email addresses",
-                                        "items": {"type": "string"},
-                                    },
-                                },
-                                "required": ["summary", "start", "end"],
-                            },
-                        },
-                    }
-                )
+        for tool_def in TOOL_DEFS:
+            tool_name = tool_def["name"]
+            # Map tool_def name to available_tools features
+            if tool_name == "list_emails" and "gmail" in available_tools and "list_messages" in available_tools["gmail"]:
+                tools.append(tool_def["openai_schema"])
+            elif tool_name == "send_email" and "gmail" in available_tools and "send_email" in available_tools["gmail"]:
+                tools.append(tool_def["openai_schema"])
+            elif tool_name == "list_events" and "calendar" in available_tools and "events" in available_tools["calendar"]:
+                tools.append(tool_def["openai_schema"])
+            elif tool_name == "create_event" and "calendar" in available_tools and "events" in available_tools["calendar"]:
+                tools.append(tool_def["openai_schema"])
 
         # Use the LLM client to generate a response
         llm_client = JarvusAIClient()

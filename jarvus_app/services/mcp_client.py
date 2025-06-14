@@ -7,10 +7,31 @@ import os
 from typing import Any, Dict, List, Optional
 
 import requests
+from requests.exceptions import RequestException
 
 # Get MCP server URL from environment variable, default to localhost for development
-MCP_SERVER_URL = os.getenv("MCP_SERVER_URL", "http://localhost:4100")
+MCP_SERVER_URL = os.getenv("MCP_SERVER_URL", "http://localhost:8000")
 print(f"\nMCP Server URL set to: {MCP_SERVER_URL}")
+
+
+class MCPError(Exception):
+    """Base exception for MCP client errors."""
+    pass
+
+
+class AuthenticationError(MCPError):
+    """Raised when authentication fails."""
+    pass
+
+
+class PermissionError(MCPError):
+    """Raised when user lacks required permissions."""
+    pass
+
+
+class RateLimitError(MCPError):
+    """Raised when rate limit is exceeded."""
+    pass
 
 
 class MCPClient:
@@ -19,6 +40,17 @@ class MCPClient:
         print(
             f"\nMCP Client initialized with URL: {self.base_url}"
         )  # Debug log
+
+    def _handle_response(self, response: requests.Response) -> Dict[str, Any]:
+        """Handle HTTP response and raise appropriate exceptions."""
+        if response.status_code == 401:
+            raise AuthenticationError("Authentication failed")
+        elif response.status_code == 403:
+            raise PermissionError("Permission denied")
+        elif response.status_code == 429:
+            raise RateLimitError("Rate limit exceeded")
+        response.raise_for_status()
+        return response.json()
 
     def list_emails(
         self, max_results: int = 5, query: Optional[str] = None
@@ -36,8 +68,7 @@ class MCPClient:
             resp = requests.post(
                 f"{self.base_url}/gmail/list_emails", json=payload
             )
-            resp.raise_for_status()
-            return resp.json()
+            return self._handle_response(resp)
         except requests.exceptions.RequestException as e:
             print(f"\nError making request: {str(e)}")
             print(f"Request URL: {self.base_url}/gmail/list_emails")
@@ -58,8 +89,7 @@ class MCPClient:
             resp = requests.post(
                 f"{self.base_url}/gmail/search_emails", json=payload
             )
-            resp.raise_for_status()
-            return resp.json()
+            return self._handle_response(resp)
         except requests.exceptions.RequestException as e:
             print(f"\nError making request: {str(e)}")
             print(f"Request URL: {self.base_url}/gmail/search_emails")
@@ -80,8 +110,7 @@ class MCPClient:
         if bcc:
             payload["bcc"] = bcc
         resp = requests.post(f"{self.base_url}/gmail/send_email", json=payload)
-        resp.raise_for_status()
-        return resp.json()
+        return self._handle_response(resp)
 
     def list_events(
         self,
@@ -97,8 +126,7 @@ class MCPClient:
         resp = requests.post(
             f"{self.base_url}/calendar/list_events", json=payload
         )
-        resp.raise_for_status()
-        return resp.json()
+        return self._handle_response(resp)
 
     def create_event(
         self,
@@ -119,8 +147,7 @@ class MCPClient:
         resp = requests.post(
             f"{self.base_url}/calendar/create_event", json=payload
         )
-        resp.raise_for_status()
-        return resp.json()
+        return self._handle_response(resp)
 
 
 # Singleton instance
