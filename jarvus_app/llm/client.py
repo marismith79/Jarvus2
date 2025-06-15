@@ -87,7 +87,7 @@ class JarvusAIClient:
             
         return None
 
-    def _handle_tool_call(self, tool_call: Any, messages: List[ChatRequestMessage]) -> Optional[str]:
+    def _handle_tool_call(self, tool_call: Any, messages: List[ChatRequestMessage], jwt_token: Optional[str] = None) -> Optional[str]:
         """Handle a tool call and return the result."""
         try:
             # Validate tool call
@@ -99,10 +99,18 @@ class JarvusAIClient:
             if not isinstance(args, dict):
                 return f"Invalid tool arguments: expected dict, got {type(args)}"
                 
-            # Execute tool
+            print(f"\n=== Tool Execution Debug ===")
+            print(f"Tool name: {tool_call.function.name}")
+            print(f"Raw arguments: {tool_call.function.arguments}")
+            print(f"Parsed arguments: {args}")
+            print(f"JWT Token provided: {jwt_token is not None}")
+            print("===========================\n")
+                
+            # Execute tool with full arguments
             result = tool_registry.execute_tool(
                 tool_name=tool_call.function.name,
-                parameters=args.get('parameters', {})
+                parameters=args,  # Pass the entire arguments dict
+                jwt_token=jwt_token
             )
             messages.append(ToolMessage(tool_call_id=tool_call.id, content=str(result)))
             return None
@@ -123,6 +131,7 @@ class JarvusAIClient:
         frequency_penalty: float = 0.0,
         tools: Optional[List[dict]] = None,
         tool_choice: Optional[str] = None,
+        jwt_token: Optional[str] = None,
     ) -> Generator[str, None, None]:
         """Create a chat completion using Azure AI Foundry API with streaming support."""
         try:
@@ -171,11 +180,18 @@ class JarvusAIClient:
                         
                     # If we have a complete tool call, execute it
                     if current_tool_call and current_tool_call.function and accumulated_args:
-                        current_tool_call.function.arguments = accumulated_args
-                        if error := self._handle_tool_call(current_tool_call, formatted_messages):
-                            yield error
-                        current_tool_call = None
-                        accumulated_args = ""
+                        # Only execute if we have a complete JSON object
+                        try:
+                            # Try to parse the accumulated arguments to verify it's complete JSON
+                            json.loads(accumulated_args)
+                            current_tool_call.function.arguments = accumulated_args
+                            if error := self._handle_tool_call(current_tool_call, formatted_messages, jwt_token):
+                                yield error
+                            current_tool_call = None
+                            accumulated_args = ""
+                        except json.JSONDecodeError:
+                            # Not complete JSON yet, continue accumulating
+                            continue
                         
                 # Handle regular content
                 elif choice.delta.content:

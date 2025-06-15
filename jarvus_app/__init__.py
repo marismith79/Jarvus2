@@ -6,6 +6,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from flask import Flask
 from flask_login import LoginManager
+from flask_migrate import Migrate
 
 from jarvus_app.config import Config
 from jarvus_app.routes.api import api
@@ -43,6 +44,7 @@ os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
 # Remove local db = SQLAlchemy()
 login_manager = LoginManager()
+migrate = Migrate()
 
 
 def create_app():
@@ -61,6 +63,7 @@ def create_app():
 
     # Initialize extensions
     db.init_app(app)
+    migrate.init_app(app, db)  # Initialize Flask-Migrate
     login_manager.init_app(app)
     login_manager.login_view = "auth.signin"
 

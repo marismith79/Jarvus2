@@ -53,13 +53,14 @@ class MCPClient:
         response.raise_for_status()
         return response.json()
 
-    def execute_tool(self, tool_name: str, parameters: Dict[str, Any]) -> Any:
+    def execute_tool(self, tool_name: str, parameters: Dict[str, Any], jwt_token: Optional[str] = None) -> Any:
         """
         Execute a tool operation through the MCP server.
         
         Args:
             tool_name: The name of the tool (e.g., 'gmail', 'calendar')
             parameters: Operation-specific parameters
+            jwt_token: Optional JWT token for authentication
             
         Returns:
             The operation result
@@ -75,14 +76,25 @@ class MCPClient:
         
         print(f"\nExecuting {tool_name}")
         print(f"Parameters: {parameters}")
+        print(f"JWT Token provided: {jwt_token is not None}")
         
         try:
             # Construct the URL for the MCP server with trailing slash
             url = f"{self.base_url}/{tool_name}/"
             print(f"Making request to: {url}")
             
+            # Set up headers with JWT token if provided
+            headers = {}
+            if jwt_token:
+                headers['Authorization'] = f'Bearer {jwt_token}'
+                print(f"Added Authorization header: Bearer {jwt_token[:10]}...")
+            else:
+                print("No JWT token provided, skipping Authorization header")
+            
+            print(f"Request headers: {headers}")
+            
             # Send parameters directly as the request body
-            resp = requests.post(url, json=parameters, allow_redirects=True)
+            resp = requests.post(url, json=parameters, headers=headers, allow_redirects=True)
             result = self._handle_response(resp)
             
             # Log successful execution

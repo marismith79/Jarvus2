@@ -1,5 +1,6 @@
 import json
 import os
+from datetime import datetime
 
 from flask import (
     Blueprint,
@@ -153,9 +154,13 @@ def oauth2callback():
         credentials = flow.credentials
         print("DEBUG: Successfully obtained credentials")
 
-        # Store credentials in database
+        # Store credentials in database with separate fields
         OAuthCredentials.store_credentials(
-            current_user.id, "gmail", credentials.to_json()
+            current_user.id,
+            "gmail",
+            access_token=credentials.token,
+            refresh_token=credentials.refresh_token,
+            expires_at=datetime.fromtimestamp(credentials.expiry.timestamp()) if credentials.expiry else None
         )
         print("DEBUG: Stored credentials in database")
 
@@ -181,16 +186,6 @@ def oauth2callback():
                 print("DEBUG: UserTool for Gmail already exists")
         except Exception as e:
             print(f"ERROR: Failed to create UserTool: {e}")
-
-        # Print out all UserTool and ToolPermission records for this user
-        try:
-            all_tools = UserTool.query.filter_by(user_id=current_user.id).all()
-            print("DEBUG: All UserTool records for user after OAuth:", all_tools)
-            from ..models.tool_permission import ToolPermission
-            all_perms = ToolPermission.get_user_permissions(current_user.id, "gmail")
-            print("DEBUG: All ToolPermission records for user after OAuth:", all_perms)
-        except Exception as e:
-            print(f"ERROR: Failed to print UserTool/ToolPermission records: {e}")
 
         return redirect(url_for("profile.profile"))
     except Exception as e:

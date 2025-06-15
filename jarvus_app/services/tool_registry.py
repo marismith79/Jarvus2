@@ -116,12 +116,14 @@ class ToolRegistry:
 
     def __init__(self):
         self._tools: Dict[str, ToolMetadata] = {}
+        print("\nTool Registry initialized")
 
     def register(self, tool: ToolMetadata) -> None:
         """Register a new tool's metadata."""
         if tool.name in self._tools:
             raise ValueError(f"Tool '{tool.name}' is already registered")
         self._tools[tool.name] = tool
+        print(f"Registered tool: {tool.name}")
 
     def get_tool(self, tool_name: str) -> Optional[ToolMetadata]:
         """Get a tool's metadata by name."""
@@ -139,13 +141,14 @@ class ToolRegistry:
         """Get metadata for all tools in a specific category."""
         return [tool for tool in self._tools.values() if tool.category == category]
 
-    def execute_tool(self, tool_name: str, parameters: Dict[str, Any] = None) -> Any:
+    def execute_tool(self, tool_name: str, parameters: Dict[str, Any] = None, jwt_token: Optional[str] = None) -> Any:
         """
         Execute a tool operation.
         
         Args:
             tool_name: The name of the tool to execute
             parameters: Optional parameters for the operation
+            jwt_token: Optional JWT token for authentication
             
         Returns:
             The result of the tool execution
@@ -154,6 +157,14 @@ class ToolRegistry:
             ValueError: If the tool is not found or not active
             ToolExecutionError: If tool execution fails
         """
+        print("\n=== Tool Registry Debug ===")
+        print(f"Executing tool: {tool_name}")
+        print(f"Parameters: {parameters}")
+        print(f"JWT Token provided: {jwt_token is not None}")
+        if jwt_token:
+            print(f"JWT Token first 10 chars: {jwt_token[:10]}...")
+        print("=========================\n")
+        
         tool = self.get_tool(tool_name)
         if not tool:
             raise ValueError(f"Tool not found: {tool_name}")
@@ -163,7 +174,7 @@ class ToolRegistry:
             
         # Use tool's executor if provided, otherwise use MCP client
         executor = tool.executor or mcp_client.execute_tool
-        result = executor(tool_name=tool_name, parameters=parameters or {})
+        result = executor(tool_name=tool_name, parameters=parameters or {}, jwt_token=jwt_token)
         
         # Format result if formatter is provided
         if tool.result_formatter:
