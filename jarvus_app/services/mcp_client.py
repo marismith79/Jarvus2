@@ -4,16 +4,10 @@ Provides a generic interface for interacting with various services through their
 """
 
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 import requests
 from requests.exceptions import RequestException
-
-from .tool_registry import tool_registry
-
-# Get MCP server URL from environment variable, default to localhost for development
-MCP_SERVER_URL = os.getenv("MCP_SERVER_URL", "http://localhost:8000")
-print(f"\nMCP Server URL set to: {MCP_SERVER_URL}")
 
 
 class MCPError(Exception):
@@ -36,9 +30,16 @@ class RateLimitError(MCPError):
     pass
 
 
+class ToolExecutionError(MCPError):
+    """Raised when tool execution fails."""
+    pass
+
+
 class MCPClient:
+    """Client for communicating with MCP servers."""
+    
     def __init__(self, base_url: Optional[str] = None):
-        self.base_url = base_url or MCP_SERVER_URL
+        self.base_url = base_url or os.getenv("MCP_SERVER_URL", "http://localhost:8000")
         print(f"\nMCP Client initialized with URL: {self.base_url}")
 
     def _handle_response(self, response: requests.Response) -> Dict[str, Any]:
@@ -52,39 +53,49 @@ class MCPClient:
         response.raise_for_status()
         return response.json()
 
-    def handle_operation(self, tool_name: str, operation: str, parameters: Dict[str, Any]) -> Any:
+    def execute_tool(self, tool_name: str, parameters: Dict[str, Any]) -> Any:
         """
-        Generic handler for tool operations.
+        Execute a tool operation through the MCP server.
         
         Args:
             tool_name: The name of the tool (e.g., 'gmail', 'calendar')
-            operation: The operation to perform
             parameters: Operation-specific parameters
             
         Returns:
             The operation result
+            
+        Raises:
+            ToolExecutionError: If tool execution fails
         """
-        print(f"\nCalling {tool_name} operation: {operation}")
+        # Validate inputs
+        if not tool_name:
+            raise ToolExecutionError("Tool name cannot be empty")
+        if not isinstance(parameters, dict):
+            raise ToolExecutionError("Parameters must be a dictionary")
+        
+        print(f"\nExecuting {tool_name}")
         print(f"Parameters: {parameters}")
         
-        # Get the tool metadata from the registry
-        tool = tool_registry.get_tool(tool_name)
-        if not tool:
-            raise ValueError(f"Tool not found: {tool_name}")
-        
         try:
-            # Construct the full URL using the tool's server path
-            url = f"{self.base_url}/{tool.server_path}/{operation}"
+            # Construct the URL for the MCP server with trailing slash
+            url = f"{self.base_url}/{tool_name}/"
             print(f"Making request to: {url}")
             
-            resp = requests.post(url, json=parameters)
-            return self._handle_response(resp)
+            # Send parameters directly as the request body
+            resp = requests.post(url, json=parameters, allow_redirects=True)
+            result = self._handle_response(resp)
+            
+            # Log successful execution
+            print(f"Successfully executed {tool_name}")
+            return result
+            
         except requests.exceptions.RequestException as e:
-            print(f"\nError making request: {str(e)}")
+            error_msg = f"Error executing {tool_name}: {str(e)}"
+            print(f"\n{error_msg}")
             print(f"Request URL: {url}")
             print(f"Request payload: {parameters}")
-            raise
+            raise ToolExecutionError(error_msg) from e
 
 
-# Singleton instance
-mcp_client = MCPClient()
+# Create a singleton instance
+mcp_client = MCPClient() 

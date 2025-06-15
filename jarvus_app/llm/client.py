@@ -82,7 +82,7 @@ class JarvusAIClient:
         if not tool_call.function.name:
             return "Invalid tool call: missing function name"
             
-        if not tool_registry.has_tool(tool_call.function.name):
+        if not tool_registry.get_tool(tool_call.function.name):
             return f"Invalid tool call: unknown function '{tool_call.function.name}'"
             
         return None
@@ -100,7 +100,10 @@ class JarvusAIClient:
                 return f"Invalid tool arguments: expected dict, got {type(args)}"
                 
             # Execute tool
-            result = tool_registry.execute_tool(tool_call.function.name, **args)
+            result = tool_registry.execute_tool(
+                tool_name=tool_call.function.name,
+                parameters=args.get('parameters', {})
+            )
             messages.append(ToolMessage(tool_call_id=tool_call.id, content=str(result)))
             return None
             

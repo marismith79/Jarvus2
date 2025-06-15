@@ -4,10 +4,11 @@ This module provides a framework for registering and discovering tools
 that are available through various MCP servers.
 """
 
-import os
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any, Callable
+
+from .mcp_client import mcp_client, ToolExecutionError
 
 
 class ToolCategory(Enum):
@@ -15,6 +16,15 @@ class ToolCategory(Enum):
     EMAIL = "email"
     CALENDAR = "calendar"
     CUSTOM = "custom"
+
+
+@dataclass
+class ToolParameter:
+    """Parameter definition for a tool."""
+    name: str
+    type: str
+    description: str
+    required: bool = False
 
 
 @dataclass
@@ -26,36 +36,63 @@ class ToolMetadata:
     server_path: str  # The path on the MCP server for this tool (e.g., 'gmail', 'calendar')
     requires_auth: bool = True
     is_active: bool = True
+    executor: Optional[Callable] = None  # Function to execute the tool operation
+    parameters: Optional[List[ToolParameter]] = None
+    result_formatter: Optional[Callable] = None
 
     @property
     def openai_schema(self) -> Dict:
         """Generate OpenAI function schema for this tool."""
-        return {
-            "type": "function",
-            "function": {
-                "name": self.name,
-                "description": self.description,
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "operation": {
-                            "type": "string",
-                            "description": f"The operation to perform with {self.name}",
-                            "enum": self._get_available_operations()
-                        },
-                        "parameters": {
-                            "type": "object",
-                            "description": "Operation-specific parameters"
-                        }
-                    },
-                    "required": ["operation"]
+        if self.parameters:
+            properties = {}
+            required = []
+            for param in self.parameters:
+                properties[param.name] = {
+                    "type": param.type,
+                    "description": param.description
+                }
+                if param.required:
+                    required.append(param.name)
+            
+            return {
+                "type": "function",
+                "function": {
+                    "name": self.name,
+                    "description": self.description,
+                    "parameters": {
+                        "type": "object",
+                        "properties": properties,
+                        "required": required
+                    }
                 }
             }
-        }
+        else:
+            # Fallback to operation-based schema
+            return {
+                "type": "function",
+                "function": {
+                    "name": self.name,
+                    "description": self.description,
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "operation": {
+                                "type": "string",
+                                "description": f"The operation to perform with {self.name}",
+                                "enum": self._get_available_operations()
+                            },
+                            "parameters": {
+                                "type": "object",
+                                "description": "Operation-specific parameters"
+                            }
+                        },
+                        "required": ["operation"]
+                    }
+                }
+            }
 
     def _get_available_operations(self) -> List[str]:
         """Get list of available operations for this tool."""
-        # This could be expanded to be more dynamic based on the tool type
         if self.category == ToolCategory.EMAIL:
             return [
                 "list_emails",
@@ -102,8 +139,48 @@ class ToolRegistry:
         """Get metadata for all tools in a specific category."""
         return [tool for tool in self._tools.values() if tool.category == category]
 
+    def execute_tool(self, tool_name: str, parameters: Dict[str, Any] = None) -> Any:
+        """
+        Execute a tool operation.
+        
+        Args:
+            tool_name: The name of the tool to execute
+            parameters: Optional parameters for the operation
+            
+        Returns:
+            The result of the tool execution
+            
+        Raises:
+            ValueError: If the tool is not found or not active
+            ToolExecutionError: If tool execution fails
+        """
+        tool = self.get_tool(tool_name)
+        if not tool:
+            raise ValueError(f"Tool not found: {tool_name}")
+            
+        if not tool.is_active:
+            raise ValueError(f"Tool is not active: {tool_name}")
+            
+        # Use tool's executor if provided, otherwise use MCP client
+        executor = tool.executor or mcp_client.execute_tool
+        result = executor(tool_name=tool_name, parameters=parameters or {})
+        
+        # Format result if formatter is provided
+        if tool.result_formatter:
+            return tool.result_formatter(result)
+        return result
 
-# Create a singleton instance
+
+def format_tool_result(result: Any) -> str:
+    """Format tool results into a human-readable string."""
+    if isinstance(result, list):
+        return "\n".join([f"- {item}" for item in result])
+    elif isinstance(result, dict):
+        return "\n".join([f"{k}: {v}" for k, v in result.items()])
+    return str(result)
+
+
+# Create singleton instance
 tool_registry = ToolRegistry()
 
 # Register default tools
@@ -112,7 +189,9 @@ tool_registry.register(ToolMetadata(
     description="Access to Gmail functionality through MCP server",
     category=ToolCategory.EMAIL,
     server_path="gmail",
-    requires_auth=True
+    requires_auth=True,
+    executor=mcp_client.execute_tool,
+    result_formatter=format_tool_result
 ))
 
 tool_registry.register(ToolMetadata(
@@ -120,5 +199,7 @@ tool_registry.register(ToolMetadata(
     description="Access to Google Calendar functionality through MCP server",
     category=ToolCategory.CALENDAR,
     server_path="calendar",
-    requires_auth=True
+    requires_auth=True,
+    executor=mcp_client.execute_tool,
+    result_formatter=format_tool_result
 ))

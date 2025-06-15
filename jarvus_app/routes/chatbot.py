@@ -30,57 +30,79 @@ def get_available_tools():
 @login_required
 def handle_chat_message():
     """Handle a chat message and return a response."""
-    # Support both GET (for SSE) and POST methods
     message = request.args.get('message') if request.method == 'GET' else request.json.get('message')
-    
     if not message:
         return jsonify({'error': 'No message provided'}), 400
 
     try:
         # Get available tools and their schemas
-        available_tools = []
-        for tool in tool_registry.get_active_tools():
-            if check_tool_access(current_user.id, tool.name):
-                available_tools.append(tool.openai_schema)
+        available_tools = [
+            tool.openai_schema 
+            for tool in tool_registry.get_active_tools() 
+            if check_tool_access(current_user.id, tool.name)
+        ]
 
-        # Initialize LLM client
+        # Initialize LLM client and format messages
         llm_client = JarvusAIClient()
-        
-        # Format system message with available tools
-        system_message = f"""You are a helpful AI assistant made for task automation.
-        When interacting with users:
-        1. Be concise and clear in your responses
-        2. Use the available tools when appropriate
-        3. If you need to use a tool, explain what you're going to do first
-        4. If you can't help with something, be honest about it
-
-        Available tools:
-        {json.dumps(available_tools, indent=2)}
-
-        When using tools:
-        1. Explain what you're doing before using a tool
-        2. Format tool results in a clear, readable way
-        3. Provide context and insights about the results
-        4. Handle errors gracefully and inform the user if something goes wrong"""
-
-        # Format messages for the LLM
         messages = [
-            llm_client.format_message("system", system_message),
+            llm_client.format_message("system", """You are a helpful AI assistant made for task automation.
+            When using tools:
+            1. Explain what you're doing before using a tool
+            2. Make the tool call
+            3. Explain the results to the user
+            4. If there's an error, explain it and suggest alternatives"""),
             llm_client.format_message("user", message)
         ]
 
         def generate():
             try:
-                for chunk in llm_client.create_chat_completion(
-                    messages, tools=available_tools
-                ):
-                    yield f"data: {json.dumps({'content': chunk})}\n\n"
+                for chunk in llm_client.create_chat_completion(messages, tools=available_tools):
+                    # Handle both string and dictionary responses
+                    if isinstance(chunk, dict) and chunk.get('tool_calls'):
+                        # Handle tool execution
+                        tool_call = chunk['tool_calls'][0]
+                        tool_name = tool_call['function']['name']
+                        tool_args = json.loads(tool_call['function']['arguments'])
+                        
+                        try:
+                            # Execute tool and get result
+                            result = tool_registry.execute_tool(
+                                tool_name=tool_name,
+                                parameters=tool_args.get('parameters', {})
+                            )
+                            
+                            # Add tool call and result to conversation
+                            messages.extend([
+                                {"role": "assistant", "content": None, "tool_calls": [tool_call]},
+                                {"role": "tool", "tool_call_id": tool_call['id'], "content": json.dumps(result)}
+                            ])
+                            
+                            # Get model's response to the result
+                            for response in llm_client.create_chat_completion(messages, tools=available_tools):
+                                if isinstance(response, str):
+                                    yield f"data: {json.dumps({'content': response})}\n\n"
+                                else:
+                                    yield f"data: {json.dumps(response)}\n\n"
+                                
+                        except Exception as e:
+                            error_msg = f"Error executing {tool_name}: {str(e)}"
+                            yield f"data: {json.dumps({'error': error_msg})}\n\n"
+                            messages.append({
+                                "role": "tool",
+                                "tool_call_id": tool_call['id'],
+                                "content": error_msg
+                            })
+                    else:
+                        # Handle regular message chunk (string or dict)
+                        if isinstance(chunk, str):
+                            yield f"data: {json.dumps({'content': chunk})}\n\n"
+                        else:
+                            yield f"data: {json.dumps(chunk)}\n\n"
+                        
             except Exception as e:
-                print(f"Error in generate: {str(e)}")
                 yield f"data: {json.dumps({'error': str(e)})}\n\n"
 
         return Response(generate(), mimetype='text/event-stream')
 
     except Exception as e:
-        print(f"Error in handle_chat_message: {str(e)}")
         return jsonify({'error': str(e)}), 500
