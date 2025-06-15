@@ -93,8 +93,12 @@ class MCPClient:
             
             print(f"Request headers: {headers}")
             
+            # If parameters contains an 'operation' field, use the nested parameters
+            request_body = parameters.get('parameters', parameters)
+            print(f"Request payload: {request_body}")
+            
             # Send parameters directly as the request body
-            resp = requests.post(url, json=parameters, headers=headers, allow_redirects=True)
+            resp = requests.post(url, json=request_body, headers=headers, allow_redirects=True)
             result = self._handle_response(resp)
             
             # Log successful execution
@@ -105,7 +109,7 @@ class MCPClient:
             error_msg = f"Error executing {tool_name}: {str(e)}"
             print(f"\n{error_msg}")
             print(f"Request URL: {url}")
-            print(f"Request payload: {parameters}")
+            print(f"Request payload: {request_body}")
             raise ToolExecutionError(error_msg) from e
 
 

@@ -153,6 +153,14 @@ def oauth2callback():
 
         credentials = flow.credentials
         print("DEBUG: Successfully obtained credentials")
+        print(f"DEBUG: Credentials type: {type(credentials)}")
+        print(f"DEBUG: Access token type: {type(credentials.token)}")
+        print(f"DEBUG: Access token length: {len(credentials.token)}")
+        print(f"DEBUG: Access token first 50 chars: {credentials.token[:50]}")
+        print(f"DEBUG: Refresh token type: {type(credentials.refresh_token)}")
+        print(f"DEBUG: Refresh token length: {len(credentials.refresh_token) if credentials.refresh_token else 0}")
+        print(f"DEBUG: Expiry type: {type(credentials.expiry)}")
+        print(f"DEBUG: Expiry value: {credentials.expiry}")
 
         # Store credentials in database with separate fields
         OAuthCredentials.store_credentials(

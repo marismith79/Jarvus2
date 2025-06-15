@@ -25,6 +25,7 @@ class ToolParameter:
     type: str
     description: str
     required: bool = False
+    items_type: Optional[str] = None
 
 
 @dataclass
@@ -47,10 +48,14 @@ class ToolMetadata:
             properties = {}
             required = []
             for param in self.parameters:
-                properties[param.name] = {
+                param_schema = {
                     "type": param.type,
                     "description": param.description
                 }
+                # Add items type for array parameters
+                if param.type == "array" and param.items_type:
+                    param_schema["items"] = {"type": param.items_type}
+                properties[param.name] = param_schema
                 if param.required:
                     required.append(param.name)
             
@@ -67,7 +72,7 @@ class ToolMetadata:
                 }
             }
         else:
-            # Fallback to operation-based schema
+            # Default schema for tools without explicit parameters
             return {
                 "type": "function",
                 "function": {
@@ -76,17 +81,11 @@ class ToolMetadata:
                     "parameters": {
                         "type": "object",
                         "properties": {
-                            "operation": {
+                            "query": {
                                 "type": "string",
-                                "description": f"The operation to perform with {self.name}",
-                                "enum": self._get_available_operations()
-                            },
-                            "parameters": {
-                                "type": "object",
-                                "description": "Operation-specific parameters"
+                                "description": "Search query or parameters for the operation"
                             }
-                        },
-                        "required": ["operation"]
+                        }
                     }
                 }
             }
@@ -202,7 +201,53 @@ tool_registry.register(ToolMetadata(
     server_path="gmail",
     requires_auth=True,
     executor=mcp_client.execute_tool,
-    result_formatter=format_tool_result
+    result_formatter=format_tool_result,
+    parameters=[
+        ToolParameter(
+            name="query",
+            type="string",
+            description="Gmail search query (e.g., 'in:inbox', 'from:someone@example.com')",
+            required=False
+        ),
+        ToolParameter(
+            name="to",
+            type="string",
+            description="Recipient email address for sending messages",
+            required=False
+        ),
+        ToolParameter(
+            name="subject",
+            type="string",
+            description="Email subject line",
+            required=False
+        ),
+        ToolParameter(
+            name="body",
+            type="string",
+            description="Email message body",
+            required=False
+        ),
+        ToolParameter(
+            name="message_id",
+            type="string",
+            description="Gmail message ID for specific message operations",
+            required=False
+        ),
+        ToolParameter(
+            name="add_labels",
+            type="array",
+            description="Labels to add to a message",
+            required=False,
+            items_type="string"
+        ),
+        ToolParameter(
+            name="remove_labels",
+            type="array",
+            description="Labels to remove from a message",
+            required=False,
+            items_type="string"
+        )
+    ]
 ))
 
 tool_registry.register(ToolMetadata(
@@ -212,5 +257,49 @@ tool_registry.register(ToolMetadata(
     server_path="calendar",
     requires_auth=True,
     executor=mcp_client.execute_tool,
-    result_formatter=format_tool_result
+    result_formatter=format_tool_result,
+    parameters=[
+        ToolParameter(
+            name="time_min",
+            type="string",
+            description="Start time for calendar events (ISO format)",
+            required=False
+        ),
+        ToolParameter(
+            name="time_max",
+            type="string",
+            description="End time for calendar events (ISO format)",
+            required=False
+        ),
+        ToolParameter(
+            name="summary",
+            type="string",
+            description="Event summary/title",
+            required=False
+        ),
+        ToolParameter(
+            name="description",
+            type="string",
+            description="Event description",
+            required=False
+        ),
+        ToolParameter(
+            name="start",
+            type="string",
+            description="Event start time (ISO format)",
+            required=False
+        ),
+        ToolParameter(
+            name="end",
+            type="string",
+            description="Event end time (ISO format)",
+            required=False
+        ),
+        ToolParameter(
+            name="event_id",
+            type="string",
+            description="Calendar event ID for specific event operations",
+            required=False
+        )
+    ]
 ))
