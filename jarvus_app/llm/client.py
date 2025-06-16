@@ -166,7 +166,6 @@ class JarvusAIClient:
         presence_penalty: float = 0.0,
         frequency_penalty: float = 0.0,
         tools: Optional[List[dict]] = None,
-        jwt_token: Optional[str] = None,
         tool_choice: Optional[str] = None,
     ) -> Generator[str, None, None]:
         """Create a chat completion using Azure AI Foundry API with streaming support."""

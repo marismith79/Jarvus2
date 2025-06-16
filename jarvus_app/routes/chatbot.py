@@ -10,6 +10,16 @@ from ..utils.tool_permissions import check_tool_access
 from ..llm.client import JarvusAIClient
 import json
 import logging
+from azure.ai.inference.models import (
+    SystemMessage,
+    UserMessage,
+    AssistantMessage,
+    ChatRequestMessage,
+    ToolMessage,
+    FunctionCall,
+    ChatCompletionsToolDefinition,
+    FunctionDefinition,
+)
 
 chatbot_bp = Blueprint('chatbot', __name__)
 logger = logging.getLogger(__name__)
@@ -37,29 +47,26 @@ def handle_tool_execution(function_call, messages, jwt_token):
             jwt_token=jwt_token
         )
         
+        result_str = str(result) if not isinstance(result, str) else result
+
         logger.info("=== Tool Result Debug ===")
         logger.info(f"Tool result type: {type(result)}")
         logger.info(f"Tool result content: {result}")
         
         # Step 1: Add the assistant message with tool_calls
-        assistant_message = {
-            "role": "assistant",
-            "tool_calls": [{
-                "id": function_call["id"],
-                "function": {
-                    "name": function_call["name"],
-                    "arguments": function_call["arguments"]
-                },
-                "type": "function"
-            }]
-        }
+        assistant_message = AssistantMessage(
+            tool_calls=[ FunctionCall(
+                name=function_call.name,
+                arguments=function_call.arguments,
+                id=function_call.id
+            )]
+        )
         
         # Step 2: Add the tool response message
-        tool_message = {
-            "role": "tool",
-            "tool_call_id": function_call["id"],
-            "content": str(result)
-        }
+        tool_message = ToolMessage(
+            tool_call_id=function_call.id,
+            content=result_str
+        )
         
         messages.append(assistant_message)
         messages.append(tool_message)
