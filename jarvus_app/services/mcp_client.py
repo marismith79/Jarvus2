@@ -41,19 +41,31 @@ class MCPClient:
     def __init__(self, base_url: Optional[str] = None):
         self.base_url = base_url or os.getenv("MCP_SERVER_URL", "http://localhost:8000")
         print(f"\nMCP Client initialized with URL: {self.base_url}")
+        self.default_timeout = 30  # 30 second default timeout
 
     def _handle_response(self, response: requests.Response) -> Dict[str, Any]:
         """Handle HTTP response and raise appropriate exceptions."""
+        print("\n=== MCP Response Debug ===")
+        print(f"Response status code: {response.status_code}")
+        print(f"Response headers: {dict(response.headers)}")
+        
         if response.status_code == 401:
             raise AuthenticationError("Authentication failed")
         elif response.status_code == 403:
             raise PermissionError("Permission denied")
         elif response.status_code == 429:
             raise RateLimitError("Rate limit exceeded")
+            
         response.raise_for_status()
-        return response.json()
+        result = response.json()
+        
+        print(f"Response body type: {type(result)}")
+        print(f"Response body: {result}")
+        print("=== End MCP Response Debug ===\n")
+        
+        return result
 
-    def execute_tool(self, tool_name: str, parameters: Dict[str, Any], jwt_token: Optional[str] = None) -> Any:
+    def execute_tool(self, tool_name: str, parameters: Dict[str, Any], jwt_token: Optional[str] = None, timeout: Optional[int] = None) -> Dict[str, Any]:
         """
         Execute a tool operation through the MCP server.
         
@@ -61,12 +73,16 @@ class MCPClient:
             tool_name: The name of the tool (e.g., 'gmail', 'calendar')
             parameters: Operation-specific parameters
             jwt_token: Optional JWT token for authentication
+            timeout: Optional timeout in seconds (defaults to self.default_timeout)
             
         Returns:
-            The operation result
+            Dict[str, Any]: The operation result as a dictionary
             
         Raises:
             ToolExecutionError: If tool execution fails
+            AuthenticationError: If authentication fails
+            PermissionError: If user lacks required permissions
+            RateLimitError: If rate limit is exceeded
         """
         # Validate inputs
         if not tool_name:
@@ -97,14 +113,29 @@ class MCPClient:
             request_body = parameters.get('parameters', parameters)
             print(f"Request payload: {request_body}")
             
-            # Send parameters directly as the request body
-            resp = requests.post(url, json=request_body, headers=headers, allow_redirects=True)
+            # Send parameters directly as the request body with timeout
+            timeout = timeout or self.default_timeout
+            resp = requests.post(
+                url, 
+                json=request_body, 
+                headers=headers, 
+                allow_redirects=True,
+                timeout=timeout
+            )
+            
+            # Handle the response and get the result
             result = self._handle_response(resp)
             
             # Log successful execution
             print(f"Successfully executed {tool_name}")
+            print(f"About to return result: {result}")
+            print(f"Result type: {type(result)}")
             return result
             
+        except requests.exceptions.Timeout:
+            error_msg = f"Request timed out after {timeout} seconds for {tool_name}"
+            print(f"\n{error_msg}")
+            raise ToolExecutionError(error_msg)
         except requests.exceptions.RequestException as e:
             error_msg = f"Error executing {tool_name}: {str(e)}"
             print(f"\n{error_msg}")

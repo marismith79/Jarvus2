@@ -156,14 +156,6 @@ class ToolRegistry:
             ValueError: If the tool is not found or not active
             ToolExecutionError: If tool execution fails
         """
-        print("\n=== Tool Registry Debug ===")
-        print(f"Executing tool: {tool_name}")
-        print(f"Parameters: {parameters}")
-        print(f"JWT Token provided: {jwt_token is not None}")
-        if jwt_token:
-            print(f"JWT Token first 10 chars: {jwt_token[:10]}...")
-        print("=========================\n")
-        
         tool = self.get_tool(tool_name)
         if not tool:
             raise ValueError(f"Tool not found: {tool_name}")
@@ -173,12 +165,30 @@ class ToolRegistry:
             
         # Use tool's executor if provided, otherwise use MCP client
         executor = tool.executor or mcp_client.execute_tool
-        result = executor(tool_name=tool_name, parameters=parameters or {}, jwt_token=jwt_token)
+        raw_result = executor(tool_name=tool_name, parameters=parameters or {}, jwt_token=jwt_token)
+        
+        return self._handle_tool_response(tool, raw_result)
+
+    def _handle_tool_response(self, tool: ToolMetadata, raw_result: Any) -> Any:
+        """
+        Handle and format the response from a tool execution.
+        
+        Args:
+            tool: The tool metadata
+            raw_result: The raw result from the tool execution
+            
+        Returns:
+            The formatted result
+        """
+        print(f"\nTool Registry: Got result from {tool.name}")
+        print(f"Result type: {type(raw_result)}")
         
         # Format result if formatter is provided
         if tool.result_formatter:
-            return tool.result_formatter(result)
-        return result
+            formatted = tool.result_formatter(raw_result)
+            print(f"Tool Registry: Formatted result type: {type(formatted)}")
+            return formatted
+        return raw_result
 
 
 def format_tool_result(result: Any) -> str:
@@ -188,6 +198,23 @@ def format_tool_result(result: Any) -> str:
     elif isinstance(result, dict):
         return "\n".join([f"{k}: {v}" for k, v in result.items()])
     return str(result)
+
+
+def format_gmail_result(result: Any) -> Dict:
+    """Format Gmail tool results while preserving dictionary structure."""
+    if isinstance(result, dict):
+        return result
+    elif isinstance(result, list):
+        return {"messages": result}
+    return {"result": str(result)}
+
+def format_calendar_result(result: Any) -> Dict:
+    """Format Calendar tool results while preserving dictionary structure."""
+    if isinstance(result, dict):
+        return result
+    elif isinstance(result, list):
+        return {"events": result}
+    return {"result": str(result)}
 
 
 # Create singleton instance
@@ -201,7 +228,7 @@ tool_registry.register(ToolMetadata(
     server_path="gmail",
     requires_auth=True,
     executor=mcp_client.execute_tool,
-    result_formatter=format_tool_result,
+    result_formatter=format_gmail_result,
     parameters=[
         ToolParameter(
             name="query",
@@ -257,7 +284,7 @@ tool_registry.register(ToolMetadata(
     server_path="calendar",
     requires_auth=True,
     executor=mcp_client.execute_tool,
-    result_formatter=format_tool_result,
+    result_formatter=format_calendar_result,
     parameters=[
         ToolParameter(
             name="time_min",

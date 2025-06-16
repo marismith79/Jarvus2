@@ -59,6 +59,16 @@ function loadAvailableTools() {
     }
 }
 
+// Helper to get the selected tool from the dropdown
+function getSelectedTool() {
+    const toolDropdown = document.getElementById('toolDropdown');
+    const selected = toolDropdown.querySelector('.checkmark[style*="inline-block"]');
+    if (selected) {
+        return selected.parentElement.querySelector('span').textContent.trim().toLowerCase();
+    }
+    return null;
+}
+
 // When user clicks "send" or presses Enter
 function sendCommand() {
     const inputEl = document.getElementById('chat-input');
@@ -79,8 +89,12 @@ function sendCommand() {
     // Show "thinking" message
     const thinkingMsg = appendMessage('bot', '...');
 
-    // Use EventSource for streaming
-    const eventSource = new EventSource(`/chatbot/send?message=${encodeURIComponent(raw)}`);
+    const selectedTool = getSelectedTool();
+    let url = `/chatbot/send?message=${encodeURIComponent(raw)}`;
+    if (selectedTool) {
+        url += `&tool_choice=${encodeURIComponent(selectedTool)}`;
+    }
+    const eventSource = new EventSource(url);
     let assistantResponse = '';
 
     eventSource.onmessage = function(event) {
