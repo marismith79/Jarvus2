@@ -78,8 +78,8 @@ ZOOM_CLIENT_CONFIG = {
 @login_required
 def connect_service(service):
     """Initiate OAuth flow for the specified service"""
-    if service == "gmail":
-        return connect_gmail()
+    if service == "google-workspace":
+        return connect_google_workspace()
     elif service == "notion":
         return connect_notion()
     elif service == "slack":
@@ -97,7 +97,7 @@ def disconnect_service(service):
     print(
         f"[DEBUG] Disconnect requested for service: {service}, user: {current_user.id}"
     )
-    if service in ["gmail", "notion", "slack", "zoom"]:
+    if service in ["google-workspace", "notion", "slack", "zoom"]:
         success = OAuthCredentials.remove_credentials(current_user.id, service)
         print(f"[DEBUG] Removal result for {service}: {success}")
         return jsonify({"success": success})
@@ -105,9 +105,9 @@ def disconnect_service(service):
     return jsonify({"success": False, "error": "Invalid service"})
 
 
-def connect_gmail():
-    """Initiate Gmail OAuth flow"""
-    print("\nDEBUG: Starting Gmail OAuth flow")
+def connect_google_workspace():
+    """Initiate Google Workspace OAuth flow"""
+    print("\nDEBUG: Starting Google Workspace OAuth flow")
     redirect_uri = GOOGLE_CLIENT_CONFIG["web"]["redirect_uris"][0]
     print(f"DEBUG: Using redirect URI: {redirect_uri}")
     print(
@@ -165,33 +165,33 @@ def oauth2callback():
         # Store credentials in database with separate fields
         OAuthCredentials.store_credentials(
             current_user.id,
-            "gmail",
+            "google-workspace",
             access_token=credentials.token,
             refresh_token=credentials.refresh_token,
             expires_at=datetime.fromtimestamp(credentials.expiry.timestamp()) if credentials.expiry else None
         )
         print("DEBUG: Stored credentials in database")
 
-        # Grant Gmail tool permissions after successful OAuth
+        # Grant Google Workspace tool permissions after successful OAuth
         try:
             grant_tool_access(
                 user_id=current_user.id,
-                tool_name="gmail"
+                tool_name="google-workspace"
             )
-            print("DEBUG: Granted Gmail tool permissions to user")
+            print("DEBUG: Granted Google Workspace tool permissions to user")
         except Exception as e:
             print(f"ERROR: Failed to grant tool permissions: {e}")
 
-        # Ensure UserTool record for Gmail exists
+        # Ensure UserTool record for Google Workspace exists
         try:
-            user_tool = UserTool.query.filter_by(user_id=current_user.id, tool_name="gmail").first()
+            user_tool = UserTool.query.filter_by(user_id=current_user.id, tool_name="google-workspace").first()
             if not user_tool:
-                user_tool = UserTool(user_id=current_user.id, tool_name="gmail", is_active=True)
+                user_tool = UserTool(user_id=current_user.id, tool_name="google-workspace", is_active=True)
                 db.session.add(user_tool)
                 db.session.commit()
-                print("DEBUG: Created UserTool for Gmail")
+                print("DEBUG: Created UserTool for Google Workspace")
             else:
-                print("DEBUG: UserTool for Gmail already exists")
+                print("DEBUG: UserTool for Google Workspace already exists")
         except Exception as e:
             print(f"ERROR: Failed to create UserTool: {e}")
 

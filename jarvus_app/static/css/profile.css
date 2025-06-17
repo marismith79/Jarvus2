@@ -250,20 +250,4 @@ nav a.active {
     font-size: 1.2rem;
     font-weight: 500;
     text-align: center;
-}
-
-/* Button Styles */
-
-.cta-button:hover {
-    background: #2563eb;
-}
-
-.cta-button.secondary {
-    background: #ef4444;
-    padding: 0.5rem 1rem;
-    color: white;
-}
-
-.cta-button.secondary:hover {
-    background: #dc2626;
 } 

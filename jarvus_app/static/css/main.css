@@ -1,8 +1,8 @@
 /* Base styles and variables */
 :root {
     /* Colors */
-    --primary-color: #3B82F6;
-    --primary-hover: #2563EB;
+    --primary-color: #3B82F6;  /* Blue */
+    --primary-hover: #2563EB;  /* Darker blue */
     --text-primary: #1F2937;
     --text-secondary: #4B5563;
     --bg-primary: #FFFFFF;
@@ -20,7 +20,7 @@
 
     /* Border radius */
     --radius-sm: 0.25rem;
-    --radius-md: 0.5rem;
+    --radius-md: 0.75rem;  /* Increased for more rounded buttons */
     --radius-lg: 1rem;
 
     /* Shadows */
@@ -116,11 +116,24 @@ nav a.active {
     transition: all 0.2s ease;
     border: none;
     cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 100px;
 }
 
 .cta-button:hover {
     background-color: var(--primary-hover);
     transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+.cta-button.secondary {
+    background-color: var(--error-color);
+}
+
+.cta-button.secondary:hover {
+    background-color: #dc2626;
 }
 
 /* Forms */
@@ -1185,23 +1198,6 @@ main {
 .cta-section p {
     margin-bottom: 2rem;
     font-size: 1.2rem;
-}
-
-.cta-button {
-    display: inline-block;
-    padding: 1rem 2rem;
-    background-color: #28a745;
-    color: white;
-    text-decoration: none;
-    border-radius: 4px;
-    font-weight: bold;
-    transition: background-color 0.3s ease;
-}
-
-.cta-button:hover {
-    background-color: #218838;
-    color: white;
-    text-decoration: none;
 }
 
 .hero .cta-buttons {

@@ -69,7 +69,7 @@
 {% block extra_js %}
 <script>
     // Pass connection status to JavaScript
-    window.gmailConnected = {{ 'true' if gmail_connected else 'false' }};
+    window.googleWorkspaceConnected = {{ 'true' if google_workspace_connected else 'false' }};
     window.notionConnected = {{ 'true' if notion_connected else 'false' }};
     window.slackConnected = {{ 'true' if slack_connected else 'false' }};
     window.zoomConnected = {{ 'true' if zoom_connected else 'false' }};

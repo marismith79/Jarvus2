@@ -25,7 +25,7 @@ def profile():
     return render_template(
         "profile.html",
         user=current_user,
-        gmail_connected=connected_services["gmail"],
+        google_workspace_connected=connected_services["google-workspace"],
         notion_connected=connected_services["notion"],
         slack_connected=connected_services["slack"],
         zoom_connected=connected_services["zoom"],
