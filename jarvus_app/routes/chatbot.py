@@ -152,7 +152,7 @@ def handle_chat_message():
                     parameters=tool_args,
                     jwt_token=jwt_token
                 )
-                logger.info(f"Tool execution result: {result}")
+                # logger.info(f"Tool execution result: {result}")
                 
                 # Append ToolMessage
                 tool_msg = ToolMessage(
@@ -161,6 +161,7 @@ def handle_chat_message():
                 )
                 messages.append(tool_msg)
 
+                # print("tool_msg:", tool_msg)
             # After executing tools, get a follow-up assistant response
             logger.info("Getting follow-up response after tool execution")
             followup: ChatCompletions = jarvus_ai.client.complete(
@@ -170,8 +171,10 @@ def handle_chat_message():
                 stream=False,
                 tool_choice=tool_choice
             )
+            print("followup:", followup)
             choice2 = followup.choices[0]
             msg2 = choice2.message
+            print("msg2:", msg2)
             assistant_msg = AssistantMessage(content=msg2.content)
             messages.append(assistant_msg)
             logger.info(f"Followup message: {assistant_msg}")
@@ -191,12 +194,18 @@ def handle_chat_message():
             for m in messages
         ]
         # Build minimal history for frontend
-        history = [ {'role': m.role, 'content': getattr(m, 'content', '')} for m in messages if hasattr(m, 'role') ]
+        # history = [ {'role': m.role, 'content': getattr(m, 'content', '')} for m in messages if hasattr(m, 'role') ]
+        # Filter out tool messages before sending to frontend
+        filtered_history = [
+            {"role": m.role, "content": getattr(m, "content", "")}
+            for m in messages
+            if m.role not in ['tool']  # exclude tool messages
+        ]
         logger.info(f"Returning response with {len(history)} messages in history")
 
         return jsonify({
             'assistant': final_reply,
-            'history': history,
+            'history': filtered_history,
             'tool_responses': assistant_messages
         }), 200
 

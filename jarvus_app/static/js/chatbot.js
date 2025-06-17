@@ -149,10 +149,12 @@ const connectedTools = {
       // Re-render the entire conversation from the returned history
       if (Array.isArray(data.history)) {
         document.getElementById('chat-history').innerHTML = '';
-        data.history.forEach(msg => {
-          const cls = msg.role === 'user' ? 'user' : 'bot';
-          appendMessage(cls, msg.content);
-        });
+        data.history
+            .filter(msg => msg.role === 'user' || msg.role === 'assistant')  // filter by role
+            .forEach(msg => {
+                const cls = msg.role === 'user' ? 'user' : 'bot';
+                appendMessage(cls, msg.content);
+            });
       } else {
         // Fallback: just show assistant or tool responses
         if (data.assistant) appendMessage('bot', data.assistant);

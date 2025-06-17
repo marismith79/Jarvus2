@@ -60,7 +60,7 @@ class MCPClient:
         result = response.json()
         
         print(f"Response body type: {type(result)}")
-        print(f"Response body: {result}")
+        # print(f"Response body: {result}")
         print("=== End MCP Response Debug ===\n")
         
         return result
@@ -128,7 +128,7 @@ class MCPClient:
             
             # Log successful execution
             print(f"Successfully executed {tool_name}")
-            print(f"About to return result: {result}")
+            # print(f"About to return result: {result}")
             print(f"Result type: {type(result)}")
             return result
             
