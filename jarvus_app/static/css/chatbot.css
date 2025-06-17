@@ -1,6 +1,18 @@
 /*─────────────────────────────────────────────────────────────────────────────
   1. Root Variables
 ─────────────────────────────────────────────────────────────────────────────*/
+:root {
+    /* Use the same color variables as main.css */
+    --primary-color: #3B82F6;  /* Blue */
+    --primary-hover: #2563EB;  /* Darker blue */
+    --text-primary: #1F2937;
+    --text-secondary: #4B5563;
+    --bg-primary: #FFFFFF;
+    --bg-secondary: #F3F4F6;
+    --border-color: #E5E7EB;
+    --error-color: #EF4444;
+    --success-color: #10B981;
+}
   
   /*─────────────────────────────────────────────────────────────────────────────
     2. Global Resets

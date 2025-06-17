@@ -24,7 +24,7 @@ function toggleSuggestions() {
 
 // Store connection status
 const connectedTools = {
-    gmail: window.gmailConnected || false,
+    googleWorkspace: window.googleWorkspaceConnected || false,
     notion: window.notionConnected || false,
     slack: window.slackConnected || false,
     zoom: window.zoomConnected || false

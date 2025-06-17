@@ -9,10 +9,10 @@ from ..models.tool_permission import ToolPermission
 
 # Define available tools and their descriptions
 TOOLS = {
-    "gmail": "Access to Gmail functionality through MCP server",
-    "notion": "Coming soon: Access to Notion functionality",
-    "slack": "Coming soon: Access to Slack functionality",
-    "zoom": "Coming soon: Access to Zoom functionality"
+    "google-workspace": "Access to Google Workspace functionality through MCP server",
+    "notion": "Access to Notion functionality through MCP server",
+    "slack": "Access to Slack functionality through MCP server",
+    "zoom": "Access to Zoom functionality through MCP server",
 }
 
 def grant_tool_access(user_id, tool_name, duration_days=None):
@@ -21,7 +21,7 @@ def grant_tool_access(user_id, tool_name, duration_days=None):
 
     Args:
         user_id (str): The user's ID
-        tool_name (str): The name of the tool (e.g., 'gmail')
+        tool_name (str): The name of the tool (e.g., 'google-workspace')
         duration_days (int, optional): Number of days until permission expires
     """
     if tool_name not in TOOLS:
@@ -97,8 +97,8 @@ def get_connected_services(user_id):
     """Get a dictionary of connected services for a user."""
     services = {}
     for service in TOOLS.keys():
-        if service == "gmail":
-            # Only check actual connection status for Gmail
+        if service == "google-workspace":
+            # Only check actual connection status for Google Workspace
             services[service] = OAuthCredentials.get_credentials(user_id, service) is not None
         else:
             # Mark other services as not connected (coming soon)
