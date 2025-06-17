@@ -22,7 +22,7 @@ from azure.ai.inference.models import (
     ChatCompletions
 )
 
-SYSTEM_PROMPT = SystemMessage(content="You are a helpful assistant.")
+SYSTEM_PROMPT = SystemMessage(content="You are a helpful assistant. Before you complete a tool call, say something to the user")
 jarvus_ai = JarvusAIClient()
 
 chatbot_bp = Blueprint('chatbot', __name__)
@@ -121,7 +121,7 @@ def handle_chat_message():
         response: ChatCompletions = jarvus_ai.client.complete(
             messages=messages,
             model=jarvus_ai.deployment_name,
-            # tools=sdk_tools,
+            tools=sdk_tools,
             stream=False,
             tool_choice=tool_choice
         )
@@ -134,6 +134,7 @@ def handle_chat_message():
             tool_calls=msg.tool_calls
             )
         messages.append(assistant_msg)
+        logger.info(f"First message: {assistant_msg}")
         assistant_messages: List[Dict[str,str]] = []
 
 
@@ -165,7 +166,7 @@ def handle_chat_message():
             followup: ChatCompletions = jarvus_ai.client.complete(
                 messages=messages,
                 model=jarvus_ai.deployment_name,
-                # tools=sdk_tools,
+                tools=sdk_tools,
                 stream=False,
                 tool_choice=tool_choice
             )
@@ -173,6 +174,7 @@ def handle_chat_message():
             msg2 = choice2.message
             assistant_msg = AssistantMessage(content=msg2.content)
             messages.append(assistant_msg)
+            logger.info(f"Followup message: {assistant_msg}")
             assistant_messages.append({'role': assistant_msg.role, 'content': assistant_msg.content})
             final_reply = msg2.content
         else:

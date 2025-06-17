@@ -156,9 +156,9 @@ const connectedTools = {
       } else {
         // Fallback: just show assistant or tool responses
         if (data.assistant) appendMessage('bot', data.assistant);
-        if (Array.isArray(data.tool_responses)) {
-          data.tool_responses.forEach(tr => appendMessage('bot', tr.content));
-        }
+        // if (Array.isArray(data.tool_responses)) {
+        //   data.tool_responses.forEach(tr => appendMessage('bot', tr.content));
+        // }
       }
     } catch (err) {
       console.error('Fetch error:', err);
@@ -166,13 +166,7 @@ const connectedTools = {
       appendMessage('bot', '⚠️ Error: Failed to get response from the assistant.');
     }
   }
-  
-  // Toggle suggestions visibility
-  function toggleSuggestions() { /* unchanged */ }
-  
-  // Insert suggestion into input
-  function insertSuggestion(text) { /* unchanged */ }
-  
+
   document.addEventListener('DOMContentLoaded', () => {
     loadAvailableTools();
     loadHistory(); // render the stored history on page load
