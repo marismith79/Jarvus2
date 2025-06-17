@@ -3,6 +3,13 @@
 {% block title %}Chatbot - Jarvus{% endblock %}
 
 {% block content %}
+<style>
+    .message p {
+        white-space: pre-wrap;
+        line-height: 1.5;
+        margin: 0;
+    }
+</style>
 <div class="chatbot-layout">
     <!-- Chat Main Area -->
     <section class="chatbot-card">
@@ -21,7 +28,7 @@
         <!-- Suggestion cards -->
         <div class="suggestions-cards-wrapper" id="suggestions-wrapper">
             <div class="suggestions-cards">
-                <div class="card card-gmail" onclick="insertSuggestion('Check my recent emails')">
+                <div class="card card-gmail" onclick="insertSuggestion('Summarize my 5 most recent emails')">
                     <div class="card-text gmail-text">
                         Summarize my most recent work emails 
                     </div>
@@ -67,6 +74,6 @@
     window.slackConnected = {{ 'true' if slack_connected else 'false' }};
     window.zoomConnected = {{ 'true' if zoom_connected else 'false' }};
 </script>
-<script src="{{ url_for('static', filename='js/chatbot.js') }}"></script>
+<script src="{{ url_for('static', filename='js/chatbot.js') }}?v=3"></script>
 {% endblock %}
 

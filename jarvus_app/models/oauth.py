@@ -13,7 +13,9 @@ class OAuthCredentials(db.Model):
         db.String(50), db.ForeignKey("users.id"), nullable=False
     )  # Link to users table
     service = db.Column(db.String(50), nullable=False)
-    credentials_json = db.Column(db.Text, nullable=False)
+    access_token = db.Column(db.Text, nullable=False)
+    refresh_token = db.Column(db.Text, nullable=True)  # Some services might not provide refresh tokens
+    expires_at = db.Column(db.DateTime, nullable=True)  # When the access token expires
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(
         db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
@@ -33,17 +35,23 @@ class OAuthCredentials(db.Model):
         return cls.query.filter_by(user_id=user_id, service=service).first()
 
     @classmethod
-    def store_credentials(cls, user_id, service, credentials_json):
+    def store_credentials(cls, user_id, service, access_token, refresh_token=None, expires_at=None):
         """Store or update OAuth credentials"""
         creds = cls.get_credentials(user_id, service)
         if creds:
-            creds.credentials_json = credentials_json
+            creds.access_token = access_token
+            if refresh_token:
+                creds.refresh_token = refresh_token
+            if expires_at:
+                creds.expires_at = expires_at
             creds.updated_at = datetime.utcnow()
         else:
             creds = cls(
                 user_id=user_id,
                 service=service,
-                credentials_json=credentials_json,
+                access_token=access_token,
+                refresh_token=refresh_token,
+                expires_at=expires_at
             )
             db.session.add(creds)
         db.session.commit()

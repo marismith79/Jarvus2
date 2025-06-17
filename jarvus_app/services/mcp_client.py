@@ -1,127 +1,148 @@
 """
-MCP Client for communicating with the Google Workspace MCP server.
-Provides functions to call MCP endpoints for Gmail and Calendar tools.
+MCP Client for communicating with MCP servers.
+Provides a generic interface for interacting with various services through their respective MCP servers.
 """
 
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 import requests
+from requests.exceptions import RequestException
 
-# Get MCP server URL from environment variable, default to localhost for development
-MCP_SERVER_URL = os.getenv("MCP_SERVER_URL", "http://localhost:4100")
-print(f"\nMCP Server URL set to: {MCP_SERVER_URL}")
+
+class MCPError(Exception):
+    """Base exception for MCP client errors."""
+    pass
+
+
+class AuthenticationError(MCPError):
+    """Raised when authentication fails."""
+    pass
+
+
+class PermissionError(MCPError):
+    """Raised when user lacks required permissions."""
+    pass
+
+
+class RateLimitError(MCPError):
+    """Raised when rate limit is exceeded."""
+    pass
+
+
+class ToolExecutionError(MCPError):
+    """Raised when tool execution fails."""
+    pass
 
 
 class MCPClient:
+    """Client for communicating with MCP servers."""
+    
     def __init__(self, base_url: Optional[str] = None):
-        self.base_url = base_url or MCP_SERVER_URL
-        print(
-            f"\nMCP Client initialized with URL: {self.base_url}"
-        )  # Debug log
+        self.base_url = base_url or os.getenv("MCP_SERVER_URL", "http://localhost:8000")
+        print(f"\nMCP Client initialized with URL: {self.base_url}")
+        self.default_timeout = 30  # 30 second default timeout
 
-    def list_emails(
-        self, max_results: int = 5, query: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
-        print(
-            f"\nCalling list_emails with max_results={max_results}, query={query}"
-        )  # Debug log
-        print(
-            f"Making request to: {self.base_url}/gmail/list_emails"
-        )  # Debug log
-        payload = {"maxResults": max_results}
-        if query:
-            payload["query"] = query
+    def _handle_response(self, response: requests.Response) -> Dict[str, Any]:
+        """Handle HTTP response and raise appropriate exceptions."""
+        print("\n=== MCP Response Debug ===")
+        print(f"Response status code: {response.status_code}")
+        print(f"Response headers: {dict(response.headers)}")
+        
+        if response.status_code == 401:
+            raise AuthenticationError("Authentication failed")
+        elif response.status_code == 403:
+            raise PermissionError("Permission denied")
+        elif response.status_code == 429:
+            raise RateLimitError("Rate limit exceeded")
+            
+        response.raise_for_status()
+        result = response.json()
+        
+        print(f"Response body type: {type(result)}")
+        # print(f"Response body: {result}")
+        print("=== End MCP Response Debug ===\n")
+        
+        return result
+
+    def execute_tool(self, tool_name: str, parameters: Dict[str, Any], jwt_token: Optional[str] = None, timeout: Optional[int] = None) -> Dict[str, Any]:
+        """
+        Execute a tool operation through the MCP server.
+        
+        Args:
+            tool_name: The name of the tool (e.g., 'gmail', 'calendar')
+            parameters: Operation-specific parameters
+            jwt_token: Optional JWT token for authentication
+            timeout: Optional timeout in seconds (defaults to self.default_timeout)
+            
+        Returns:
+            Dict[str, Any]: The operation result as a dictionary
+            
+        Raises:
+            ToolExecutionError: If tool execution fails
+            AuthenticationError: If authentication fails
+            PermissionError: If user lacks required permissions
+            RateLimitError: If rate limit is exceeded
+        """
+        # Validate inputs
+        if not tool_name:
+            raise ToolExecutionError("Tool name cannot be empty")
+        if not isinstance(parameters, dict):
+            raise ToolExecutionError("Parameters must be a dictionary")
+        
+        print(f"\nExecuting {tool_name}")
+        print(f"Parameters: {parameters}")
+        print(f"JWT Token provided: {jwt_token is not None}")
+        
         try:
+            # Construct the URL for the MCP server with trailing slash
+            url = f"{self.base_url}/{tool_name}/"
+            print(f"Making request to: {url}")
+            
+            # Set up headers with JWT token if provided
+            headers = {}
+            if jwt_token:
+                headers['Authorization'] = f'Bearer {jwt_token}'
+                print(f"Added Authorization header: Bearer {jwt_token[:10]}...")
+            else:
+                print("No JWT token provided, skipping Authorization header")
+            
+            print(f"Request headers: {headers}")
+            
+            # If parameters contains an 'operation' field, use the nested parameters
+            request_body = parameters.get('parameters', parameters)
+            print(f"Request payload: {request_body}")
+            
+            # Send parameters directly as the request body with timeout
+            timeout = timeout or self.default_timeout
             resp = requests.post(
-                f"{self.base_url}/gmail/list_emails", json=payload
+                url, 
+                json=request_body, 
+                headers=headers, 
+                allow_redirects=True,
+                timeout=timeout
             )
-            resp.raise_for_status()
-            return resp.json()
+            
+            # Handle the response and get the result
+            result = self._handle_response(resp)
+            
+            # Log successful execution
+            print(f"Successfully executed {tool_name}")
+            # print(f"About to return result: {result}")
+            print(f"Result type: {type(result)}")
+            return result
+            
+        except requests.exceptions.Timeout:
+            error_msg = f"Request timed out after {timeout} seconds for {tool_name}"
+            print(f"\n{error_msg}")
+            raise ToolExecutionError(error_msg)
         except requests.exceptions.RequestException as e:
-            print(f"\nError making request: {str(e)}")
-            print(f"Request URL: {self.base_url}/gmail/list_emails")
-            print(f"Request payload: {payload}")
-            raise
-
-    def search_emails(
-        self, query: str, max_results: int = 10
-    ) -> List[Dict[str, Any]]:
-        print(
-            f"\nCalling search_emails with query={query}, max_results={max_results}"
-        )  # Debug log
-        print(
-            f"Making request to: {self.base_url}/gmail/search_emails"
-        )  # Debug log
-        payload = {"query": query, "maxResults": max_results}
-        try:
-            resp = requests.post(
-                f"{self.base_url}/gmail/search_emails", json=payload
-            )
-            resp.raise_for_status()
-            return resp.json()
-        except requests.exceptions.RequestException as e:
-            print(f"\nError making request: {str(e)}")
-            print(f"Request URL: {self.base_url}/gmail/search_emails")
-            print(f"Request payload: {payload}")
-            raise
-
-    def send_email(
-        self,
-        to: str,
-        subject: str,
-        body: str,
-        cc: Optional[str] = None,
-        bcc: Optional[str] = None,
-    ) -> Dict[str, Any]:
-        payload = {"to": to, "subject": subject, "body": body}
-        if cc:
-            payload["cc"] = cc
-        if bcc:
-            payload["bcc"] = bcc
-        resp = requests.post(f"{self.base_url}/gmail/send_email", json=payload)
-        resp.raise_for_status()
-        return resp.json()
-
-    def list_events(
-        self,
-        max_results: int = 10,
-        time_min: Optional[str] = None,
-        time_max: Optional[str] = None,
-    ) -> List[Dict[str, Any]]:
-        payload = {"maxResults": max_results}
-        if time_min:
-            payload["timeMin"] = time_min
-        if time_max:
-            payload["timeMax"] = time_max
-        resp = requests.post(
-            f"{self.base_url}/calendar/list_events", json=payload
-        )
-        resp.raise_for_status()
-        return resp.json()
-
-    def create_event(
-        self,
-        summary: str,
-        start: str,
-        end: str,
-        location: Optional[str] = None,
-        description: Optional[str] = None,
-        attendees: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
-        payload = {"summary": summary, "start": start, "end": end}
-        if location:
-            payload["location"] = location
-        if description:
-            payload["description"] = description
-        if attendees:
-            payload["attendees"] = attendees
-        resp = requests.post(
-            f"{self.base_url}/calendar/create_event", json=payload
-        )
-        resp.raise_for_status()
-        return resp.json()
+            error_msg = f"Error executing {tool_name}: {str(e)}"
+            print(f"\n{error_msg}")
+            print(f"Request URL: {url}")
+            print(f"Request payload: {request_body}")
+            raise ToolExecutionError(error_msg) from e
 
 
-# Singleton instance
-mcp_client = MCPClient()
+# Create a singleton instance
+mcp_client = MCPClient() 

@@ -2,6 +2,7 @@
 
 import os
 import sys
+import logging
 
 import msal
 from dotenv import load_dotenv
@@ -22,6 +23,7 @@ from ..db import db
 load_dotenv()
 
 auth = Blueprint("auth", __name__)
+logger = logging.getLogger(__name__)
 
 # Load B2C config from env
 CLIENT_ID = os.getenv("B2C_CLIENT_ID")
@@ -66,13 +68,10 @@ def signin():
 @auth.route("/getAToken")
 def authorized():
     """Callback endpoint for B2C to redirect back with code."""
-    print("DEBUG: Starting authorized callback", flush=True)
+    logger.info("=== Starting authorized callback ===")
     error = request.args.get("error")
     error_description = request.args.get("error_description")
-    print(
-        f"DEBUG: Error params - error: {error}, description: {error_description}",
-        flush=True,
-    )
+    logger.info(f"Error params - error: {error}, description: {error_description}")
 
     # Handle "forgot password" error from B2C
     if (
@@ -83,29 +82,29 @@ def authorized():
         return redirect(url_for("auth.forgot_password"))
 
     code = request.args.get("code")
-    print(f"DEBUG: Received code: {code}", flush=True)
+    logger.info(f"Received code: {code}")
     if not code:
-        print("DEBUG: No code received, redirecting to signin", flush=True)
+        logger.info("No code received, redirecting to signin")
         return redirect(url_for("auth.signin"))
 
     msal_app = msal.ConfidentialClientApplication(
         CLIENT_ID, authority=SIGNIN_AUTHORITY, client_credential=CLIENT_SECRET
     )
-    print("DEBUG: Acquiring token with code", flush=True)
+    logger.info("Acquiring token with code")
     result = msal_app.acquire_token_by_authorization_code(
         code, scopes=SCOPE, redirect_uri=REDIRECT_URI
     )
-    print(f"DEBUG: Token acquisition result: {result}", flush=True)
+    logger.info(f"Token acquisition result: {result}")
 
     if "id_token_claims" in result:
         claims = result["id_token_claims"]
-        print(f"DEBUG: Full result from Azure B2C: {result}", flush=True)
-        print(f"DEBUG: Claims from Azure B2C: {claims}", flush=True)
+        logger.info(f"Full result from Azure B2C: {result}")
+        logger.info(f"Claims from Azure B2C: {claims}")
         user_id = claims.get("sub")
-        print(f"DEBUG: User ID (sub): {user_id}", flush=True)
+        logger.info(f"User ID (sub): {user_id}")
 
         if not user_id:
-            print("DEBUG: No user ID (sub) found in claims", flush=True)
+            logger.error("No user ID (sub) found in claims")
             return render_template(
                 "signin.html",
                 error="User ID not found in authentication response. Please try signing in again.",
@@ -113,20 +112,14 @@ def authorized():
 
         # Find user in DB or create a new one
         user = User.query.get(user_id)
-        print(f"DEBUG: Existing user found: {user}", flush=True)
+        logger.info(f"Existing user found: {user}")
 
         if not user:
-            print(
-                "DEBUG: No existing user found, creating new user", flush=True
-            )
+            logger.info("No existing user found, creating new user")
             try:
                 # Get email and name from claims if available
-                email = claims.get("emails", [None])[
-                    0
-                ]  # Azure AD provides email in 'emails' array
-                name = claims.get(
-                    "name"
-                )  # Azure AD provides name in 'name' claim
+                email = claims.get("emails", [None])[0]  # Azure AD provides email in 'emails' array
+                name = claims.get("name")  # Azure AD provides name in 'name' claim
 
                 # If email is not available, generate a temporary one
                 if not email:
@@ -139,12 +132,9 @@ def authorized():
                 user = User(id=user_id, name=name, email=email)
                 db.session.add(user)
                 db.session.commit()
-                print(
-                    f"DEBUG: Created new user: {user.id}, {user.name}, {user.email}",
-                    flush=True,
-                )
+                logger.info(f"Created new user: {user.id}, {user.name}, {user.email}")
             except Exception as e:
-                print(f"DEBUG: Error creating user: {str(e)}", flush=True)
+                logger.error(f"Error creating user: {str(e)}")
                 db.session.rollback()
                 return render_template(
                     "signin.html",
@@ -156,16 +146,23 @@ def authorized():
         user_claims[user_id] = claims
         session["user_claims"] = user_claims
 
+        # Store the JWT token in the session
+        if "id_token" in result:
+            session["jwt_token"] = result["id_token"]
+            logger.info("=== Token Storage Debug ===")
+            logger.info(f"Stored JWT token in session: {result['id_token'][:10]}...")
+            logger.info(f"Session contents after token storage: {dict(session)}")
+            logger.info("=========================")
+        else:
+            logger.error("No id_token found in result")
+
         if user:
             login_user(user, remember=True)
-            print(f"DEBUG: User logged in successfully: {user.id}", flush=True)
+            logger.info(f"User logged in successfully: {user.id}")
             next_url = session.pop("next_url", None)
             return redirect(next_url or url_for("web.landing"))
         else:
-            print(
-                "DEBUG: User object is None after creation/retrieval",
-                flush=True,
-            )
+            logger.error("User object is None after creation/retrieval")
             return render_template(
                 "signin.html",
                 error="Failed to create or retrieve user account. Please try signing in again.",
@@ -173,7 +170,7 @@ def authorized():
 
     # on error, show the sign‑in page with an error message
     error = result.get("error_description") or result.get("error")
-    print(f"DEBUG: Authentication error: {error}", flush=True)
+    logger.error(f"Authentication error: {error}")
     return render_template("signin.html", error=error)
 
 

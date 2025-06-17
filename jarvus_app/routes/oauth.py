@@ -1,5 +1,6 @@
 import json
 import os
+from datetime import datetime
 
 from flask import (
     Blueprint,
@@ -16,6 +17,9 @@ from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 
 from ..models.oauth import OAuthCredentials  # Uncommented
+from ..utils.tool_permissions import grant_tool_access
+from ..models.user_tool import UserTool
+from ..db import db
 
 oauth_bp = Blueprint("oauth", __name__)
 
@@ -33,22 +37,9 @@ GOOGLE_CLIENT_CONFIG = {
         "token_uri": "https://oauth2.googleapis.com/token",
         "redirect_uris": [os.getenv("GOOGLE_REDIRECT_URI")],
         "scopes": [
-            "https://www.googleapis.com/auth/gmail.readonly", # View your email messages and settings
-            "https://www.googleapis.com/auth/gmail.compose", # Manage drafts and send emails
-            "https://www.googleapis.com/auth/gmail.modify", # Read, compose and send emails from your Gmail account
-            "https://www.googleapis.com/auth/spreadsheets", # See, edit, create and delete all your Google Sheets spreadsheets
-            "https://www.googleapis.com/auth/presentations", # See, edit, create and delete all your Google Slides presentations
-            "https://www.googleapis.com/auth/drive.install", # Connect itself to your Google Drive
-            "https://www.googleapis.com/auth/activity", # View the activity history of your Google apps
-            "https://www.googleapis.com/auth/docs", # See, edit, create and delete all of your Google Drive files
-            "https://www.googleapis.com/auth/drive", # See, edit, create and delete all of your Google Drive files
-            "https://www.googleapis.com/auth/documents", # See, edit, create and delete all your Google Docs documents
-            "https://www.googleapis.com/auth/calendar", # See, edit, share and permanently delete all the calendars that you can access using Google Calendar
-            "https://www.googleapis.com/auth/meetings.space.created", # Create, edit and see information about your Google Meet conferences created by the app.	
-            "https://www.googleapis.com/meetings.space.settings", # Edit and see settings for all of your Google Meet calls. 
-            "https://www.googleapis.com/auth/meetings.space.readonly", # Read information about any of your Google Meet conferences
-            "https://www.googleapis.com/auth/meetings.space.created", # Create, edit and see information about your Google Meet conferences created by the app.	
-            "https://www.googleapis.com/auth/meetings.space.readonly", # Read information about any of your Google Meet conferences
+            "https://www.googleapis.com/auth/gmail.readonly",
+            "https://www.googleapis.com/auth/gmail.send",
+            "https://www.googleapis.com/auth/gmail.modify",
         ],
     }
 }
@@ -87,8 +78,8 @@ ZOOM_CLIENT_CONFIG = {
 @login_required
 def connect_service(service):
     """Initiate OAuth flow for the specified service"""
-    if service == "google-workspace":
-        return connect_google_workspace()
+    if service == "gmail":
+        return connect_gmail()
     elif service == "notion":
         return connect_notion()
     elif service == "slack":
@@ -96,7 +87,7 @@ def connect_service(service):
     elif service == "zoom":
         return connect_zoom()
     else:
-        return redirect(url_for("web.profile"))
+        return redirect(url_for("profile.profile"))
 
 
 @oauth_bp.route("/disconnect/<service>", methods=["POST"])
@@ -106,7 +97,7 @@ def disconnect_service(service):
     print(
         f"[DEBUG] Disconnect requested for service: {service}, user: {current_user.id}"
     )
-    if service in ["google-workspace", "notion", "slack", "zoom"]:
+    if service in ["gmail", "notion", "slack", "zoom"]:
         success = OAuthCredentials.remove_credentials(current_user.id, service)
         print(f"[DEBUG] Removal result for {service}: {success}")
         return jsonify({"success": success})
@@ -114,9 +105,9 @@ def disconnect_service(service):
     return jsonify({"success": False, "error": "Invalid service"})
 
 
-def connect_google_workspace():
-    """Initiate Google Workspace OAuth flow"""
-    print("\nDEBUG: Starting Google Workspace OAuth flow")
+def connect_gmail():
+    """Initiate Gmail OAuth flow"""
+    print("\nDEBUG: Starting Gmail OAuth flow")
     redirect_uri = GOOGLE_CLIENT_CONFIG["web"]["redirect_uris"][0]
     print(f"DEBUG: Using redirect URI: {redirect_uri}")
     print(
@@ -144,9 +135,8 @@ def oauth2callback():
     """Handle OAuth 2.0 callback"""
     print("\nDEBUG: Received OAuth callback")
     print(f"DEBUG: Callback URL: {request.url}")
-    print(
-        f"DEBUG: Expected redirect URI: {GOOGLE_CLIENT_CONFIG['web']['redirect_uris'][0]}"
-    )
+    print(f"DEBUG: Expected redirect URI: {GOOGLE_CLIENT_CONFIG['web']['redirect_uris'][0]}")
+    print(f"DEBUG: Current user in OAuth callback: {getattr(current_user, 'id', None)}")
 
     try:
         flow = Flow.from_client_config(
@@ -163,18 +153,53 @@ def oauth2callback():
 
         credentials = flow.credentials
         print("DEBUG: Successfully obtained credentials")
+        print(f"DEBUG: Credentials type: {type(credentials)}")
+        print(f"DEBUG: Access token type: {type(credentials.token)}")
+        print(f"DEBUG: Access token length: {len(credentials.token)}")
+        print(f"DEBUG: Access token first 50 chars: {credentials.token[:50]}")
+        print(f"DEBUG: Refresh token type: {type(credentials.refresh_token)}")
+        print(f"DEBUG: Refresh token length: {len(credentials.refresh_token) if credentials.refresh_token else 0}")
+        print(f"DEBUG: Expiry type: {type(credentials.expiry)}")
+        print(f"DEBUG: Expiry value: {credentials.expiry}")
 
-        # Store credentials in database
+        # Store credentials in database with separate fields
         OAuthCredentials.store_credentials(
-            current_user.id, "google-workspace", credentials.to_json()
+            current_user.id,
+            "gmail",
+            access_token=credentials.token,
+            refresh_token=credentials.refresh_token,
+            expires_at=datetime.fromtimestamp(credentials.expiry.timestamp()) if credentials.expiry else None
         )
         print("DEBUG: Stored credentials in database")
 
-        return redirect(url_for("web.profile"))
+        # Grant Gmail tool permissions after successful OAuth
+        try:
+            grant_tool_access(
+                user_id=current_user.id,
+                tool_name="gmail"
+            )
+            print("DEBUG: Granted Gmail tool permissions to user")
+        except Exception as e:
+            print(f"ERROR: Failed to grant tool permissions: {e}")
+
+        # Ensure UserTool record for Gmail exists
+        try:
+            user_tool = UserTool.query.filter_by(user_id=current_user.id, tool_name="gmail").first()
+            if not user_tool:
+                user_tool = UserTool(user_id=current_user.id, tool_name="gmail", is_active=True)
+                db.session.add(user_tool)
+                db.session.commit()
+                print("DEBUG: Created UserTool for Gmail")
+            else:
+                print("DEBUG: UserTool for Gmail already exists")
+        except Exception as e:
+            print(f"ERROR: Failed to create UserTool: {e}")
+
+        return redirect(url_for("profile.profile"))
     except Exception as e:
         print(f"ERROR: Failed to process OAuth callback: {str(e)}")
         print(f"ERROR: Full error details: {repr(e)}")
-        return redirect(url_for("web.profile"))
+        return redirect(url_for("profile.profile"))
 
 
 def connect_notion():

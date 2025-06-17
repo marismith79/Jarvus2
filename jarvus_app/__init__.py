@@ -6,12 +6,14 @@ from pathlib import Path
 from dotenv import load_dotenv
 from flask import Flask
 from flask_login import LoginManager
+from flask_migrate import Migrate
 
 from jarvus_app.config import Config
 from jarvus_app.routes.api import api
 from jarvus_app.routes.auth import auth
 from jarvus_app.routes.chatbot import chatbot_bp
 from jarvus_app.routes.oauth import oauth_bp
+from jarvus_app.routes.profile import profile_bp
 from jarvus_app.routes.web_pages import web
 
 from .db import db  # Use the shared db instance
@@ -42,6 +44,7 @@ os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
 # Remove local db = SQLAlchemy()
 login_manager = LoginManager()
+migrate = Migrate()
 
 
 def create_app():
@@ -60,6 +63,7 @@ def create_app():
 
     # Initialize extensions
     db.init_app(app)
+    migrate.init_app(app, db)  # Initialize Flask-Migrate
     login_manager.init_app(app)
     login_manager.login_view = "auth.signin"
 
@@ -76,6 +80,7 @@ def create_app():
     # app.register_blueprint(mcp_bp, url_prefix='/mcp')
     app.register_blueprint(chatbot_bp, url_prefix="/chatbot")
     app.register_blueprint(oauth_bp)
+    app.register_blueprint(profile_bp)
     # app.register_blueprint(flow_builder_bp, url_prefix='/flow_builder')
 
     return app
