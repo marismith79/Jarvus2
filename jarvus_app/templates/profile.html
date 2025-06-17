@@ -38,16 +38,16 @@
                 <div class="profile-card">
                     <h2>App Integrations</h2>
                     <div class="integrations-grid">
-                        <!-- Gmail Integration -->
+                        <!-- Google Workspace Integration -->
                         <div class="integration-card">
                             <div class="integration-header">
-                                <img src="{{ url_for('static', filename='images/gmail-logo.png') }}" alt="Gmail Logo" class="integration-logo">
-                                <span class="integration-name">Gmail</span>
+                                <img src="{{ url_for('static', filename='images/google-logo.png') }}" alt="Google Workspace Logo" class="integration-logo">
+                                <span class="integration-name">Google Workspace</span>
                             </div>
-                            {% if gmail_connected %}
-                                <button class="cta-button secondary" onclick="disconnectGmail()">Disconnect</button>
+                            {% if google_workspace_connected %}
+                                <button class="cta-button secondary" onclick="disconnectGoogleWorkspace()">Disconnect</button>
                             {% else %}
-                                <button class="cta-button" onclick="connectGmail()">Connect</button>
+                                <button class="cta-button" onclick="connectGoogleWorkspace()">Connect</button>
                             {% endif %}
                         </div>
 
