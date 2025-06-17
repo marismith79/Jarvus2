@@ -6,7 +6,9 @@ that are available through various MCP servers.
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, List, Optional, Any, Callable
+from typing import Any, Callable, Dict, List, Optional
+
+from azure.ai.inference.models import ChatCompletionsToolDefinition, FunctionDefinition
 
 from .mcp_client import mcp_client, ToolExecutionError
 
@@ -34,80 +36,46 @@ class ToolMetadata:
     name: str
     description: str
     category: ToolCategory
-    server_path: str  # The path on the MCP server for this tool (e.g., 'gmail', 'calendar')
+    server_path: str                # e.g., 'gmail', 'calendar'
     requires_auth: bool = True
     is_active: bool = True
-    executor: Optional[Callable] = None  # Function to execute the tool operation
+    executor: Optional[Callable] = None
     parameters: Optional[List[ToolParameter]] = None
     result_formatter: Optional[Callable] = None
 
-    @property
-    def openai_schema(self) -> Dict:
-        """Generate OpenAI function schema for this tool."""
+    def to_sdk_definition(self) -> ChatCompletionsToolDefinition:
+        """Convert this metadata into an Azure SDK ChatCompletionsToolDefinition."""
+        # Build JSON schema for function parameters
+        props: Dict[str, Any] = {}
+        required: List[str] = []
+
         if self.parameters:
-            properties = {}
-            required = []
-            for param in self.parameters:
-                param_schema = {
-                    "type": param.type,
-                    "description": param.description
-                }
-                # Add items type for array parameters
-                if param.type == "array" and param.items_type:
-                    param_schema["items"] = {"type": param.items_type}
-                properties[param.name] = param_schema
-                if param.required:
-                    required.append(param.name)
-            
-            return {
-                "type": "function",
-                "function": {
-                    "name": self.name,
-                    "description": self.description,
-                    "parameters": {
-                        "type": "object",
-                        "properties": properties,
-                        "required": required
-                    }
-                }
-            }
+            for p in self.parameters:
+                schema: Dict[str, Any] = {"type": p.type, "description": p.description}
+                if p.type == "array" and p.items_type:
+                    schema["items"] = {"type": p.items_type}
+                props[p.name] = schema
+                if p.required:
+                    required.append(p.name)
         else:
-            # Default schema for tools without explicit parameters
-            return {
-                "type": "function",
-                "function": {
-                    "name": self.name,
-                    "description": self.description,
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "query": {
-                                "type": "string",
-                                "description": "Search query or parameters for the operation"
-                            }
-                        }
-                    }
+            # Default single-query parameter
+            props = {
+                "query": {
+                    "type": "string",
+                    "description": "Search query or parameters for the operation"
                 }
             }
 
-    def _get_available_operations(self) -> List[str]:
-        """Get list of available operations for this tool."""
-        if self.category == ToolCategory.EMAIL:
-            return [
-                "list_emails",
-                "search_emails",
-                "send_email",
-                "create_draft",
-                "send_draft"
-            ]
-        elif self.category == ToolCategory.CALENDAR:
-            return [
-                "list_events",
-                "create_event",
-                "update_event",
-                "delete_event"
-            ]
-        return []
+        func_def = FunctionDefinition(
+            name=self.name,
+            description=self.description,
+            parameters={
+                "type": "object",
+                "properties": props,
+                "required": required
+            }
+        )
+        return ChatCompletionsToolDefinition(function=func_def)
 
 
 class ToolRegistry:
@@ -115,7 +83,7 @@ class ToolRegistry:
 
     def __init__(self):
         self._tools: Dict[str, ToolMetadata] = {}
-        print("\nTool Registry initialized")
+        print("Tool Registry initialized")
 
     def register(self, tool: ToolMetadata) -> None:
         """Register a new tool's metadata."""
@@ -134,199 +102,105 @@ class ToolRegistry:
 
     def get_active_tools(self) -> List[ToolMetadata]:
         """Get metadata for all active tools."""
-        return [tool for tool in self._tools.values() if tool.is_active]
+        return [t for t in self._tools.values() if t.is_active]
 
     def get_tools_by_category(self, category: ToolCategory) -> List[ToolMetadata]:
         """Get metadata for all tools in a specific category."""
-        return [tool for tool in self._tools.values() if tool.category == category]
+        return [t for t in self._tools.values() if t.category == category]
 
-    def execute_tool(self, tool_name: str, parameters: Dict[str, Any] = None, jwt_token: Optional[str] = None) -> Any:
-        """
-        Execute a tool operation.
-        
-        Args:
-            tool_name: The name of the tool to execute
-            parameters: Optional parameters for the operation
-            jwt_token: Optional JWT token for authentication
-            
-        Returns:
-            The result of the tool execution
-            
-        Raises:
-            ValueError: If the tool is not found or not active
-            ToolExecutionError: If tool execution fails
-        """
+    def get_sdk_tools(self) -> List[ChatCompletionsToolDefinition]:
+        """Return all active tools as Azure SDK definitions."""
+        return [m.to_sdk_definition() for m in self._tools.values() if m.is_active]
+
+    def execute_tool(
+        self,
+        tool_name: str,
+        parameters: Dict[str, Any] = None,
+        jwt_token: Optional[str] = None
+    ) -> Any:
+        """Execute a tool operation and format the result."""
         tool = self.get_tool(tool_name)
-        if not tool:
-            raise ValueError(f"Tool not found: {tool_name}")
-            
-        if not tool.is_active:
-            raise ValueError(f"Tool is not active: {tool_name}")
-            
-        # Use tool's executor if provided, otherwise use MCP client
+        if not tool or not tool.is_active:
+            raise ValueError(f"Tool not available: {tool_name}")
+
         executor = tool.executor or mcp_client.execute_tool
-        raw_result = executor(tool_name=tool_name, parameters=parameters or {}, jwt_token=jwt_token)
-        
+        raw_result = executor(
+            tool_name=tool_name,
+            parameters=parameters or {},
+            jwt_token=jwt_token
+        )
         return self._handle_tool_response(tool, raw_result)
 
     def _handle_tool_response(self, tool: ToolMetadata, raw_result: Any) -> Any:
-        """
-        Handle and format the response from a tool execution.
-        
-        Args:
-            tool: The tool metadata
-            raw_result: The raw result from the tool execution
-            
-        Returns:
-            The formatted result
-        """
+        """Handle and optionally format the raw tool execution result."""
         print(f"\nTool Registry: Got result from {tool.name}")
-        print(f"Result type: {type(raw_result)}")
-        
-        # Format result if formatter is provided
         if tool.result_formatter:
-            formatted = tool.result_formatter(raw_result)
-            print(f"Tool Registry: Formatted result type: {type(formatted)}")
-            return formatted
+            return tool.result_formatter(raw_result)
         return raw_result
 
 
 def format_tool_result(result: Any) -> str:
-    """Format tool results into a human-readable string."""
+    """Format generic tool result into a human-readable string."""
     if isinstance(result, list):
-        return "\n".join([f"- {item}" for item in result])
-    elif isinstance(result, dict):
-        return "\n".join([f"{k}: {v}" for k, v in result.items()])
+        return "\n".join(f"- {item}" for item in result)
+    if isinstance(result, dict):
+        return "\n".join(f"{k}: {v}" for k, v in result.items())
     return str(result)
 
 
-def format_gmail_result(result: Any) -> Dict:
+def format_gmail_result(result: Any) -> Dict[str, Any]:
     """Format Gmail tool results while preserving dictionary structure."""
     if isinstance(result, dict):
         return result
-    elif isinstance(result, list):
+    if isinstance(result, list):
         return {"messages": result}
     return {"result": str(result)}
 
-def format_calendar_result(result: Any) -> Dict:
+
+def format_calendar_result(result: Any) -> Dict[str, Any]:
     """Format Calendar tool results while preserving dictionary structure."""
     if isinstance(result, dict):
         return result
-    elif isinstance(result, list):
+    if isinstance(result, list):
         return {"events": result}
     return {"result": str(result)}
 
 
-# Create singleton instance
+# Instantiate registry and register default tools
+
 tool_registry = ToolRegistry()
 
-# Register default tools
 tool_registry.register(ToolMetadata(
     name="gmail",
-    description="Access to Gmail functionality through MCP server",
+    description="Access Gmail via MCP server",
     category=ToolCategory.EMAIL,
     server_path="gmail",
     requires_auth=True,
     executor=mcp_client.execute_tool,
-    result_formatter=format_gmail_result,
     parameters=[
-        ToolParameter(
-            name="query",
-            type="string",
-            description="Gmail search query (e.g., 'in:inbox', 'from:someone@example.com')",
-            required=False
-        ),
-        ToolParameter(
-            name="to",
-            type="string",
-            description="Recipient email address for sending messages",
-            required=False
-        ),
-        ToolParameter(
-            name="subject",
-            type="string",
-            description="Email subject line",
-            required=False
-        ),
-        ToolParameter(
-            name="body",
-            type="string",
-            description="Email message body",
-            required=False
-        ),
-        ToolParameter(
-            name="message_id",
-            type="string",
-            description="Gmail message ID for specific message operations",
-            required=False
-        ),
-        ToolParameter(
-            name="add_labels",
-            type="array",
-            description="Labels to add to a message",
-            required=False,
-            items_type="string"
-        ),
-        ToolParameter(
-            name="remove_labels",
-            type="array",
-            description="Labels to remove from a message",
-            required=False,
-            items_type="string"
-        )
-    ]
+        ToolParameter("query", "string", "Gmail search query", required=False),
+        ToolParameter("to", "string", "Recipient email address", required=False),
+        ToolParameter("subject", "string", "Email subject line", required=False),
+        ToolParameter("body", "string", "Email message body", required=False),
+    ],
+    result_formatter=format_gmail_result
 ))
 
 tool_registry.register(ToolMetadata(
     name="calendar",
-    description="Access to Google Calendar functionality through MCP server",
+    description="Access Google Calendar via MCP server",
     category=ToolCategory.CALENDAR,
     server_path="calendar",
     requires_auth=True,
     executor=mcp_client.execute_tool,
-    result_formatter=format_calendar_result,
     parameters=[
-        ToolParameter(
-            name="time_min",
-            type="string",
-            description="Start time for calendar events (ISO format)",
-            required=False
-        ),
-        ToolParameter(
-            name="time_max",
-            type="string",
-            description="End time for calendar events (ISO format)",
-            required=False
-        ),
-        ToolParameter(
-            name="summary",
-            type="string",
-            description="Event summary/title",
-            required=False
-        ),
-        ToolParameter(
-            name="description",
-            type="string",
-            description="Event description",
-            required=False
-        ),
-        ToolParameter(
-            name="start",
-            type="string",
-            description="Event start time (ISO format)",
-            required=False
-        ),
-        ToolParameter(
-            name="end",
-            type="string",
-            description="Event end time (ISO format)",
-            required=False
-        ),
-        ToolParameter(
-            name="event_id",
-            type="string",
-            description="Calendar event ID for specific event operations",
-            required=False
-        )
-    ]
+        ToolParameter("time_min", "string", "Start time for events (ISO)", required=False),
+        ToolParameter("time_max", "string", "End time for events (ISO)", required=False),
+        ToolParameter("summary", "string", "Event summary/title", required=False),
+        ToolParameter("description", "string", "Event description", required=False),
+        ToolParameter("start", "string", "Event start time (ISO)", required=False),
+        ToolParameter("end", "string", "Event end time (ISO)", required=False),
+        ToolParameter("event_id", "string", "Calendar event ID", required=False),
+    ],
+    result_formatter=format_calendar_result
 ))
