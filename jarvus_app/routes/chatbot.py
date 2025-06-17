@@ -201,7 +201,7 @@ def handle_chat_message():
             for m in messages
             if m.role not in ['tool']  # exclude tool messages
         ]
-        logger.info(f"Returning response with {len(history)} messages in history")
+        logger.info(f"Returning response with {len(filtered_history)} messages in history")
 
         return jsonify({
             'assistant': final_reply,

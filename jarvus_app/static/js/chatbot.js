@@ -37,7 +37,7 @@ const connectedTools = {
     wrapper.classList.add('message', who);
   
     const p = document.createElement('p');
-    p.textContent = text;
+    p.innerHTML = text.replace(/\n/g, '<br>');
     wrapper.appendChild(p);
   
     history.appendChild(wrapper);
