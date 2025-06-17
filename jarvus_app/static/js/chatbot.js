@@ -28,7 +28,7 @@ const connectedTools = {
     notion: window.notionConnected || false,
     slack: window.slackConnected || false,
     zoom: window.zoomConnected || false
-};
+  };
   
   // Helper to append a message bubble into #chat-history
   function appendMessage(who, text) {
@@ -67,56 +67,40 @@ const connectedTools = {
   }
   
   // Load available tools
-  async function loadAvailableTools() {
+  function loadAvailableTools() {
     const toolDropdown = document.getElementById('toolDropdown');
-    // clear out any old entries
     toolDropdown.innerHTML = '';
-  
-    // (optional) load previously‐saved selection from server
-    try {
-      const res = await fetch('/chatbot/selected_tools');
-      if (res.ok) {
-        const data = await res.json();
-        selectedTools = data.tools || [];
-      }
-    } catch (_) {}
+    let hasConnected = false;
   
     for (const [tool, ok] of Object.entries(connectedTools)) {
-      if (!ok) continue;
-      const name = tool.toLowerCase();
-      const item = document.createElement('div');
-      item.classList.add('tool-item');
-  
-      // show checkmark if already in selectedTools
-      const checked = selectedTools.includes(name);
-      item.innerHTML = `
-        <span>${tool[0].toUpperCase() + tool.slice(1)}</span>
-        <span class="checkmark" style="display:${checked ? 'inline-block' : 'none'}">✓</span>
-      `;
-  
-      item.onclick = async e => {
-        e.stopPropagation();
-        const cm = item.querySelector('.checkmark');
-        const nowOn = cm.style.display === 'none';
-        cm.style.display = nowOn ? 'inline-block' : 'none';
-  
-        if (nowOn) {
-          selectedTools.push(name);
-        } else {
-          selectedTools = selectedTools.filter(x => x !== name);
-        }
-  
-        // persist new selection back to server
-        await fetch('/chatbot/selected_tools', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ tools: selectedTools })
-        });
-      };
-  
-      toolDropdown.appendChild(item);
+      if (ok) {
+        hasConnected = true;
+        const item = document.createElement('div');
+        item.classList.add('tool-item');
+        item.innerHTML = `
+          <span>${tool[0].toUpperCase() + tool.slice(1)}</span>
+          <span class="checkmark" style="display:none">✓</span>
+        `;
+        item.onclick = e => {
+          e.stopPropagation();
+          const cm = item.querySelector('.checkmark');
+          cm.style.display = cm.style.display === 'none' ? 'inline-block' : 'none';
+          const name = item.querySelector('span').textContent.toLowerCase();
+            if (selectedTools.includes(name)) {
+                selectedTools = selectedTools.filter(x=>x!==name);
+            } else {
+                selectedTools.push(name);
+            }
+            // persist to server:
+            fetch('/chatbot/selected_tools', {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({tools: selectedTools})
+            });
+        };
+        toolDropdown.appendChild(item);
+      }
     }
-  }  
   
     if (!hasConnected) {
       const msg = document.createElement('div');
@@ -124,6 +108,7 @@ const connectedTools = {
       msg.textContent = 'No tools connected';
       toolDropdown.appendChild(msg);
     }
+  }
   
   function getSelectedTool() {
     const sel = document.querySelector('#toolDropdown .checkmark[style*="inline-block"]');
@@ -144,17 +129,13 @@ const connectedTools = {
     // Show interim "thinking…" bubble
     const thinkingMsg = appendMessage('bot', '…');
   
-    const tool = selectedTools;  // either "gmail" or null
-
+    // const tool = getSelectedTool();
     const options = {
       method: 'POST',
-      headers: { 'Content-Type':'application/json' },
-      body: JSON.stringify({
-        message: raw,
-        tool_choice: tool   // this now matches what the backend expects
-      })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: raw })
     };
-
+  
     try {
       const res = await fetch('/chatbot/send', options);
       const data = await res.json();
