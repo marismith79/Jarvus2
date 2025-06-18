@@ -1,6 +1,13 @@
 import os
 
 from dotenv import load_dotenv
+from azure.ai.inference.models import (
+    SystemMessage,
+    UserMessage,
+    AssistantMessage,
+    ToolMessage,
+    ChatCompletions
+)
 
 # Load environment variables
 load_dotenv()
@@ -22,3 +29,6 @@ class Config:
     
     SQLALCHEMY_DATABASE_URI = db_uri
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+    # System prompt for the chatbot
+    CHATBOT_SYSTEM_PROMPT = "You are a helpful assistant. Before you complete a tool call, say something to the user"

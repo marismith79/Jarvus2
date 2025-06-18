@@ -21,8 +21,8 @@ from azure.ai.inference.models import (
     ToolMessage,
     ChatCompletions
 )
+from ..config import Config
 
-SYSTEM_PROMPT = SystemMessage(content="You are a helpful assistant. Before you complete a tool call, say something to the user")
 jarvus_ai = JarvusAIClient()
 
 chatbot_bp = Blueprint('chatbot', __name__)
@@ -102,7 +102,7 @@ def handle_chat_message():
     messages = session.get('messages_objects')
     if not messages:
         logger.info("No existing conversation - initializing with system prompt")
-        messages = [SYSTEM_PROMPT]
+        messages = [SystemMessage(content=Config.CHATBOT_SYSTEM_PROMPT)]
     else:
         logger.info(f"Loaded existing conversation with {len(messages)} messages")
 
