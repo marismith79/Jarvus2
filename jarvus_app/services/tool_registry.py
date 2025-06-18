@@ -37,7 +37,17 @@ class ToolParameter:
     type: str
     description: str
     required: bool = False
-    items_type: Optional[str] = None
+    items_type: Optional[str] = None  # for backward compatibility
+    items: Optional["ToolParameter"] = None  # for nested arrays/objects
+
+    def to_schema(self) -> dict:
+        schema = {"type": self.type, "description": self.description}
+        if self.type == "array":
+            if self.items:
+                schema["items"] = self.items.to_schema()
+            elif self.items_type:
+                schema["items"] = {"type": self.items_type}
+        return schema
 
 
 @dataclass
@@ -55,15 +65,12 @@ class ToolMetadata:
 
     def to_sdk_definition(self) -> ChatCompletionsToolDefinition:
         """Convert this metadata into an Azure SDK ChatCompletionsToolDefinition."""
-        # Build JSON schema for function parameters
         props: Dict[str, Any] = {}
         required: List[str] = []
 
         if self.parameters:
             for p in self.parameters:
-                schema: Dict[str, Any] = {"type": p.type, "description": p.description}
-                if p.type == "array" and p.items_type:
-                    schema["items"] = {"type": p.items_type}
+                schema = p.to_schema()
                 props[p.name] = schema
                 if p.required:
                     required.append(p.name)

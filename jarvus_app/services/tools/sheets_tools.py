@@ -44,7 +44,18 @@ def register_sheets_tools(registry: 'ToolRegistry') -> None:
         parameters=[
             ToolParameter("sheet_id", "string", "ID of the sheet to update", required=True),
             ToolParameter("range", "string", "Range to update (e.g., 'A1:D10')", required=True),
-            ToolParameter("values", "array", "2D array of values to write", required=True, items_type="array"),
+            ToolParameter(
+                "values",
+                "array",
+                "2D array of values to write",
+                required=True,
+                items=ToolParameter(
+                    name="row",
+                    type="array",
+                    description="Row of values",
+                    items_type="string"
+                )
+            ),
         ],
         result_formatter=format_tool_result
     ))
@@ -58,7 +69,18 @@ def register_sheets_tools(registry: 'ToolRegistry') -> None:
         parameters=[
             ToolParameter("sheet_id", "string", "ID of the sheet to append to", required=True),
             ToolParameter("range", "string", "Range to append to (e.g., 'A1:D')", required=True),
-            ToolParameter("values", "array", "2D array of values to append", required=True, items_type="array"),
+            ToolParameter(
+                "values",
+                "array",
+                "2D array of values to append",
+                required=True,
+                items=ToolParameter(
+                    name="row",
+                    type="array",
+                    description="Row of values",
+                    items_type="string"
+                )
+            ),
         ],
         result_formatter=format_tool_result
     ))
