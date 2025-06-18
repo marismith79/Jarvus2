@@ -15,9 +15,19 @@ from .mcp_client import mcp_client, ToolExecutionError
 
 class ToolCategory(Enum):
     """Categories for different types of tools."""
-    EMAIL = "email"
-    CALENDAR = "calendar"
+    # Service Provider Categories
+    GOOGLE_WORKSPACE = "google-workspace"
+    MICROSOFT_365 = "microsoft-365"
     CUSTOM = "custom"
+    
+    # Google Workspace Service Categories
+    GMAIL = "google-workspace.gmail"
+    DRIVE = "google-workspace.drive"
+    DOCS = "google-workspace.docs"
+    SHEETS = "google-workspace.sheets"
+    SLIDES = "google-workspace.slides"
+    MEET = "google-workspace.meet"
+    CALENDAR = "google-workspace.calendar"
 
 
 @dataclass
@@ -27,7 +37,17 @@ class ToolParameter:
     type: str
     description: str
     required: bool = False
-    items_type: Optional[str] = None
+    items_type: Optional[str] = None  # for backward compatibility
+    items: Optional["ToolParameter"] = None  # for nested arrays/objects
+
+    def to_schema(self) -> dict:
+        schema = {"type": self.type, "description": self.description}
+        if self.type == "array":
+            if self.items:
+                schema["items"] = self.items.to_schema()
+            elif self.items_type:
+                schema["items"] = {"type": self.items_type}
+        return schema
 
 
 @dataclass
@@ -45,15 +65,12 @@ class ToolMetadata:
 
     def to_sdk_definition(self) -> ChatCompletionsToolDefinition:
         """Convert this metadata into an Azure SDK ChatCompletionsToolDefinition."""
-        # Build JSON schema for function parameters
         props: Dict[str, Any] = {}
         required: List[str] = []
 
         if self.parameters:
             for p in self.parameters:
-                schema: Dict[str, Any] = {"type": p.type, "description": p.description}
-                if p.type == "array" and p.items_type:
-                    schema["items"] = {"type": p.items_type}
+                schema = p.to_schema()
                 props[p.name] = schema
                 if p.required:
                     required.append(p.name)
@@ -104,9 +121,20 @@ class ToolRegistry:
         """Get metadata for all active tools."""
         return [t for t in self._tools.values() if t.is_active]
 
-    def get_tools_by_category(self, category: ToolCategory) -> List[ToolMetadata]:
+    def get_tools_by_category(self, category: Optional[ToolCategory] = None) -> List[ToolMetadata]:
         """Get metadata for all tools in a specific category."""
+        if category is None:
+            return list(self._tools.values())
         return [t for t in self._tools.values() if t.category == category]
+
+    def get_tools_by_category_dict(self) -> Dict[ToolCategory, List[ToolMetadata]]:
+        """Get all tools grouped by category."""
+        tools_by_category: Dict[ToolCategory, List[ToolMetadata]] = {}
+        for tool in self._tools.values():
+            if tool.category not in tools_by_category:
+                tools_by_category[tool.category] = []
+            tools_by_category[tool.category].append(tool)
+        return tools_by_category
 
     def get_sdk_tools(self) -> List[ChatCompletionsToolDefinition]:
         """Return all active tools as Azure SDK definitions."""
@@ -124,9 +152,13 @@ class ToolRegistry:
             raise ValueError(f"Tool not available: {tool_name}")
 
         executor = tool.executor or mcp_client.execute_tool
+        request_body = {
+            "operation": tool_name,
+            "parameters": parameters
+        }
         raw_result = executor(
-            tool_name=tool_name,
-            parameters=parameters or {},
+            tool_name=tool.server_path,
+            parameters=request_body,
             jwt_token=jwt_token
         )
         return self._handle_tool_response(tool, raw_result)
@@ -166,41 +198,25 @@ def format_calendar_result(result: Any) -> Dict[str, Any]:
     return {"result": str(result)}
 
 
-# Instantiate registry and register default tools
-
+# Instantiate registry
 tool_registry = ToolRegistry()
 
-tool_registry.register(ToolMetadata(
-    name="gmail",
-    description="Access Gmail via MCP server",
-    category=ToolCategory.EMAIL,
-    server_path="gmail",
-    requires_auth=True,
-    executor=mcp_client.execute_tool,
-    parameters=[
-        ToolParameter("query", "string", "Gmail search query", required=False),
-        ToolParameter("to", "string", "Recipient email address", required=False),
-        ToolParameter("subject", "string", "Email subject line", required=False),
-        ToolParameter("body", "string", "Email message body", required=False),
-    ],
-    result_formatter=format_gmail_result
-))
+# Import tool registrations from separate modules
+from .tools import (
+    register_gmail_tools,
+    register_calendar_tools,
+    register_drive_tools,
+    register_docs_tools,
+    register_meet_tools,
+    register_sheets_tools,
+    register_slides_tools
+)
 
-tool_registry.register(ToolMetadata(
-    name="calendar",
-    description="Access Google Calendar via MCP server",
-    category=ToolCategory.CALENDAR,
-    server_path="calendar",
-    requires_auth=True,
-    executor=mcp_client.execute_tool,
-    parameters=[
-        ToolParameter("time_min", "string", "Start time for events (ISO)", required=False),
-        ToolParameter("time_max", "string", "End time for events (ISO)", required=False),
-        ToolParameter("summary", "string", "Event summary/title", required=False),
-        ToolParameter("description", "string", "Event description", required=False),
-        ToolParameter("start", "string", "Event start time (ISO)", required=False),
-        ToolParameter("end", "string", "Event end time (ISO)", required=False),
-        ToolParameter("event_id", "string", "Calendar event ID", required=False),
-    ],
-    result_formatter=format_calendar_result
-))
+# Register all tools
+register_gmail_tools(tool_registry)
+register_calendar_tools(tool_registry)
+register_drive_tools(tool_registry)
+register_docs_tools(tool_registry)
+register_meet_tools(tool_registry)
+register_sheets_tools(tool_registry)
+register_slides_tools(tool_registry) 
