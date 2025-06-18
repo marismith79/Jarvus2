@@ -32,8 +32,8 @@ def register_gmail_tools(registry: 'ToolRegistry') -> None:
         server_path="gmail",
         requires_auth=True,
         parameters=[
-            ToolParameter("max_results", "integer", "Maximum number of results to return", required=False),
-            ToolParameter("query", "string", "Search query to filter emails", required=False),
+            ToolParameter("max_results", "integer", "Maximum number of results to return", required=True),
+            ToolParameter("query", "string", "Search query to filter emails", required=True),
         ],
         result_formatter=format_gmail_result
     ))

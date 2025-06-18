@@ -152,9 +152,13 @@ class ToolRegistry:
             raise ValueError(f"Tool not available: {tool_name}")
 
         executor = tool.executor or mcp_client.execute_tool
+        request_body = {
+            "operation": tool_name,
+            "parameters": parameters
+        }
         raw_result = executor(
-            tool_name=tool_name,
-            parameters=parameters or {},
+            tool_name=tool.server_path,
+            parameters=request_body,
             jwt_token=jwt_token
         )
         return self._handle_tool_response(tool, raw_result)
