@@ -85,7 +85,7 @@ class JarvusAIClient:
             print(f"First choice message: {response['choices'][0]['message']}")
             
             choice = response.choices[0] # ChatChoice
-            msg = choice.message                         # ChatResponseMessage
+            msg = choice.message # ChatResponseMessage
             if msg.tool_calls:
                 # one or more ChatCompletionsToolCall objects
                 for call in msg.tool_calls:
