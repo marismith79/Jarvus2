@@ -65,7 +65,7 @@ class MCPClient:
         
         return result
 
-    def execute_tool(self, tool_name: str, parameters: Dict[str, Any], jwt_token: Optional[str] = None, timeout: Optional[int] = None) -> Dict[str, Any]:
+    def execute_tool(self, tool_name: str, payload: Dict[str, Any], jwt_token: Optional[str] = None, timeout: Optional[int] = None) -> Dict[str, Any]:
         """
         Execute a tool operation through the MCP server.
         
@@ -87,11 +87,11 @@ class MCPClient:
         # Validate inputs
         if not tool_name:
             raise ToolExecutionError("Tool name cannot be empty")
-        if not isinstance(parameters, dict):
+        if not isinstance(payload, dict):
             raise ToolExecutionError("Parameters must be a dictionary")
         
         print(f"\nExecuting {tool_name}")
-        print(f"Parameters: {parameters}")
+        print(f"Parameters: {payload}")
         print(f"JWT Token provided: {jwt_token is not None}")
         
         try:
@@ -110,14 +110,14 @@ class MCPClient:
             print(f"Request headers: {headers}")
             
             # If parameters contains an 'operation' field, use the nested parameters
-            request_body = parameters.get('parameters', parameters)
-            print(f"Request payload: {request_body}")
+            # request_body = parameters.get('parameters', parameters)
+            print(f"Request payload: {payload}")
             
             # Send parameters directly as the request body with timeout
             timeout = timeout or self.default_timeout
             resp = requests.post(
                 url, 
-                json=request_body, 
+                json=payload, 
                 headers=headers, 
                 allow_redirects=True,
                 timeout=timeout
@@ -140,7 +140,7 @@ class MCPClient:
             error_msg = f"Error executing {tool_name}: {str(e)}"
             print(f"\n{error_msg}")
             print(f"Request URL: {url}")
-            print(f"Request payload: {request_body}")
+            print(f"Request payload: {payload}")
             raise ToolExecutionError(error_msg) from e
 
 

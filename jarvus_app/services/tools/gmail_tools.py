@@ -10,7 +10,32 @@ def register_gmail_tools(registry: 'ToolRegistry') -> None:
     """Register all Gmail-related tools."""
     
     registry.register(ToolMetadata(
-        name="gmail_send",
+        name="list_messages",
+        description="List emails in Gmail inbox",
+        category=ToolCategory.GOOGLE_WORKSPACE,
+        server_path="gmail",
+        requires_auth=True,
+        parameters=[
+            ToolParameter("max_results", "integer", "Maximum number of results to return", required=True),
+            ToolParameter("query", "string", "Search query to filter emails", required=True),
+        ],
+        result_formatter=format_gmail_result
+    ))
+
+    registry.register(ToolMetadata(
+        name="get_message",
+        description="Get a specific email by ID from Gmail",
+        category=ToolCategory.GOOGLE_WORKSPACE,
+        server_path="gmail",
+        requires_auth=True,
+        parameters=[
+            ToolParameter("message_id", "string", "ID of the email to retrieve", required=True),
+        ],
+        result_formatter=format_gmail_result
+    ))
+    
+    registry.register(ToolMetadata(
+        name="send_message",
         description="Send an email using Gmail",
         category=ToolCategory.GOOGLE_WORKSPACE,
         server_path="gmail",
@@ -26,33 +51,8 @@ def register_gmail_tools(registry: 'ToolRegistry') -> None:
     ))
 
     registry.register(ToolMetadata(
-        name="gmail_list",
-        description="List emails in Gmail inbox",
-        category=ToolCategory.GOOGLE_WORKSPACE,
-        server_path="gmail",
-        requires_auth=True,
-        parameters=[
-            ToolParameter("max_results", "integer", "Maximum number of results to return", required=True),
-            ToolParameter("query", "string", "Search query to filter emails", required=True),
-        ],
-        result_formatter=format_gmail_result
-    ))
-
-    registry.register(ToolMetadata(
-        name="gmail_get",
-        description="Get a specific email by ID",
-        category=ToolCategory.GOOGLE_WORKSPACE,
-        server_path="gmail",
-        requires_auth=True,
-        parameters=[
-            ToolParameter("message_id", "string", "ID of the email to retrieve", required=True),
-        ],
-        result_formatter=format_gmail_result
-    ))
-
-    registry.register(ToolMetadata(
-        name="gmail_delete",
-        description="Delete an email by ID",
+        name="delete_message",
+        description="Delete an email in Gmail by ID",
         category=ToolCategory.GOOGLE_WORKSPACE,
         server_path="gmail",
         requires_auth=True,
@@ -63,8 +63,8 @@ def register_gmail_tools(registry: 'ToolRegistry') -> None:
     ))
 
     registry.register(ToolMetadata(
-        name="gmail_modify",
-        description="Modify labels of an email",
+        name="modify_label",
+        description="Modify labels of an email in Gmail",
         category=ToolCategory.GOOGLE_WORKSPACE,
         server_path="gmail",
         requires_auth=True,

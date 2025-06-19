@@ -158,7 +158,7 @@ class ToolRegistry:
         }
         raw_result = executor(
             tool_name=tool.server_path,
-            parameters=request_body,
+            payload=request_body,
             jwt_token=jwt_token
         )
         return self._handle_tool_response(tool, raw_result)
