@@ -13,7 +13,7 @@ def register_slides_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="get_presentation",
         description="Get a Google Slides presentation",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.SLIDES,
         server_path="slides",
         requires_auth=True,
         parameters=[
@@ -25,7 +25,7 @@ def register_slides_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="create_presentation",
         description="Create a new Google Slides presentation",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.SLIDES,
         server_path="slides",
         requires_auth=True,
         parameters=[
@@ -38,7 +38,7 @@ def register_slides_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="update_presentation",
         description="Update a Google Slides presentation",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.SLIDES,
         server_path="slides",
         requires_auth=True,
         parameters=[
@@ -52,7 +52,7 @@ def register_slides_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="batch_update_presentation",
         description="Batch update a Google Slides presentation",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.SLIDES,
         server_path="slides",
         requires_auth=True,
         parameters=[
@@ -67,7 +67,7 @@ def register_slides_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="create_slide",
         description="Create a new slide",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.SLIDES,
         server_path="slides",
         requires_auth=True,
         parameters=[
@@ -83,7 +83,7 @@ def register_slides_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="duplicate_slide",
         description="Duplicate a slide",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.SLIDES,
         server_path="slides",
         requires_auth=True,
         parameters=[
@@ -97,7 +97,7 @@ def register_slides_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="delete_slide",
         description="Delete a slide",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.SLIDES,
         server_path="slides",
         requires_auth=True,
         parameters=[
@@ -110,7 +110,7 @@ def register_slides_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="get_slide",
         description="Get a specific slide",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.SLIDES,
         server_path="slides",
         requires_auth=True,
         parameters=[
@@ -123,7 +123,7 @@ def register_slides_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="list_slides",
         description="List all slides in a presentation",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.SLIDES,
         server_path="slides",
         requires_auth=True,
         parameters=[
@@ -136,7 +136,7 @@ def register_slides_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="create_shape",
         description="Create a shape on a slide",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.SLIDES,
         server_path="slides",
         requires_auth=True,
         parameters=[
@@ -152,7 +152,7 @@ def register_slides_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="create_text_box",
         description="Create a text box on a slide",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.SLIDES,
         server_path="slides",
         requires_auth=True,
         parameters=[
@@ -167,7 +167,7 @@ def register_slides_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="create_image",
         description="Create an image on a slide",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.SLIDES,
         server_path="slides",
         requires_auth=True,
         parameters=[
@@ -183,7 +183,7 @@ def register_slides_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="create_table",
         description="Create a table on a slide",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.SLIDES,
         server_path="slides",
         requires_auth=True,
         parameters=[
@@ -200,7 +200,7 @@ def register_slides_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="delete_page_element",
         description="Delete a page element",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.SLIDES,
         server_path="slides",
         requires_auth=True,
         parameters=[
@@ -213,7 +213,7 @@ def register_slides_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="get_page_element",
         description="Get a specific page element",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.SLIDES,
         server_path="slides",
         requires_auth=True,
         parameters=[
@@ -227,7 +227,7 @@ def register_slides_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="slides_insert_text",
         description="Insert text into a text element",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.SLIDES,
         server_path="slides",
         requires_auth=True,
         parameters=[
@@ -242,7 +242,7 @@ def register_slides_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="delete_text",
         description="Delete text from a text element",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.SLIDES,
         server_path="slides",
         requires_auth=True,
         parameters=[
@@ -256,7 +256,7 @@ def register_slides_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="slides_replace_all_text",
         description="Replace all instances of text",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.SLIDES,
         server_path="slides",
         requires_auth=True,
         parameters=[
@@ -271,7 +271,7 @@ def register_slides_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="slides_create",
         description="Create a new Google Slides presentation",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.SLIDES,
         server_path="slides",
         requires_auth=True,
         parameters=[
@@ -284,7 +284,7 @@ def register_slides_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="slides_get",
         description="Get a Google Slides presentation",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.SLIDES,
         server_path="slides",
         requires_auth=True,
         parameters=[
@@ -296,7 +296,7 @@ def register_slides_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="slides_update",
         description="Update a Google Slides presentation",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.SLIDES,
         server_path="slides",
         requires_auth=True,
         parameters=[
@@ -309,7 +309,7 @@ def register_slides_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="slides_share",
         description="Share a Google Slides presentation",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.SLIDES,
         server_path="slides",
         requires_auth=True,
         parameters=[
@@ -323,7 +323,7 @@ def register_slides_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="slides_list",
         description="List Google Slides presentations",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.SLIDES,
         server_path="slides",
         requires_auth=True,
         parameters=[
@@ -336,7 +336,7 @@ def register_slides_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="slides_delete",
         description="Delete a Google Slides presentation",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.SLIDES,
         server_path="slides",
         requires_auth=True,
         parameters=[

@@ -13,7 +13,7 @@ def register_drive_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="list_files",
         description="List files in Google Drive",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DRIVE,
         server_path="drive",
         requires_auth=True,
         parameters=[
@@ -32,7 +32,7 @@ def register_drive_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="get_file",
         description="Get a specific file from Google Drive",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DRIVE,
         server_path="drive",
         requires_auth=True,
         parameters=[
@@ -46,7 +46,7 @@ def register_drive_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="create_file",
         description="Create a new file in Google Drive",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DRIVE,
         server_path="drive",
         requires_auth=True,
         parameters=[
@@ -62,7 +62,7 @@ def register_drive_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="update_file",
         description="Update an existing file in Google Drive",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DRIVE,
         server_path="drive",
         requires_auth=True,
         parameters=[
@@ -78,7 +78,7 @@ def register_drive_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="delete_file",
         description="Delete a file from Google Drive",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DRIVE,
         server_path="drive",
         requires_auth=True,
         parameters=[
@@ -91,7 +91,7 @@ def register_drive_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="copy_file",
         description="Copy a file in Google Drive",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DRIVE,
         server_path="drive",
         requires_auth=True,
         parameters=[
@@ -106,7 +106,7 @@ def register_drive_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="empty_trash",
         description="Empty the trash in Google Drive",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DRIVE,
         server_path="drive",
         requires_auth=True,
         parameters=[],
@@ -116,7 +116,7 @@ def register_drive_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="export_file",
         description="Export a Google Workspace document",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DRIVE,
         server_path="drive",
         requires_auth=True,
         parameters=[
@@ -129,7 +129,7 @@ def register_drive_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="generate_ids",
         description="Generate file IDs for Google Drive",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DRIVE,
         server_path="drive",
         requires_auth=True,
         parameters=[
@@ -142,7 +142,7 @@ def register_drive_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="download_file",
         description="Download a file from Google Drive",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DRIVE,
         server_path="drive",
         requires_auth=True,
         parameters=[
@@ -155,7 +155,7 @@ def register_drive_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="watch_file",
         description="Watch for changes to a file",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DRIVE,
         server_path="drive",
         requires_auth=True,
         parameters=[
@@ -174,7 +174,7 @@ def register_drive_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="list_permissions",
         description="List permissions for a file",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DRIVE,
         server_path="drive",
         requires_auth=True,
         parameters=[
@@ -189,7 +189,7 @@ def register_drive_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="get_permission",
         description="Get a specific permission",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DRIVE,
         server_path="drive",
         requires_auth=True,
         parameters=[
@@ -203,7 +203,7 @@ def register_drive_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="create_permission",
         description="Create a new permission for a file",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DRIVE,
         server_path="drive",
         requires_auth=True,
         parameters=[
@@ -220,7 +220,7 @@ def register_drive_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="update_permission",
         description="Update an existing permission",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DRIVE,
         server_path="drive",
         requires_auth=True,
         parameters=[
@@ -235,7 +235,7 @@ def register_drive_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="delete_permission",
         description="Delete a permission",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DRIVE,
         server_path="drive",
         requires_auth=True,
         parameters=[
@@ -249,7 +249,7 @@ def register_drive_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="drive_upload",
         description="Upload a file to Google Drive",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DRIVE,
         server_path="drive",
         requires_auth=True,
         parameters=[
@@ -264,7 +264,7 @@ def register_drive_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="drive_download",
         description="Download a file from Google Drive",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DRIVE,
         server_path="drive",
         requires_auth=True,
         parameters=[
@@ -276,7 +276,7 @@ def register_drive_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="drive_list",
         description="List files in Google Drive",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DRIVE,
         server_path="drive",
         requires_auth=True,
         parameters=[
@@ -290,7 +290,7 @@ def register_drive_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="drive_create_folder",
         description="Create a new folder in Google Drive",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DRIVE,
         server_path="drive",
         requires_auth=True,
         parameters=[
@@ -303,7 +303,7 @@ def register_drive_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="drive_share",
         description="Share a file or folder in Google Drive",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DRIVE,
         server_path="drive",
         requires_auth=True,
         parameters=[
@@ -317,7 +317,7 @@ def register_drive_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="drive_delete",
         description="Delete a file or folder from Google Drive",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DRIVE,
         server_path="drive",
         requires_auth=True,
         parameters=[

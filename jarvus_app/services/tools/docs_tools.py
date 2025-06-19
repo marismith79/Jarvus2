@@ -13,7 +13,7 @@ def register_docs_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="get_document",
         description="Get a Google Docs document",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DOCS,
         server_path="docs",
         requires_auth=True,
         parameters=[
@@ -26,7 +26,7 @@ def register_docs_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="create_document",
         description="Create a new Google Docs document",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DOCS,
         server_path="docs",
         requires_auth=True,
         parameters=[
@@ -39,7 +39,7 @@ def register_docs_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="update_document",
         description="Update a Google Docs document",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DOCS,
         server_path="docs",
         requires_auth=True,
         parameters=[
@@ -53,7 +53,7 @@ def register_docs_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="batch_update_document",
         description="Batch update a Google Docs document",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DOCS,
         server_path="docs",
         requires_auth=True,
         parameters=[
@@ -67,7 +67,7 @@ def register_docs_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="get_document_revision",
         description="Get a specific revision of a document",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DOCS,
         server_path="docs",
         requires_auth=True,
         parameters=[
@@ -80,7 +80,7 @@ def register_docs_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="list_document_revisions",
         description="List revisions of a document",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DOCS,
         server_path="docs",
         requires_auth=True,
         parameters=[
@@ -95,7 +95,7 @@ def register_docs_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="insert_text",
         description="Insert text into a document",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DOCS,
         server_path="docs",
         requires_auth=True,
         parameters=[
@@ -109,7 +109,7 @@ def register_docs_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="delete_content_range",
         description="Delete content from a document",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DOCS,
         server_path="docs",
         requires_auth=True,
         parameters=[
@@ -122,7 +122,7 @@ def register_docs_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="replace_all_text",
         description="Replace all instances of text in a document",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DOCS,
         server_path="docs",
         requires_auth=True,
         parameters=[
@@ -136,7 +136,7 @@ def register_docs_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="insert_table",
         description="Insert a table into a document",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DOCS,
         server_path="docs",
         requires_auth=True,
         parameters=[
@@ -152,7 +152,7 @@ def register_docs_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="insert_table_row",
         description="Insert a row into a table",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DOCS,
         server_path="docs",
         requires_auth=True,
         parameters=[
@@ -166,7 +166,7 @@ def register_docs_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="insert_table_column",
         description="Insert a column into a table",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DOCS,
         server_path="docs",
         requires_auth=True,
         parameters=[
@@ -180,7 +180,7 @@ def register_docs_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="delete_table_row",
         description="Delete a row from a table",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DOCS,
         server_path="docs",
         requires_auth=True,
         parameters=[
@@ -193,7 +193,7 @@ def register_docs_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="delete_table_column",
         description="Delete a column from a table",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DOCS,
         server_path="docs",
         requires_auth=True,
         parameters=[
@@ -206,7 +206,7 @@ def register_docs_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="insert_inline_image",
         description="Insert an inline image into a document",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DOCS,
         server_path="docs",
         requires_auth=True,
         parameters=[
@@ -221,7 +221,7 @@ def register_docs_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="insert_page_break",
         description="Insert a page break into a document",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DOCS,
         server_path="docs",
         requires_auth=True,
         parameters=[
@@ -234,7 +234,7 @@ def register_docs_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="insert_section_break",
         description="Insert a section break into a document",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DOCS,
         server_path="docs",
         requires_auth=True,
         parameters=[
@@ -249,7 +249,7 @@ def register_docs_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="update_paragraph_style",
         description="Update paragraph style in a document",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DOCS,
         server_path="docs",
         requires_auth=True,
         parameters=[
@@ -263,7 +263,7 @@ def register_docs_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="update_text_style",
         description="Update text style in a document",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DOCS,
         server_path="docs",
         requires_auth=True,
         parameters=[
@@ -279,7 +279,7 @@ def register_docs_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="create_comment",
         description="Create a comment in a document",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DOCS,
         server_path="docs",
         requires_auth=True,
         parameters=[
@@ -293,7 +293,7 @@ def register_docs_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="get_comment",
         description="Get a specific comment",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DOCS,
         server_path="docs",
         requires_auth=True,
         parameters=[
@@ -306,7 +306,7 @@ def register_docs_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="list_comments",
         description="List comments in a document",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DOCS,
         server_path="docs",
         requires_auth=True,
         parameters=[
@@ -320,7 +320,7 @@ def register_docs_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="update_comment",
         description="Update a comment",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DOCS,
         server_path="docs",
         requires_auth=True,
         parameters=[
@@ -334,7 +334,7 @@ def register_docs_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="delete_comment",
         description="Delete a comment",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DOCS,
         server_path="docs",
         requires_auth=True,
         parameters=[
@@ -348,7 +348,7 @@ def register_docs_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="create_reply",
         description="Create a reply to a comment",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DOCS,
         server_path="docs",
         requires_auth=True,
         parameters=[
@@ -362,7 +362,7 @@ def register_docs_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="get_reply",
         description="Get a specific reply",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DOCS,
         server_path="docs",
         requires_auth=True,
         parameters=[
@@ -376,7 +376,7 @@ def register_docs_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="list_replies",
         description="List replies to a comment",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DOCS,
         server_path="docs",
         requires_auth=True,
         parameters=[
@@ -391,7 +391,7 @@ def register_docs_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="update_reply",
         description="Update a reply",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DOCS,
         server_path="docs",
         requires_auth=True,
         parameters=[
@@ -406,7 +406,7 @@ def register_docs_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="delete_reply",
         description="Delete a reply",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DOCS,
         server_path="docs",
         requires_auth=True,
         parameters=[
@@ -421,7 +421,7 @@ def register_docs_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="docs_create",
         description="Create a new Google Doc",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DOCS,
         server_path="docs",
         requires_auth=True,
         parameters=[
@@ -434,7 +434,7 @@ def register_docs_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="docs_get",
         description="Get a Google Doc by ID",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DOCS,
         server_path="docs",
         requires_auth=True,
         parameters=[
@@ -446,7 +446,7 @@ def register_docs_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="docs_update",
         description="Update a Google Doc",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DOCS,
         server_path="docs",
         requires_auth=True,
         parameters=[
@@ -459,7 +459,7 @@ def register_docs_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="docs_share",
         description="Share a Google Doc with others",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DOCS,
         server_path="docs",
         requires_auth=True,
         parameters=[
@@ -473,7 +473,7 @@ def register_docs_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="docs_list",
         description="List Google Docs",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DOCS,
         server_path="docs",
         requires_auth=True,
         parameters=[
@@ -486,7 +486,7 @@ def register_docs_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="docs_delete",
         description="Delete a Google Doc",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.DOCS,
         server_path="docs",
         requires_auth=True,
         parameters=[

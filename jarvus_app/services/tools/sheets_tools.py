@@ -13,7 +13,7 @@ def register_sheets_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="get_spreadsheet",
         description="Get a Google Sheets spreadsheet",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.SHEETS,
         server_path="sheets",
         requires_auth=True,
         parameters=[
@@ -28,7 +28,7 @@ def register_sheets_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="create_spreadsheet",
         description="Create a new Google Sheets spreadsheet",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.SHEETS,
         server_path="sheets",
         requires_auth=True,
         parameters=[
@@ -42,7 +42,7 @@ def register_sheets_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="update_spreadsheet",
         description="Update a Google Sheets spreadsheet",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.SHEETS,
         server_path="sheets",
         requires_auth=True,
         parameters=[
@@ -58,7 +58,7 @@ def register_sheets_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="batch_update_spreadsheet",
         description="Batch update a Google Sheets spreadsheet",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.SHEETS,
         server_path="sheets",
         requires_auth=True,
         parameters=[
@@ -75,7 +75,7 @@ def register_sheets_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="get_sheet",
         description="Get values from a sheet",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.SHEETS,
         server_path="sheets",
         requires_auth=True,
         parameters=[
@@ -91,7 +91,7 @@ def register_sheets_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="update_sheet",
         description="Update values in a sheet",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.SHEETS,
         server_path="sheets",
         requires_auth=True,
         parameters=[
@@ -109,7 +109,7 @@ def register_sheets_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="batch_update_sheet",
         description="Batch update values in a sheet",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.SHEETS,
         server_path="sheets",
         requires_auth=True,
         parameters=[
@@ -126,7 +126,7 @@ def register_sheets_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="clear_sheet",
         description="Clear values from a sheet",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.SHEETS,
         server_path="sheets",
         requires_auth=True,
         parameters=[
@@ -139,7 +139,7 @@ def register_sheets_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="batch_clear_sheet",
         description="Batch clear values from a sheet",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.SHEETS,
         server_path="sheets",
         requires_auth=True,
         parameters=[
@@ -152,7 +152,7 @@ def register_sheets_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="append_sheet",
         description="Append values to a sheet",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.SHEETS,
         server_path="sheets",
         requires_auth=True,
         parameters=[
@@ -172,7 +172,7 @@ def register_sheets_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="sheets_create",
         description="Create a new Google Sheet",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.SHEETS,
         server_path="sheets",
         requires_auth=True,
         parameters=[
@@ -185,7 +185,7 @@ def register_sheets_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="sheets_get",
         description="Get data from a Google Sheet",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.SHEETS,
         server_path="sheets",
         requires_auth=True,
         parameters=[
@@ -198,7 +198,7 @@ def register_sheets_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="sheets_update",
         description="Update data in a Google Sheet",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.SHEETS,
         server_path="sheets",
         requires_auth=True,
         parameters=[
@@ -223,7 +223,7 @@ def register_sheets_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="sheets_append",
         description="Append data to a Google Sheet",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.SHEETS,
         server_path="sheets",
         requires_auth=True,
         parameters=[
@@ -248,7 +248,7 @@ def register_sheets_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="sheets_clear",
         description="Clear data from a Google Sheet",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.SHEETS,
         server_path="sheets",
         requires_auth=True,
         parameters=[
@@ -261,7 +261,7 @@ def register_sheets_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="sheets_list",
         description="List Google Sheets",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.SHEETS,
         server_path="sheets",
         requires_auth=True,
         parameters=[

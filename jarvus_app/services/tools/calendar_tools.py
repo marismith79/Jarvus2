@@ -12,7 +12,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="list_events",
         description="List calendar events",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.CALENDAR,
         server_path="calendar",
         requires_auth=True,
         parameters=[
@@ -29,7 +29,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="create_event",
         description="Create a new calendar event",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.CALENDAR,
         server_path="calendar",
         requires_auth=True,
         parameters=[
@@ -47,7 +47,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="get_event",
         description="Get a specific calendar event",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.CALENDAR,
         server_path="calendar",
         requires_auth=True,
         parameters=[
@@ -60,7 +60,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="update_event",
         description="Update an existing calendar event",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.CALENDAR,
         server_path="calendar",
         requires_auth=True,
         parameters=[
@@ -79,7 +79,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="delete_event",
         description="Delete a calendar event",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.CALENDAR,
         server_path="calendar",
         requires_auth=True,
         parameters=[
@@ -93,7 +93,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="move_event",
         description="Move an event to a different calendar",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.CALENDAR,
         server_path="calendar",
         requires_auth=True,
         parameters=[
@@ -107,7 +107,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="quick_add_event",
         description="Quick add an event using natural language",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.CALENDAR,
         server_path="calendar",
         requires_auth=True,
         parameters=[
@@ -120,7 +120,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="get_event_instances",
         description="Get instances of a recurring event",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.CALENDAR,
         server_path="calendar",
         requires_auth=True,
         parameters=[
@@ -134,7 +134,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="import_event",
         description="Import an event from external data",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.CALENDAR,
         server_path="calendar",
         requires_auth=True,
         parameters=[
@@ -147,7 +147,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="patch_event",
         description="Patch specific fields of an event",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.CALENDAR,
         server_path="calendar",
         requires_auth=True,
         parameters=[
@@ -167,7 +167,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="list_calendars",
         description="List available calendars",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.CALENDAR,
         server_path="calendar",
         requires_auth=True,
         parameters=[
@@ -179,7 +179,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="get_calendar",
         description="Get a specific calendar",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.CALENDAR,
         server_path="calendar",
         requires_auth=True,
         parameters=[
@@ -191,7 +191,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="create_calendar",
         description="Create a new calendar",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.CALENDAR,
         server_path="calendar",
         requires_auth=True,
         parameters=[
@@ -205,7 +205,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="update_calendar",
         description="Update an existing calendar",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.CALENDAR,
         server_path="calendar",
         requires_auth=True,
         parameters=[
@@ -220,7 +220,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="delete_calendar",
         description="Delete a calendar",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.CALENDAR,
         server_path="calendar",
         requires_auth=True,
         parameters=[
@@ -232,7 +232,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="clear_calendar",
         description="Clear all events from a calendar",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.CALENDAR,
         server_path="calendar",
         requires_auth=True,
         parameters=[
@@ -245,7 +245,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="freebusy_query",
         description="Query free/busy information for calendars",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.CALENDAR,
         server_path="calendar",
         requires_auth=True,
         parameters=[
@@ -259,7 +259,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="get_colors",
         description="Get available calendar colors",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.CALENDAR,
         server_path="calendar",
         requires_auth=True,
         parameters=[],
@@ -269,7 +269,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="list_settings",
         description="List calendar settings",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.CALENDAR,
         server_path="calendar",
         requires_auth=True,
         parameters=[
@@ -281,7 +281,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="get_setting",
         description="Get a specific calendar setting",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.CALENDAR,
         server_path="calendar",
         requires_auth=True,
         parameters=[
@@ -294,7 +294,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="create_meeting",
         description="Create a new meeting with video conferencing",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.CALENDAR,
         server_path="calendar",
         requires_auth=True,
         parameters=[
@@ -312,7 +312,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="get_meeting",
         description="Get a specific meeting",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.CALENDAR,
         server_path="calendar",
         requires_auth=True,
         parameters=[
@@ -325,7 +325,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="update_meeting",
         description="Update an existing meeting",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.CALENDAR,
         server_path="calendar",
         requires_auth=True,
         parameters=[
@@ -344,7 +344,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="delete_meeting",
         description="Delete a meeting",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.CALENDAR,
         server_path="calendar",
         requires_auth=True,
         parameters=[
@@ -357,7 +357,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="list_meetings",
         description="List meetings",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.CALENDAR,
         server_path="calendar",
         requires_auth=True,
         parameters=[
@@ -374,7 +374,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="add_meeting_attendee",
         description="Add an attendee to a meeting",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.CALENDAR,
         server_path="calendar",
         requires_auth=True,
         parameters=[
@@ -389,7 +389,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="remove_meeting_attendee",
         description="Remove an attendee from a meeting",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.CALENDAR,
         server_path="calendar",
         requires_auth=True,
         parameters=[
