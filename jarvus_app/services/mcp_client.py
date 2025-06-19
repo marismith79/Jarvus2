@@ -140,7 +140,7 @@ class MCPClient:
             error_msg = f"Error executing {tool_name}: {str(e)}"
             print(f"\n{error_msg}")
             print(f"Request URL: {url}")
-            print(f"Request payload: {request_body}")
+            print(f"Request payload: {payload}")
             raise ToolExecutionError(error_msg) from e
 
 
