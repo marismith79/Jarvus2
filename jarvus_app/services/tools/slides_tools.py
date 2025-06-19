@@ -225,7 +225,7 @@ def register_slides_tools(registry: 'ToolRegistry') -> None:
 
     # Text operations
     registry.register(ToolMetadata(
-        name="insert_text",
+        name="slides_insert_text",
         description="Insert text into a text element",
         category=ToolCategory.GOOGLE_WORKSPACE,
         server_path="slides",
@@ -254,7 +254,7 @@ def register_slides_tools(registry: 'ToolRegistry') -> None:
     ))
 
     registry.register(ToolMetadata(
-        name="replace_all_text",
+        name="slides_replace_all_text",
         description="Replace all instances of text",
         category=ToolCategory.GOOGLE_WORKSPACE,
         server_path="slides",
@@ -355,20 +355,6 @@ def register_slides_tools(registry: 'ToolRegistry') -> None:
             ToolParameter("presentation_id", "string", "ID of the presentation", required=True),
             ToolParameter("slide_layout", "string", "Layout type for the new slide", required=False),
             ToolParameter("placeholder_ids", "array", "List of placeholder IDs", required=False, items_type="string"),
-        ],
-        result_formatter=format_tool_result
-    ))
-
-    registry.register(ToolMetadata(
-        name="slides_insert_text",
-        description="Insert text into a shape or text box in a Google Slides presentation",
-        category=ToolCategory.SLIDES,
-        server_path="slides",
-        requires_auth=True,
-        parameters=[
-            ToolParameter("presentation_id", "string", "ID of the presentation", required=True),
-            ToolParameter("object_id", "string", "ID of the shape or text box", required=True),
-            ToolParameter("text", "string", "Text to insert", required=True),
         ],
         result_formatter=format_tool_result
     ))

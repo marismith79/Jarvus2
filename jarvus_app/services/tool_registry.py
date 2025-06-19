@@ -26,7 +26,7 @@ class ToolCategory(Enum):
     DOCS = "google-workspace.docs"
     SHEETS = "google-workspace.sheets"
     SLIDES = "google-workspace.slides"
-    MEET = "google-workspace.meet"
+
     CALENDAR = "google-workspace.calendar"
 
 
@@ -207,7 +207,6 @@ from .tools import (
     register_calendar_tools,
     register_drive_tools,
     register_docs_tools,
-    register_meet_tools,
     register_sheets_tools,
     register_slides_tools
 )
@@ -217,6 +216,5 @@ register_gmail_tools(tool_registry)
 register_calendar_tools(tool_registry)
 register_drive_tools(tool_registry)
 register_docs_tools(tool_registry)
-register_meet_tools(tool_registry)
 register_sheets_tools(tool_registry)
 register_slides_tools(tool_registry) 
