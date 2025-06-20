@@ -17,6 +17,7 @@ from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 
 from ..config import Config
+from ..config import Config
 from ..models.oauth import OAuthCredentials  # Uncommented
 from ..utils.tool_permissions import grant_tool_access
 from ..models.user_tool import UserTool
@@ -47,6 +48,8 @@ GOOGLE_CLIENT_CONFIG = {
         ]
     }
 }
+
+
 
 
 
