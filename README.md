@@ -61,7 +61,7 @@ Go to:
 ## Azure Debugging
 
 Run this command:
-   az webapp log tail --name jarvus --resource-group Jarvus
+  az webapp log tail --name jarvus --resource-group Jarvus
 
 ## Environment Variables
 
