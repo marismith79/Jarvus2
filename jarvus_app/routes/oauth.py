@@ -37,10 +37,13 @@ GOOGLE_CLIENT_CONFIG = {
         "token_uri": "https://oauth2.googleapis.com/token",
         "redirect_uris": [os.getenv("GOOGLE_REDIRECT_URI")],
         "scopes": [
-            "https://www.googleapis.com/auth/gmail.readonly",
-            "https://www.googleapis.com/auth/gmail.send",
-            "https://www.googleapis.com/auth/gmail.modify",
-        ],
+        "https://mail.google.com/",  # Full access to Gmail account (includes all operations)
+        "https://www.googleapis.com/auth/calendar",  # Full access to Google Calendar
+        "https://www.googleapis.com/auth/drive",  # Full access to Google Drive
+        "https://www.googleapis.com/auth/spreadsheets",  # Full access to Google Sheets
+        "https://www.googleapis.com/auth/documents",  # Full access to Google Docs
+        "https://www.googleapis.com/auth/presentations"  # Full access to Google Slides
+        ]
     }
 }
 
