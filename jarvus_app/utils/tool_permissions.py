@@ -98,9 +98,24 @@ def get_connected_services(user_id):
     services = {}
     for service in TOOLS.keys():
         if service == "google-workspace":
-            # Only check actual connection status for Google Workspace
-            services[service] = OAuthCredentials.get_credentials(user_id, service) is not None
+            # Check if user has OAuth credentials for this service
+            creds = OAuthCredentials.get_credentials(user_id, service)
+            
+            # Debug: Print what we find
+            print(f"DEBUG: Checking OAuth credentials for user {user_id}, service {service}")
+            print(f"DEBUG: OAuth credentials found: {creds is not None}")
+            
+            # Consider connected if OAuth credentials exist
+            services[service] = creds is not None
+            print(f"DEBUG: Final result for {service}: {services[service]}")
         else:
             # Mark other services as not connected (coming soon)
             services[service] = False
     return services
+
+def get_user_oauth_scopes(user_id: str, service: str) -> list:
+    """Get the OAuth scopes granted by a user for a specific service."""
+    creds = OAuthCredentials.get_credentials(user_id, service)
+    if creds and creds.scopes:
+        return creds.scopes.split(" ")
+    return []

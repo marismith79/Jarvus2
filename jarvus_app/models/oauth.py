@@ -20,6 +20,7 @@ class OAuthCredentials(db.Model):
     updated_at = db.Column(
         db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
     )
+    scopes = db.Column(db.Text, nullable=True)
 
     # Relationship with User model
     user = db.relationship(
@@ -35,15 +36,18 @@ class OAuthCredentials(db.Model):
         return cls.query.filter_by(user_id=user_id, service=service).first()
 
     @classmethod
-    def store_credentials(cls, user_id, service, access_token, refresh_token=None, expires_at=None):
+    def store_credentials(cls, user_id, service, access_token, refresh_token=None, expires_at=None, scopes=None):
         """Store or update OAuth credentials"""
         creds = cls.get_credentials(user_id, service)
+        scopes_str = " ".join(scopes) if scopes else ""
         if creds:
             creds.access_token = access_token
             if refresh_token:
                 creds.refresh_token = refresh_token
             if expires_at:
                 creds.expires_at = expires_at
+            if scopes is not None:
+                creds.scopes = scopes_str
             creds.updated_at = datetime.utcnow()
         else:
             creds = cls(
@@ -51,7 +55,8 @@ class OAuthCredentials(db.Model):
                 service=service,
                 access_token=access_token,
                 refresh_token=refresh_token,
-                expires_at=expires_at
+                expires_at=expires_at,
+                scopes=scopes_str,
             )
             db.session.add(creds)
         db.session.commit()
@@ -75,3 +80,16 @@ class OAuthCredentials(db.Model):
             return True
         print("[DEBUG] No credentials found to delete.")
         return False
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "service": self.service,
+            "access_token": self.access_token,
+            "refresh_token": self.refresh_token,
+            "expires_at": self.expires_at.isoformat() if self.expires_at else None,
+            "created_at": self.created_at.isoformat(),
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "scopes": self.scopes.split(" ") if self.scopes else [],
+        }

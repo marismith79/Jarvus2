@@ -12,7 +12,7 @@ from ..llm.client import JarvusAIClient
 from ..services.tool_registry import tool_registry
 from flask_login import login_required, current_user
 from flask import Blueprint, jsonify, request, session
-from ..utils.tool_permissions import check_tool_access
+from ..utils.tool_permissions import check_tool_access, get_user_oauth_scopes
 import logging
 from azure.ai.inference.models import (
     SystemMessage,
@@ -36,8 +36,11 @@ tool_choice = 'required'
 @login_required
 def get_available_tools():
     """Return only the definitions the user has toggled on."""
+    # Get user's OAuth scopes for Google Workspace
+    user_scopes = get_user_oauth_scopes(current_user.id, "google-workspace")
+    
     # all of your definitions:
-    all_defs = tool_registry.get_sdk_tools()
+    all_defs = tool_registry.get_sdk_tools(user_scopes)
 
     # which names did the user pick?
     selected = session.get('selected_tools', [])
@@ -141,10 +144,13 @@ def handle_chat_message():
 
     # Prepare tool definitions - FILTER BASED ON USER SELECTION
     selected_tools = session.get('selected_tools', [])
+    
+    # Get user's OAuth scopes for Google Workspace
+    user_scopes = get_user_oauth_scopes(current_user.id, "google-workspace")
 
     if selected_tools:
-        # Get tools only for selected services
-        sdk_tools = tool_registry.get_sdk_tools_by_modules(selected_tools)
+        # Get tools only for selected services with scope descriptions
+        sdk_tools = tool_registry.get_sdk_tools_by_modules(selected_tools, user_scopes)
         logger.info(f"Loaded {len(sdk_tools)} tools for selected services: {selected_tools}")
     else:
         # If no services selected, send empty list

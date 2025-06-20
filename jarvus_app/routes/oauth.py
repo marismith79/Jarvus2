@@ -37,12 +37,33 @@ GOOGLE_CLIENT_CONFIG = {
         "token_uri": "https://oauth2.googleapis.com/token",
         "redirect_uris": [os.getenv("GOOGLE_REDIRECT_URI")],
         "scopes": [
-        "https://mail.google.com/",  # Full access to Gmail account (includes all operations)
-        "https://www.googleapis.com/auth/calendar",  # Full access to Google Calendar
-        "https://www.googleapis.com/auth/drive",  # Full access to Google Drive
-        "https://www.googleapis.com/auth/spreadsheets",  # Full access to Google Sheets
-        "https://www.googleapis.com/auth/documents",  # Full access to Google Docs
-        "https://www.googleapis.com/auth/presentations"  # Full access to Google Slides
+            # Gmail
+            "https://www.googleapis.com/auth/gmail.readonly",  # Read-only access to emails
+            "https://www.googleapis.com/auth/gmail.compose",   # Compose and send emails
+            "https://www.googleapis.com/auth/gmail.send",       # Send emails only
+            "https://mail.google.com/",                         # Full access to Gmail
+
+            # Google Calendar
+            "https://www.googleapis.com/auth/calendar.readonly", # Read-only access to calendars
+            "https://www.googleapis.com/auth/calendar.events",   # Read/write access to events
+            "https://www.googleapis.com/auth/calendar",          # Full access to calendars
+
+            # Google Meet
+            "https://www.googleapis.com/auth/meetings.space.created", # Create meeting spaces
+            "https://www.googleapis.com/auth/drive.meet.readonly",    # Read-only access to Meet recordings in Drive
+
+            # Google Drive
+            "https://www.googleapis.com/auth/drive.readonly",    # Read-only access to Drive files
+            "https://www.googleapis.com/auth/drive.file",        # Per-file access to files created or opened by the app
+            "https://www.googleapis.com/auth/drive",             # Full access to Drive
+
+            # Google Docs, Sheets, Slides
+            "https://www.googleapis.com/auth/documents.readonly",# Read-only access to Docs
+            "https://www.googleapis.com/auth/documents",         # Full access to Docs
+            "https://www.googleapis.com/auth/spreadsheets.readonly", # Read-only access to Sheets
+            "https://www.googleapis.com/auth/spreadsheets",      # Full access to Sheets
+            "https://www.googleapis.com/auth/presentations.readonly",# Read-only access to Slides
+            "https://www.googleapis.com/auth/presentations"      # Full access to Slides
         ]
     }
 }
@@ -101,9 +122,53 @@ def disconnect_service(service):
         f"[DEBUG] Disconnect requested for service: {service}, user: {current_user.id}"
     )
     if service in ["google-workspace", "notion", "slack", "zoom"]:
-        success = OAuthCredentials.remove_credentials(current_user.id, service)
-        print(f"[DEBUG] Removal result for {service}: {success}")
+        success = True
+        
+        # 1. Revoke OAuth tokens with Google (for Google services)
+        if service == "google-workspace":
+            try:
+                # Get credentials before removing them
+                creds = OAuthCredentials.get_credentials(current_user.id, service)
+                if creds and creds.access_token:
+                    # Revoke the token with Google
+                    import requests
+                    revoke_url = "https://oauth2.googleapis.com/revoke"
+                    requests.post(revoke_url, data={'token': creds.access_token})
+                    print(f"[DEBUG] Revoked Google token for {service}")
+            except Exception as e:
+                print(f"[DEBUG] Failed to revoke Google token: {e}")
+                # Don't fail the entire operation if token revocation fails
+        
+        # 2. Remove OAuth credentials from database
+        creds_removed = OAuthCredentials.remove_credentials(current_user.id, service)
+        print(f"[DEBUG] OAuth credentials removal result for {service}: {creds_removed}")
+        
+        # 3. Deactivate UserTool record
+        try:
+            from ..models.user_tool import UserTool
+            user_tool = UserTool.query.filter_by(user_id=current_user.id, tool_name=service).first()
+            if user_tool:
+                user_tool.is_active = False
+                db.session.commit()
+                print(f"[DEBUG] Deactivated UserTool for {service}")
+        except Exception as e:
+            print(f"[DEBUG] Failed to deactivate UserTool: {e}")
+            success = False
+        
+        # 4. Revoke all tool permissions
+        try:
+            from ..models.tool_permission import ToolPermission
+            permissions = ToolPermission.query.filter_by(user_id=current_user.id, tool_name=service).all()
+            for permission in permissions:
+                permission.is_granted = False
+            db.session.commit()
+            print(f"[DEBUG] Revoked {len(permissions)} tool permissions for {service}")
+        except Exception as e:
+            print(f"[DEBUG] Failed to revoke tool permissions: {e}")
+            success = False
+        
         return jsonify({"success": success})
+    
     print(f"[DEBUG] Invalid service disconnect attempted: {service}")
     return jsonify({"success": False, "error": "Invalid service"})
 
@@ -164,6 +229,7 @@ def oauth2callback():
         print(f"DEBUG: Refresh token length: {len(credentials.refresh_token) if credentials.refresh_token else 0}")
         print(f"DEBUG: Expiry type: {type(credentials.expiry)}")
         print(f"DEBUG: Expiry value: {credentials.expiry}")
+        print(f"DEBUG: Scopes: {credentials.scopes}")
 
         # Store credentials in database with separate fields
         OAuthCredentials.store_credentials(
@@ -171,7 +237,8 @@ def oauth2callback():
             "google-workspace",
             access_token=credentials.token,
             refresh_token=credentials.refresh_token,
-            expires_at=datetime.fromtimestamp(credentials.expiry.timestamp()) if credentials.expiry else None
+            expires_at=datetime.fromtimestamp(credentials.expiry.timestamp()) if credentials.expiry else None,
+            scopes=credentials.scopes
         )
         print("DEBUG: Stored credentials in database")
 

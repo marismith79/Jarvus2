@@ -11,6 +11,7 @@ from typing import Any, Callable, Dict, List, Optional
 from azure.ai.inference.models import ChatCompletionsToolDefinition, FunctionDefinition
 
 from .mcp_client import mcp_client, ToolExecutionError
+from ..utils.scope_helpers import generate_scope_description
 
 
 class ToolCategory(Enum):
@@ -56,14 +57,14 @@ class ToolMetadata:
     name: str
     description: str
     category: ToolCategory
-    server_path: str                # e.g., 'gmail', 'calendar'
+    server_path: str                
     requires_auth: bool = True
     is_active: bool = True
     executor: Optional[Callable] = None
     parameters: Optional[List[ToolParameter]] = None
     result_formatter: Optional[Callable] = None
 
-    def to_sdk_definition(self) -> ChatCompletionsToolDefinition:
+    def to_sdk_definition(self, user_scopes: Optional[List[str]] = None, scope_description: Optional[str] = None) -> ChatCompletionsToolDefinition:
         """Convert this metadata into an Azure SDK ChatCompletionsToolDefinition."""
         props: Dict[str, Any] = {}
         required: List[str] = []
@@ -83,9 +84,14 @@ class ToolMetadata:
                 }
             }
 
+        # Add scope description to the tool description if available
+        description = self.description
+        if scope_description:
+            description = f"{description}\n\n{scope_description}"
+
         func_def = FunctionDefinition(
             name=self.name,
-            description=self.description,
+            description=description,
             parameters={
                 "type": "object",
                 "properties": props,
@@ -136,9 +142,9 @@ class ToolRegistry:
             tools_by_category[tool.category].append(tool)
         return tools_by_category
 
-    def get_sdk_tools(self) -> List[ChatCompletionsToolDefinition]:
+    def get_sdk_tools(self, user_scopes: Optional[List[str]] = None) -> List[ChatCompletionsToolDefinition]:
         """Return all active tools as Azure SDK definitions."""
-        return [m.to_sdk_definition() for m in self._tools.values() if m.is_active]
+        return [m.to_sdk_definition(user_scopes) for m in self._tools.values() if m.is_active]
 
     def execute_tool(
         self,
@@ -170,7 +176,7 @@ class ToolRegistry:
             return tool.result_formatter(raw_result)
         return raw_result
 
-    def get_tools_by_module(self, module_name: str) -> List[ChatCompletionsToolDefinition]:
+    def get_tools_by_module(self, module_name: str, user_scopes: Optional[List[str]] = None) -> List[ChatCompletionsToolDefinition]:
         """Get tools from a specific module/file."""
         # Map frontend tool names to tool categories
         module_to_category = {
@@ -184,19 +190,35 @@ class ToolRegistry:
         
         category = module_to_category.get(module_name.lower())
         if category:
+            # Generate scope description for this module
+            scope_description = None
+            if user_scopes:
+                service_names = {
+                    ToolCategory.GMAIL: "Gmail",
+                    ToolCategory.CALENDAR: "Calendar", 
+                    ToolCategory.DRIVE: "Drive",
+                    ToolCategory.DOCS: "Docs",
+                    ToolCategory.SHEETS: "Sheets",
+                    ToolCategory.SLIDES: "Slides"
+                }
+                service_name = service_names.get(category, module_name.title())
+                scope_description = generate_scope_description(user_scopes, service_name)
+            
             # Debug logging to help diagnose issues
-            tools = [m.to_sdk_definition() for m in self._tools.values() 
+            tools = [m.to_sdk_definition(scope_description=scope_description) 
+                    for m in self._tools.values() 
                     if m.is_active and m.category == category]
+            
             print(f"Found {len(tools)} tools for category {category}")
             return tools
         print(f"No category found for module {module_name}")
         return []
 
-    def get_sdk_tools_by_modules(self, module_names: List[str]) -> List[ChatCompletionsToolDefinition]:
+    def get_sdk_tools_by_modules(self, module_names: List[str], user_scopes: Optional[List[str]] = None) -> List[ChatCompletionsToolDefinition]:
         """Get tools from multiple modules."""
         all_tools = []
         for module_name in module_names:
-            all_tools.extend(self.get_tools_by_module(module_name))
+            all_tools.extend(self.get_tools_by_module(module_name, user_scopes))
         return all_tools
 
 
