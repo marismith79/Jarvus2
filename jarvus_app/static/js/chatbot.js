@@ -66,6 +66,7 @@ const connectedTools = {
         const cssRole = msg.role === 'user' ? 'user' : 'bot';
         appendMessage(cssRole, msg.content);
       });
+      toggleSuggestionsBar();
     } catch (err) {
       console.error('Failed to load history:', err);
     }
@@ -128,6 +129,7 @@ const connectedTools = {
   
     // Append the user's message locally
     appendMessage('user', raw);
+    toggleSuggestionsBar();
     inputEl.value = '';
     inputEl.focus();
   
@@ -160,6 +162,7 @@ const connectedTools = {
                 const cls = msg.role === 'user' ? 'user' : 'bot';
                 appendMessage(cls, msg.content);
             });
+        toggleSuggestionsBar();
       } else {
         // Fallback: just show assistant or tool responses
         if (data.assistant) appendMessage('bot', data.assistant);
@@ -188,5 +191,41 @@ const connectedTools = {
     });
     document.querySelector('.dropdown-btn').addEventListener('click', toggleSuggestions);
     /* tool-dropdown open/close logic unchanged */
+
+    // Header hide/show on scroll
+    let lastScrollY = window.scrollY;
+    const header = document.querySelector('header');
+    let ticking = false;
+
+    function onScroll() {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          if (window.scrollY > 10 && window.scrollY > lastScrollY) {
+            header.classList.add('header-hidden');
+          } else if (window.scrollY <= 10) {
+            header.classList.remove('header-hidden');
+          } else if (window.scrollY < lastScrollY) {
+            header.classList.remove('header-hidden');
+          }
+          lastScrollY = window.scrollY;
+          ticking = false;
+        });
+        ticking = true;
+      }
+    }
+    window.addEventListener('scroll', onScroll);
   });
+  
+  // Helper to show/hide suggestions bar based on chat history
+  function toggleSuggestionsBar() {
+    const history = document.getElementById('chat-history');
+    const suggestionsBar = document.getElementById('suggestions-bar');
+    if (!history || !suggestionsBar) return;
+    // If there are no messages, show suggestions
+    if (history.children.length === 0) {
+      suggestionsBar.style.display = 'block';
+    } else {
+      suggestionsBar.style.display = 'none';
+    }
+  }
   
