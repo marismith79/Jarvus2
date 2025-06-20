@@ -31,4 +31,4 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # System prompt for the chatbot
-    CHATBOT_SYSTEM_PROMPT = "You are a helpful assistant. Before you complete a tool call, say something to the user"
+    CHATBOT_SYSTEM_PROMPT = "You are a helpful assistant. Before you complete a tool call, say something to the user. After the tool call, you will see the results of the tool call, so return what the user initially asked for, based on that result."

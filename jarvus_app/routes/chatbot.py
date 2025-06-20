@@ -22,6 +22,8 @@ from azure.ai.inference.models import (
     ChatCompletions
 )
 from ..config import Config
+from jarvus_app.models.history import History
+from ..db import db
 
 jarvus_ai = JarvusAIClient()
 
@@ -64,7 +66,7 @@ def save_selected_tools():
 @login_required
 def handle_chat_message():
     """Handle incoming chat messages, invoking LLM and tools as needed."""
-    
+    import sys
     logger.info("=== Starting chat message handling ===")
     logger.info(f"Request method: {request.method}")
     logger.info(f"Request headers: {dict(request.headers)}")
@@ -73,19 +75,44 @@ def handle_chat_message():
     logger.info(f"Request json: {request.get_json(silent=True)}")
     logger.info(f"Current user: {current_user.id}")
     logger.info(f"Session ID: {session.sid if hasattr(session, 'sid') else 'No session ID'}")
-    # logger.info(f"Session contents: {dict(session)}")
+
+    # Log session size and key details
+    session_total_size = 0
+    logger.info("=== Session Key Size Debug ===")
+    for k, v in session.items():
+        try:
+            if isinstance(v, (str, bytes)):
+                size = len(v)
+            else:
+                import json
+                size = len(json.dumps(v))
+        except Exception as e:
+            size = -1
+        session_total_size += size if size > 0 else 0
+        logger.info(f"Session key: {k} | type: {type(v).__name__} | size: {size} bytes")
+    logger.info(f"Total session size (approx): {session_total_size} bytes")
+    logger.info("====================================")
     
+    # Use session.sid as the session_id
+    session_id = getattr(session, 'sid', None)
+    if not session_id:
+        # Fallback: use _id if sid is not available
+        session_id = session.get('_id')
+    if not session_id:
+        # Fallback: use user id (not ideal for multi-device)
+        session_id = str(current_user.id)
+
     # GET: return current conversation history
-    if request.method == 'GET':
-        logger.info("Processing GET request - returning conversation history")
-        # def get_history():
-        #     history = session.get('history', [])
-        #     return jsonify(history), 200
-        # logger.info(f"Returning history with {len(history)} messages")
-        # return jsonify(history), 200
-        history = session.get('history', [])
-        logger.info(f"Returning history with {len(history)} messages")
-        return jsonify(history), 200
+    # if request.method == 'GET':
+    #     logger.info("Processing GET request - returning conversation history")
+    #     history_obj = History.query.filter_by(session_id=session_id).first()
+    #     if history_obj:
+    #         history = history_obj.messages
+    #         logger.info(f"Returning history with {len(history)} messages from DB")
+    #     else:
+    #         history = []
+    #         logger.info("No history found in DB for this session")
+    #     return jsonify(history), 200
 
     # POST: process new user message
     logger.info("Processing POST request - handling new message")
@@ -99,12 +126,13 @@ def handle_chat_message():
     logger.info(f"JWT token present: {bool(jwt_token)}")
 
     # Load or initialize conversation
-    messages = session.get('messages_objects')
-    if not messages:
-        logger.info("No existing conversation - initializing with system prompt")
-        messages = [SystemMessage(content=Config.CHATBOT_SYSTEM_PROMPT)]
-    else:
-        logger.info(f"Loaded existing conversation with {len(messages)} messages")
+    # history_obj = History.query.filter_by(session_id=session_id).first()
+    # if history_obj:
+    #     messages = history_obj.messages or []
+    #     logger.info(f"Loaded existing conversation with {len(messages)} messages from DB")
+    # else:
+    #     logger.info("No existing conversation - initializing with system prompt")
+    messages = [SystemMessage(content=Config.CHATBOT_SYSTEM_PROMPT)]
 
     # Append user message
     user_msg = UserMessage(content=user_text)
@@ -112,12 +140,12 @@ def handle_chat_message():
     logger.info("Added user message to conversation")
 
     # Prepare tool definitions - FILTER BASED ON USER SELECTION
-    selected_services = session.get('selected_tools', [])
+    selected_tools = session.get('selected_tools', [])
 
-    if selected_services:
+    if selected_tools:
         # Get tools only for selected services
-        sdk_tools = tool_registry.get_sdk_tools_by_modules(selected_services)
-        logger.info(f"Loaded {len(sdk_tools)} tools for selected services: {selected_services}")
+        sdk_tools = tool_registry.get_sdk_tools_by_modules(selected_tools)
+        logger.info(f"Loaded {len(sdk_tools)} tools for selected services: {selected_tools}")
     else:
         # If no services selected, send empty list
         sdk_tools = []
@@ -170,7 +198,7 @@ def handle_chat_message():
                 messages.append(tool_msg)
 
             # After executing tools, get a follow-up assistant response
-            logger.info("Getting follow-up response after tool execution")
+            logger.info(f"Getting follow-up response after tool execution.")
             followup: ChatCompletions = jarvus_ai.client.complete(
                 messages=messages,
                 model=jarvus_ai.deployment_name,
@@ -194,26 +222,34 @@ def handle_chat_message():
             assistant_messages.append({'role': assistant_msg.role, 'content': assistant_msg.content})
             final_reply = msg.content
 
-        # Persist conversation state
-        session['history'] = [
-            {"role": m.role, "content": getattr(m, "content", "")}
-            for m in messages
-        ]
+        # Save updated messages to DB
+        # if history_obj:
+        #     history_obj.messages = [
+        #         {"role": m.role, "content": getattr(m, "content", "")}
+        #         for m in messages
+        #     ]
+        # else:
+        history_obj = History(
+            session_id=session_id,
+            messages=[{"role": m.role, "content": getattr(m, "content", "")} for m in messages]
+        )
+        db.session.add(history_obj)
+        db.session.commit()
+
         # Build minimal history for frontend
-        # history = [ {'role': m.role, 'content': getattr(m, 'content', '')} for m in messages if hasattr(m, 'role') ]
-        # Filter out tool messages before sending to frontend
         filtered_history = [
             {"role": m.role, "content": getattr(m, "content", "")}
             for m in messages
-            if m.role not in ['tool']  # exclude tool messages
+            if m.role not in ['tool'] and getattr(m, "content", None)
         ]
         logger.info(f"Returning response with {len(filtered_history)} messages in history")
+        logger.info(f"filtered_history: {filtered_history}")
 
-        return jsonify({
-            'assistant': final_reply,
-            'history': filtered_history,
-            'tool_responses': assistant_messages
-        }), 200
+        return jsonify(
+            {
+                "history": filtered_history,  # Return the complete history
+            }
+        )
 
     except Exception as e:
         logger.error(f"Error processing message: {str(e)}", exc_info=True)
