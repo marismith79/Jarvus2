@@ -168,7 +168,7 @@ const connectedTools = {
         // }
       }
     } catch (err) {
-      console.error('Fetch error:', err);
+      logger.debug('Fetch error:', err);
       thinkingMsg.remove();
       appendMessage('bot', '⚠️ Error: Failed to get response from the assistant.');
     }

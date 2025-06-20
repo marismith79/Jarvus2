@@ -22,17 +22,17 @@ def register_gmail_tools(registry: 'ToolRegistry') -> None:
         result_formatter=format_gmail_result
     ))
 
-    registry.register(ToolMetadata(
-        name="get_message",
-        description="Get a specific email by ID from Gmail",
-        category=ToolCategory.GMAIL,
-        server_path="gmail",
-        requires_auth=True,
-        parameters=[
-            ToolParameter("message_id", "string", "ID of the email to retrieve", required=True),
-        ],
-        result_formatter=format_gmail_result
-    ))
+    # registry.register(ToolMetadata(
+    #     name="get_message",
+    #     description="Get a specific email by ID from Gmail",
+    #     category=ToolCategory.GMAIL,
+    #     server_path="gmail",
+    #     requires_auth=True,
+    #     parameters=[
+    #         ToolParameter("message_id", "string", "ID of the email to retrieve", required=True),
+    #     ],
+    #     result_formatter=format_gmail_result
+    # ))
     
     registry.register(ToolMetadata(
         name="send_message",
