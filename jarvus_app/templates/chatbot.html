@@ -25,29 +25,31 @@
             <button class="dropdown-btn">▾</button>
         </div>
 
-        <!-- Suggestion cards -->
-        <div class="suggestions-cards-wrapper" id="suggestions-wrapper">
-            <div class="suggestions-cards">
-                <div class="card card-gmail" onclick="insertSuggestion('Summarize my 5 most recent emails')">
-                    <div class="card-text gmail-text">
-                        Summarize my most recent work emails 
+        <!-- Chat history -->
+        <div id="chat-history" class="chat-history"></div>
+
+        <!-- Suggestions bar (initially visible, hidden after first message) -->
+        <div id="suggestions-bar">
+            <div class="suggestions-cards-wrapper" id="suggestions-wrapper">
+                <div class="suggestions-cards">
+                    <div class="card card-gmail" onclick="insertSuggestion('Summarize my 5 most recent emails')">
+                        <div class="card-text gmail-text">
+                            Summarize my most recent work emails 
+                        </div>
                     </div>
-                </div>
-                <div class="card card-calendar" onclick="insertSuggestion('Show my upcoming events')">
-                    <div class="card-text calendar-text">
-                        Show all my upcoming calls
+                    <div class="card card-calendar" onclick="insertSuggestion('Show my upcoming events')">
+                        <div class="card-text calendar-text">
+                            Show all my upcoming calls
+                        </div>
                     </div>
-                </div>
-                <div class="card card-salesforce" onclick="insertSuggestion('Update the opportunity to Signed')">
-                    <div class="card-text salesforce-text">
-                        Create a notion database for my sales
+                    <div class="card card-salesforce" onclick="insertSuggestion('Update the opportunity to Signed')">
+                        <div class="card-text salesforce-text">
+                            Create a notion database for my sales
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-
-        <!-- Chat history -->
-        <div id="chat-history" class="chat-history"></div>
 
         <!-- Chat input bar -->
         <form class="chat-input-bar" onsubmit="event.preventDefault(); sendCommand();">
@@ -65,8 +67,13 @@
     </section>
 </div>
 {% endblock %}
-
 {% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    document.body.classList.add('chatbot-page');
+    document.documentElement.classList.add('chatbot-page');
+  });
+</script>
 <script>
     // Pass connection status to JavaScript
     window.gmailConnected = {{ 'true' if google_workspace_connected else 'false' }};
@@ -81,4 +88,5 @@
 </script>
 <script src="{{ url_for('static', filename='js/chatbot.js') }}?v=3"></script>
 {% endblock %}
+
 
