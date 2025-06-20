@@ -16,6 +16,7 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 
+from ..config import Config
 from ..models.oauth import OAuthCredentials  # Uncommented
 from ..utils.tool_permissions import grant_tool_access
 from ..models.user_tool import UserTool
@@ -36,13 +37,11 @@ GOOGLE_CLIENT_CONFIG = {
         "auth_uri": "https://accounts.google.com/o/oauth2/auth",
         "token_uri": "https://oauth2.googleapis.com/token",
         "redirect_uris": [os.getenv("GOOGLE_REDIRECT_URI")],
-        "scopes": [
-            "https://www.googleapis.com/auth/gmail.readonly",
-            "https://www.googleapis.com/auth/gmail.send",
-            "https://www.googleapis.com/auth/gmail.modify",
-        ],
+        "scopes": Config.GOOGLE_SCOPES,
     }
 }
+
+
 
 # Print debug info about OAuth configuration
 print("\nDEBUG: OAuth Configuration:")
