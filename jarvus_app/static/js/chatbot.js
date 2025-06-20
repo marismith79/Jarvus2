@@ -24,11 +24,16 @@ function toggleSuggestions() {
 
 // Store connection status
 const connectedTools = {
-    googleWorkspace: window.googleWorkspaceConnected || false,
-    notion: window.notionConnected || false,
-    slack: window.slackConnected || false,
-    zoom: window.zoomConnected || false
-  };
+  gmail: window.gmailConnected || false,
+  docs: window.docsConnected || false,
+  slides: window.slidesConnected || false,
+  sheets: window.sheetsConnected || false,
+  drive: window.driveConnected || false,
+  calendar: window.calendarConnected || false,
+  notion: window.notionConnected || false,
+  slack: window.slackConnected || false,
+  zoom: window.zoomConnected || false
+};
   
   // Helper to append a message bubble into #chat-history
   function appendMessage(who, text) {

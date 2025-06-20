@@ -12,7 +12,7 @@ def register_gmail_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="list_messages",
         description="List emails in Gmail inbox",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.GMAIL,
         server_path="gmail",
         requires_auth=True,
         parameters=[
@@ -25,7 +25,7 @@ def register_gmail_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="get_message",
         description="Get a specific email by ID from Gmail",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.GMAIL,
         server_path="gmail",
         requires_auth=True,
         parameters=[
@@ -37,7 +37,7 @@ def register_gmail_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="send_message",
         description="Send an email using Gmail",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.GMAIL,
         server_path="gmail",
         requires_auth=True,
         parameters=[
@@ -53,7 +53,7 @@ def register_gmail_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="delete_message",
         description="Delete an email in Gmail by ID",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.GMAIL,
         server_path="gmail",
         requires_auth=True,
         parameters=[
@@ -65,7 +65,7 @@ def register_gmail_tools(registry: 'ToolRegistry') -> None:
     registry.register(ToolMetadata(
         name="modify_label",
         description="Modify labels of an email in Gmail",
-        category=ToolCategory.GOOGLE_WORKSPACE,
+        category=ToolCategory.GMAIL,
         server_path="gmail",
         requires_auth=True,
         parameters=[

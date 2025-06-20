@@ -111,9 +111,17 @@ def handle_chat_message():
     messages.append(user_msg)
     logger.info("Added user message to conversation")
 
-    # Prepare tool definitions
-    sdk_tools = tool_registry.get_sdk_tools()
-    logger.info(f"Loaded {len(sdk_tools)} available tools")
+    # Prepare tool definitions - FILTER BASED ON USER SELECTION
+    selected_services = session.get('selected_tools', [])
+
+    if selected_services:
+        # Get tools only for selected services
+        sdk_tools = tool_registry.get_sdk_tools_by_modules(selected_services)
+        logger.info(f"Loaded {len(sdk_tools)} tools for selected services: {selected_services}")
+    else:
+        # If no services selected, send empty list
+        sdk_tools = []
+        logger.info("No services selected - sending empty tool list")
 
     try:
         # Call Azure AI for completion (non-streaming)
@@ -135,8 +143,8 @@ def handle_chat_message():
             )
         messages.append(assistant_msg)
         logger.info(f"First message: {assistant_msg}")
-        assistant_messages: List[Dict[str,str]] = []
 
+        assistant_messages: List[Dict[str,str]] = []
 
         # Handle function/tool calls if present
         if msg.tool_calls:
@@ -152,7 +160,7 @@ def handle_chat_message():
                     parameters=tool_args,
                     jwt_token=jwt_token
                 )
-                # logger.info(f"Tool execution result: {result}")
+
                 
                 # Append ToolMessage
                 tool_msg = ToolMessage(
@@ -161,7 +169,6 @@ def handle_chat_message():
                 )
                 messages.append(tool_msg)
 
-                # print("tool_msg:", tool_msg)
             # After executing tools, get a follow-up assistant response
             logger.info("Getting follow-up response after tool execution")
             followup: ChatCompletions = jarvus_ai.client.complete(
@@ -181,8 +188,7 @@ def handle_chat_message():
             assistant_messages.append({'role': assistant_msg.role, 'content': assistant_msg.content})
             final_reply = msg2.content
         else:
-            # Plain text reply
-            logger.info("Processing plain text reply")
+            # Only append here for plain text
             assistant_msg = AssistantMessage(content=msg.content)
             messages.append(assistant_msg)
             assistant_messages.append({'role': assistant_msg.role, 'content': assistant_msg.content})

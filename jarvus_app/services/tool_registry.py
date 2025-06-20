@@ -26,7 +26,7 @@ class ToolCategory(Enum):
     DOCS = "google-workspace.docs"
     SHEETS = "google-workspace.sheets"
     SLIDES = "google-workspace.slides"
-    MEET = "google-workspace.meet"
+
     CALENDAR = "google-workspace.calendar"
 
 
@@ -170,6 +170,35 @@ class ToolRegistry:
             return tool.result_formatter(raw_result)
         return raw_result
 
+    def get_tools_by_module(self, module_name: str) -> List[ChatCompletionsToolDefinition]:
+        """Get tools from a specific module/file."""
+        # Map frontend tool names to tool categories
+        module_to_category = {
+            'gmail': ToolCategory.GMAIL,
+            'docs': ToolCategory.DOCS,
+            'slides': ToolCategory.SLIDES,
+            'sheets': ToolCategory.SHEETS,
+            'drive': ToolCategory.DRIVE,
+            'calendar': ToolCategory.CALENDAR,
+        }
+        
+        category = module_to_category.get(module_name.lower())
+        if category:
+            # Debug logging to help diagnose issues
+            tools = [m.to_sdk_definition() for m in self._tools.values() 
+                    if m.is_active and m.category == category]
+            print(f"Found {len(tools)} tools for category {category}")
+            return tools
+        print(f"No category found for module {module_name}")
+        return []
+
+    def get_sdk_tools_by_modules(self, module_names: List[str]) -> List[ChatCompletionsToolDefinition]:
+        """Get tools from multiple modules."""
+        all_tools = []
+        for module_name in module_names:
+            all_tools.extend(self.get_tools_by_module(module_name))
+        return all_tools
+
 
 def format_tool_result(result: Any) -> str:
     """Format generic tool result into a human-readable string."""
@@ -207,7 +236,6 @@ from .tools import (
     register_calendar_tools,
     register_drive_tools,
     register_docs_tools,
-    register_meet_tools,
     register_sheets_tools,
     register_slides_tools
 )
@@ -217,6 +245,5 @@ register_gmail_tools(tool_registry)
 register_calendar_tools(tool_registry)
 register_drive_tools(tool_registry)
 register_docs_tools(tool_registry)
-register_meet_tools(tool_registry)
 register_sheets_tools(tool_registry)
 register_slides_tools(tool_registry) 
