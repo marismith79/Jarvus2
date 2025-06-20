@@ -33,34 +33,34 @@ class Config:
     # System prompt for the chatbot
     CHATBOT_SYSTEM_PROMPT = "You are a helpful assistant. Before you complete a tool call, say something to the user. After the tool call, you will see the results of the tool call, so return what the user initially asked for, based on that result."
     
-    # Service-specific scopes
-    GMAIL_SCOPES = [
-        "https://www.googleapis.com/auth/gmail.readonly",  # View your email messages and settings
-        "https://www.googleapis.com/auth/gmail.compose",   # Manage drafts and send emails
-        "https://www.googleapis.com/auth/gmail.modify"     # Read, compose and send emails from your Gmail account
+    # Gmail API settings - Updated to most comprehensive scope
+    GMAIL_SCOPES: list = [
+        "https://mail.google.com/"  # Full access to Gmail account (includes all operations)
     ]
     
-    CALENDAR_SCOPES = [
-        "https://www.googleapis.com/auth/calendar"  # See, edit, share and permanently delete all the calendars that you can access using Google Calendar
+    # Calendar API settings - Updated to most comprehensive scope
+    CALENDAR_SCOPES: list = [
+        "https://www.googleapis.com/auth/calendar"  # Full access to Google Calendar
     ]
     
-    DRIVE_SCOPES = [
-        "https://www.googleapis.com/auth/drive",           # See, edit, create and delete all of your Google Drive files
-        "https://www.googleapis.com/auth/drive.install",   # Connect itself to your Google Drive
-        "https://www.googleapis.com/auth/activity"         # View the activity history of your Google apps
+    # Drive API settings - Updated to most comprehensive scope
+    DRIVE_SCOPES: list = [
+        "https://www.googleapis.com/auth/drive"  # Full access to Google Drive
     ]
     
-    SHEETS_SCOPES = [
-        "https://www.googleapis.com/auth/spreadsheets"  # See, edit, create and delete all your Google Sheets spreadsheets
+    # Sheets API settings - Updated to most comprehensive scope
+    SHEETS_SCOPES: list = [
+        "https://www.googleapis.com/auth/spreadsheets"  # Full access to Google Sheets
     ]
     
-    DOCS_SCOPES = [
-        "https://www.googleapis.com/auth/documents",  # See, edit, create and delete all your Google Docs documents
-        "https://www.googleapis.com/auth/docs"        # See, edit, create and delete all of your Google Drive files
+    # Docs API settings - Updated to most comprehensive scope
+    DOCS_SCOPES: list = [
+        "https://www.googleapis.com/auth/documents"  # Full access to Google Docs
     ]
     
-    SLIDES_SCOPES = [
-        "https://www.googleapis.com/auth/presentations"  # See, edit, create and delete all your Google Slides presentations
+    # Slides API settings - Updated to most comprehensive scope
+    SLIDES_SCOPES: list = [
+        "https://www.googleapis.com/auth/presentations"  # Full access to Google Slides
     ]
     
     # Combined scopes for all services
