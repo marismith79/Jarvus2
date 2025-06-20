@@ -8,8 +8,17 @@ def reset_db():
     app = create_app()
     with app.app_context():
         print("Resetting database...")
+        print("WARNING: This script uses db.drop_all() and db.create_all() which bypasses Alembic migrations.")
+        print("For production, consider using Alembic downgrade/upgrade commands instead.")
         
         try:
+            # Import all models to ensure they are registered
+            from jarvus_app.models.user import User
+            from jarvus_app.models.user_tool import UserTool
+            from jarvus_app.models.oauth import OAuthCredentials
+            from jarvus_app.models.tool_permission import ToolPermission
+            from jarvus_app.models.history import History
+            
             # Drop all tables
             db.drop_all()
             print("Dropped all existing tables")
@@ -17,11 +26,6 @@ def reset_db():
             # Create new tables
             db.create_all()
             print("Created new tables")
-            
-            # Optionally populate with initial data
-            if input("Would you like to populate the database with initial data? (y/n): ").lower() == 'y':
-                from populate_db import populate_db
-                populate_db()
                 
         except Exception as e:
             print(f"Error resetting database: {str(e)}")

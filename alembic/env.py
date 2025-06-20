@@ -14,20 +14,23 @@ load_dotenv()
 # access to the values within the .ini file in use.
 config = context.config
 
-# Set the database URL from environment variable
-database_url = os.getenv('TEST_DATABASE_URL')
-if database_url is None:
-    raise ValueError("TEST_DATABASE_URL environment variable is not set")
-config.set_main_option('sqlalchemy.url', str(database_url))
+# Import the database URL function from our app
+from jarvus_app.db import get_database_url
+
+# Set the database URL using the same logic as the app
+config.set_main_option('sqlalchemy.url', get_database_url())
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Import your models here
+# Import ALL your models here to ensure they're registered with SQLAlchemy
 from jarvus_app.models.user import User
 from jarvus_app.models.user_tool import UserTool
+from jarvus_app.models.oauth import OAuthCredentials
+from jarvus_app.models.tool_permission import ToolPermission
+from jarvus_app.models.history import History
 from jarvus_app.db import db
 
 # add your model's MetaData object here

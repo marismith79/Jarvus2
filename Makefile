@@ -46,6 +46,31 @@ test:             ## Run tests and generate coverage report.
 migrations:       ## Run database migrations.
 	$(ENV_PREFIX)alembic upgrade head
 
+.PHONY: migration-create
+migration-create: ## Create a new migration file.
+	@read -p "Migration message: " message; \
+	$(ENV_PREFIX)alembic revision --autogenerate -m "$$message"
+
+.PHONY: migration-generate
+migration-generate: ## Generate migration from model changes.
+	$(ENV_PREFIX)alembic revision --autogenerate -m "auto-generated migration"
+
+.PHONY: migration-history
+migration-history: ## Show migration history.
+	$(ENV_PREFIX)alembic history
+
+.PHONY: migration-current
+migration-current: ## Show current migration version.
+	$(ENV_PREFIX)alembic current
+
+.PHONY: migration-downgrade
+migration-downgrade: ## Downgrade to previous migration.
+	$(ENV_PREFIX)alembic downgrade -1
+
+.PHONY: migration-stamp
+migration-stamp: ## Mark database as up-to-date without running migrations.
+	$(ENV_PREFIX)alembic stamp head
+
 .PHONY: watch
 watch:            ## Run tests on every change.
 	ls **/**.py | entr $(ENV_PREFIX)pytest -s -vvv -l --tb=long --maxfail=1 tests/

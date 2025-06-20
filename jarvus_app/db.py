@@ -14,10 +14,25 @@ load_dotenv()
 db = SQLAlchemy()
 
 
+def get_database_url() -> str:
+    """Get database URL from environment variables with fallback logic."""
+    # Check for production environment first
+    if os.getenv('FLASK_ENV') == 'production':
+        database_url = os.getenv('AZURE_SQL_CONNECTION_STRING')
+        if database_url:
+            return database_url
+    
+    # Fall back to development/test database
+    database_url = os.getenv('TEST_DATABASE_URL')
+    if database_url is None:
+        raise ValueError("No database URL found in environment variables. Set AZURE_SQL_CONNECTION_STRING, or TEST_DATABASE_URL")
+    return database_url
+
+
 def init_db(app: Flask) -> None:
     """Initialize the database with the app."""
     # Get the database URI from environment variable
-    raw_uri = os.getenv("DATABASE_URI")
+    raw_uri = get_database_url()
     print(f"Raw DATABASE_URI type: {type(raw_uri)}")
     print(f"Raw DATABASE_URI value: {raw_uri}")
     
@@ -90,6 +105,8 @@ def init_db(app: Flask) -> None:
                 from .models.oauth import OAuthCredentials
                 from .models.tool_permission import ToolPermission
                 from .models.user import User
+                from .models.user_tool import UserTool
+                from .models.history import History
 
                 # This will create all tables that don't exist
                 db.create_all()
@@ -101,6 +118,8 @@ def init_db(app: Flask) -> None:
                     "users",
                     "google_oauth_credentials",
                     "tool_permissions",
+                    "user_tools",
+                    "histories",
                 ]
                 existing_tables = inspector.get_table_names()
 

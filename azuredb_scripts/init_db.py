@@ -9,7 +9,17 @@ def init_db():
     app = create_app()
     with app.app_context():
         print("Creating database tables...")
+        print("WARNING: This script uses db.create_all() which bypasses Alembic migrations.")
+        print("For production, consider using 'make migrations' instead.")
+        
         try:
+            # Import all models to ensure they are registered
+            from jarvus_app.models.user import User
+            from jarvus_app.models.user_tool import UserTool
+            from jarvus_app.models.oauth import OAuthCredentials
+            from jarvus_app.models.tool_permission import ToolPermission
+            from jarvus_app.models.history import History
+            
             db.create_all()
             print("Database tables created successfully!")
         except Exception as e:

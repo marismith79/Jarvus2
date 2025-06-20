@@ -91,3 +91,18 @@ jobs:
           app-name: 'jarvus'
           slot-name: 'Production'
           
+      - name: 'Run Database Migrations'
+        run: |
+          # Install dependencies in the deployment environment
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          
+          # Set environment variables for production
+          export FLASK_ENV=production
+          export AZURE_SQL_CONNECTION_STRING="${{ secrets.AZURE_SQL_CONNECTION_STRING }}"
+          
+          # Run migrations
+          alembic upgrade head
+          
+          echo "Database migrations completed successfully"
+          

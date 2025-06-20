@@ -113,9 +113,41 @@ The `azuredb_scripts` folder contains utilities to bootstrap or reset a local or
 
 ```bash
 python azuredb_scripts/init_db.py     # create tables
-python azuredb_scripts/populate_db.py # optional seed data
 python azuredb_scripts/check_db.py    # inspect tables
 python azuredb_scripts/reset_db.py    # drop & recreate
+```
+
+### Database Migrations
+
+This project uses Alembic for database migrations. When you need to make changes to your models:
+
+```bash
+# 1. Make changes to your models
+# 2. Generate migration
+make migration-generate
+
+# 3. Apply migration
+make migrations
+
+# 4. Check status
+make migration-current
+```
+
+**Available migration commands:**
+- `make migrations` - Apply all pending migrations
+- `make migration-current` - Check current migration status
+- `make migration-history` - Show migration history
+- `make migration-generate` - Generate new migration from model changes
+- `make migration-downgrade` - Downgrade to previous migration
+
+**For Production:**
+```bash
+# Set production environment
+export FLASK_ENV=production
+export AZURE_SQL_CONNECTION_STRING="your_production_connection_string"
+
+# Apply migrations
+make migrations
 ```
 
 ## Azure Deployment Pipeline
