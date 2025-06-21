@@ -36,11 +36,8 @@ tool_choice = 'required'
 @login_required
 def get_available_tools():
     """Return only the definitions the user has toggled on."""
-    # Get user's OAuth scopes for Google Workspace
-    user_scopes = get_user_oauth_scopes(current_user.id, "google-workspace")
-    
     # all of your definitions:
-    all_defs = tool_registry.get_sdk_tools(user_scopes)
+    all_defs = tool_registry.get_sdk_tools()
 
     # which names did the user pick?
     selected = session.get('selected_tools', [])
@@ -105,23 +102,11 @@ def handle_chat_message():
         # Fallback: use user id (not ideal for multi-device)
         session_id = str(current_user.id)
 
-    # GET: return current conversation history
-    # if request.method == 'GET':
-    #     logger.info("Processing GET request - returning conversation history")
-    #     history_obj = History.query.filter_by(session_id=session_id).first()
-    #     if history_obj:
-    #         history = history_obj.messages
-    #         logger.info(f"Returning history with {len(history)} messages from DB")
-    #     else:
-    #         history = []
-    #         logger.info("No history found in DB for this session")
-    #     return jsonify(history), 200
-
     # POST: process new user message
     logger.info("Processing POST request - handling new message")
     data = request.get_json() or {}
     user_text = data.get('message', '')
-    tool_choice = data.get('tool_choice')
+    tool_choice = data.get('tool_choice', 'auto')
     jwt_token = session.get('jwt_token')
     
     logger.info(f"Received message: {user_text}")
@@ -130,11 +115,18 @@ def handle_chat_message():
 
     # Load or initialize conversation
     # history_obj = History.query.filter_by(session_id=session_id).first()
-    # if history_obj:
-    #     messages = history_obj.messages or []
-    #     logger.info(f"Loaded existing conversation with {len(messages)} messages from DB")
+    # if history_obj and history_obj.messages:
+    #     messages = [SystemMessage(content=Config.CHATBOT_SYSTEM_PROMPT)]
+    #     for m in history_obj.messages:
+    #         if m['role'] == 'user':
+    #             messages.append(UserMessage(content=m['content']))
+    #         elif m['role'] == 'assistant':
+    #             messages.append(AssistantMessage(content=m['content']))
+    #         elif m['role'] == 'tool':
+    #             messages.append(ToolMessage(content=m['content'], tool_call_id=m.get('tool_call_id')))
+    #     logger.info(f"Loaded existing conversation with {len(history_obj.messages)} messages from DB")
     # else:
-    #     logger.info("No existing conversation - initializing with system prompt")
+        # logger.info("No existing conversation - initializing with system prompt")
     messages = [SystemMessage(content=Config.CHATBOT_SYSTEM_PROMPT)]
 
     # Append user message
@@ -144,12 +136,10 @@ def handle_chat_message():
 
     # Prepare tool definitions - FILTER BASED ON USER SELECTION
     selected_tools = session.get('selected_tools', [])
-    
-    # Get user's OAuth scopes for Google Workspace
     user_scopes = get_user_oauth_scopes(current_user.id, "google-workspace")
 
     if selected_tools:
-        # Get tools only for selected services with scope descriptions
+        # Get tools only for selected services
         sdk_tools = tool_registry.get_sdk_tools_by_modules(selected_tools, user_scopes)
         logger.info(f"Loaded {len(sdk_tools)} tools for selected services: {selected_tools}")
     else:
@@ -158,30 +148,34 @@ def handle_chat_message():
         logger.info("No services selected - sending empty tool list")
 
     try:
-        # Call Azure AI for completion (non-streaming)
-        logger.info("Calling Azure AI for completion")
-        response: ChatCompletions = jarvus_ai.client.complete(
-            messages=messages,
-            model=jarvus_ai.deployment_name,
-            tools=sdk_tools,
-            stream=False,
-            tool_choice=tool_choice
-        )
-        logger.info("Received response from Azure AI")
-
-        choice = response.choices[0]  # ChatChoice
-        msg = choice.message           # ChatResponseMessage
-        assistant_msg = AssistantMessage(
-            content=msg.content,
-            tool_calls=msg.tool_calls
+        # Recursive tool calling loop
+        while True:
+            # Call Azure AI for completion (non-streaming)
+            logger.info("Calling Azure AI for completion")
+            response: ChatCompletions = jarvus_ai.client.complete(
+                messages=messages,
+                model=jarvus_ai.deployment_name,
+                tools=sdk_tools,
+                stream=False,
+                tool_choice=tool_choice
             )
-        messages.append(assistant_msg)
-        logger.info(f"First message: {assistant_msg}")
+            logger.info("Received response from Azure AI")
 
-        assistant_messages: List[Dict[str,str]] = []
+            choice = response.choices[0]  # ChatChoice
+            msg = choice.message           # ChatResponseMessage
+            assistant_msg = AssistantMessage(
+                content=msg.content,
+                tool_calls=msg.tool_calls
+            )
+            messages.append(assistant_msg)
+            logger.info(f"Assistant message: {assistant_msg}")
 
-        # Handle function/tool calls if present
-        if msg.tool_calls:
+            # If no tool calls, we're done
+            if not msg.tool_calls:
+                logger.info("No tool calls in response - conversation complete")
+                break
+
+            # Handle function/tool calls if present
             logger.info(f"Processing {len(msg.tool_calls)} tool calls")
             for call in msg.tool_calls:
                 tool_name = call.function.name
@@ -195,50 +189,28 @@ def handle_chat_message():
                     jwt_token=jwt_token
                 )
 
-                
                 # Append ToolMessage
                 tool_msg = ToolMessage(
                     content=json.dumps(result),
                     tool_call_id=call.id,
                 )
                 messages.append(tool_msg)
-
-            # After executing tools, get a follow-up assistant response
-            logger.info(f"Getting follow-up response after tool execution.")
-            followup: ChatCompletions = jarvus_ai.client.complete(
-                messages=messages,
-                model=jarvus_ai.deployment_name,
-                tools=sdk_tools,
-                stream=False,
-                tool_choice=tool_choice
-            )
-            print("followup:", followup)
-            choice2 = followup.choices[0]
-            msg2 = choice2.message
-            print("msg2:", msg2)
-            assistant_msg = AssistantMessage(content=msg2.content)
-            messages.append(assistant_msg)
-            logger.info(f"Followup message: {assistant_msg}")
-            assistant_messages.append({'role': assistant_msg.role, 'content': assistant_msg.content})
-            final_reply = msg2.content
-        else:
-            # Only append here for plain text
-            assistant_msg = AssistantMessage(content=msg.content)
-            messages.append(assistant_msg)
-            assistant_messages.append({'role': assistant_msg.role, 'content': assistant_msg.content})
-            final_reply = msg.content
+                logger.info(f"Added tool result to conversation")
 
         # Save updated messages to DB
+        history_data = [
+            {
+                "role": m.role, 
+                "content": getattr(m, "content", ""), 
+                **({"tool_call_id": m.tool_call_id} if hasattr(m, "tool_call_id") and m.tool_call_id else {})
+            } 
+            for m in messages
+        ]
+        
         # if history_obj:
-        #     history_obj.messages = [
-        #         {"role": m.role, "content": getattr(m, "content", "")}
-        #         for m in messages
-        #     ]
+        #     history_obj.messages = history_data
         # else:
-        history_obj = History(
-            session_id=session_id,
-            messages=[{"role": m.role, "content": getattr(m, "content", "")} for m in messages]
-        )
+        history_obj = History(session_id=session_id, messages=history_data)
         db.session.add(history_obj)
         db.session.commit()
 
