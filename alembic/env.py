@@ -14,10 +14,27 @@ load_dotenv()
 # access to the values within the .ini file in use.
 config = context.config
 
-# Set the database URL from environment variable
-database_url = os.getenv('TEST_DATABASE_URL')
-if database_url is None:
-    raise ValueError("TEST_DATABASE_URL environment variable is not set")
+# Determine environment - default to development
+FLASK_ENV = os.getenv("FLASK_ENV", "development")
+print(f"Alembic running in {FLASK_ENV} mode")
+
+# Set the database URL based on environment
+if FLASK_ENV == "production":
+    database_url = os.getenv('AZURE_SQL_CONNECTION_STRING')
+    if database_url is None:
+        raise ValueError("AZURE_SQL_CONNECTION_STRING environment variable is not set for production")
+else:
+    # Development - use TEST_DATABASE_URL or fallback to SQLite
+    database_url = os.getenv('TEST_DATABASE_URL')
+    if not database_url:
+        # Fallback to SQLite in instance folder
+        from pathlib import Path
+        basedir = Path(__file__).parent.parent
+        instance_path = basedir / "instance"
+        instance_path.mkdir(exist_ok=True)
+        database_url = f"sqlite:///{instance_path}/jarvus_app.db"
+        print(f"Using development SQLite database: {database_url}")
+
 config.set_main_option('sqlalchemy.url', str(database_url))
 
 # Interpret the config file for Python logging.
@@ -28,6 +45,9 @@ if config.config_file_name is not None:
 # Import your models here
 from jarvus_app.models.user import User
 from jarvus_app.models.user_tool import UserTool
+from jarvus_app.models.oauth import OAuthCredentials
+from jarvus_app.models.tool_permission import ToolPermission
+from jarvus_app.models.history import History
 from jarvus_app.db import db
 
 # add your model's MetaData object here
