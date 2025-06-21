@@ -14,11 +14,28 @@ load_dotenv()
 # access to the values within the .ini file in use.
 config = context.config
 
-# Import the database URL function from our app
-from jarvus_app.db import get_database_url
+# Determine environment - default to development
+FLASK_ENV = os.getenv("FLASK_ENV", "development")
+print(f"Alembic running in {FLASK_ENV} mode")
 
-# Set the database URL using the same logic as the app
-config.set_main_option('sqlalchemy.url', get_database_url())
+# Set the database URL based on environment
+if FLASK_ENV == "production":
+    database_url = os.getenv('AZURE_SQL_CONNECTION_STRING')
+    if database_url is None:
+        raise ValueError("AZURE_SQL_CONNECTION_STRING environment variable is not set for production")
+else:
+    # Development - use TEST_DATABASE_URL or fallback to SQLite
+    database_url = os.getenv('TEST_DATABASE_URL')
+    if not database_url:
+        # Fallback to SQLite in instance folder
+        from pathlib import Path
+        basedir = Path(__file__).parent.parent
+        instance_path = basedir / "instance"
+        instance_path.mkdir(exist_ok=True)
+        database_url = f"sqlite:///{instance_path}/jarvus_app.db"
+        print(f"Using development SQLite database: {database_url}")
+
+config.set_main_option('sqlalchemy.url', str(database_url))
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

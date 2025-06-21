@@ -3,9 +3,13 @@ from jarvus_app import create_app
 from jarvus_app.db import db
 from sqlalchemy import inspect, text
 from dotenv import load_dotenv
+import os
 
 def check_db():
+    # Set environment to development by default
+    os.environ.setdefault("FLASK_ENV", "development")
     load_dotenv()
+    
     app = create_app()
     with app.app_context():
         print("Checking database status...")

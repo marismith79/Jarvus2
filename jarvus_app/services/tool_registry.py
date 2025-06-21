@@ -113,7 +113,7 @@ class ToolRegistry:
         if tool.name in self._tools:
             raise ValueError(f"Tool '{tool.name}' is already registered")
         self._tools[tool.name] = tool
-        print(f"Registered tool: {tool.name}")
+        # print(f"Registered tool: {tool.name}")
 
     def get_tool(self, tool_name: str) -> Optional[ToolMetadata]:
         """Get a tool's metadata by name."""

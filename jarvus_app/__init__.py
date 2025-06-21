@@ -24,13 +24,15 @@ from .models.user import User
 
 # Get the project root directory
 project_root = Path(__file__).parent.parent
-env_path = project_root / ".env"
 
-# Load .env early only in development so Config (or your routes) can pick up env vars
-if os.getenv("FLASK_ENV") == "development":
-    print(
-        f"Development mode detected: attempting to load .env file from: {env_path}"
-    )
+# Determine environment - default to development
+FLASK_ENV = os.getenv("FLASK_ENV", "development")
+print(f"Running in {FLASK_ENV} mode")
+
+# Load .env early only in development
+if FLASK_ENV == "development":
+    env_path = project_root / ".env"
+    print(f"Development mode detected: attempting to load .env file from: {env_path}")
     if env_path.exists():
         load_dotenv(env_path)
         print("Environment variables loaded from .env")
@@ -40,7 +42,8 @@ else:
     print("Production mode detected: skipping .env file loading")
 
 # Allow OAuth2 to work over HTTP in development
-os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
+if FLASK_ENV == "development":
+    os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
 # Remove local db = SQLAlchemy()
 login_manager = LoginManager()
@@ -48,7 +51,15 @@ migrate = Migrate()
 
 
 def create_app():
-    app = Flask(__name__)
+    # Create Flask app with instance relative config
+    app = Flask(__name__, instance_relative_config=True)
+    
+    # Ensure instance directory exists
+    try:
+        os.makedirs(app.instance_path)
+    except OSError:
+        pass
+    
     # Secret key for session encryption
     app.secret_key = os.getenv(
         "FLASK_SECRET_KEY", os.getenv("SECRET_KEY", "dev")
@@ -59,7 +70,7 @@ def create_app():
 
     # Load config
     app.config.from_object(Config)
-    print("Database URI:", app.config["SQLALCHEMY_DATABASE_URI"])
+    print(f"Database URI: {app.config['SQLALCHEMY_DATABASE_URI']}")
 
     # Initialize extensions
     db.init_app(app)

@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
 from azure.ai.inference.models import (
@@ -9,25 +10,51 @@ from azure.ai.inference.models import (
     ChatCompletions
 )
 
-# Load environment variables
-load_dotenv()
-
-# Get the absolute path of the project root
+# Get the project root directory
 basedir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
+# Determine environment - default to development
+FLASK_ENV = os.getenv("FLASK_ENV", "development")
+print(f"Running in {FLASK_ENV} mode")
+
+# Load .env file in development
+if FLASK_ENV == "development":
+    env_path = Path(basedir) / ".env"
+    if env_path.exists():
+        load_dotenv(env_path)
+        print(f"Loaded environment from {env_path}")
+    else:
+        print(f"Warning: .env file not found at {env_path}")
 
 class Config:
     SECRET_KEY = os.getenv("SECRET_KEY", "default-dev-key")
-    DEBUG = True
-
-    # Get the database URI from environment variable
-    db_uri = os.getenv("TEST_DATABASE_URL")
-    if not db_uri:
-        raise ValueError(
-            "TEST_DATABASE_URL environment variable is not set"
-        )
+    DEBUG = FLASK_ENV == "development"
     
-    SQLALCHEMY_DATABASE_URI = db_uri
+    # Environment-based database configuration
+    @staticmethod
+    def get_database_uri():
+        """Get database URI based on environment"""
+        if FLASK_ENV == "production":
+            db_uri = os.getenv("AZURE_SQL_CONNECTION_STRING")
+            if not db_uri:
+                raise ValueError("AZURE_SQL_CONNECTION_STRING environment variable is not set for production")
+            print("Using production database (Azure SQL)")
+        else:
+            # Development - use TEST_DATABASE_URL or fallback to SQLite
+            db_uri = os.getenv("TEST_DATABASE_URL")
+            if not db_uri:
+                # Fallback to SQLite in instance folder
+                instance_path = Path(basedir) / "instance"
+                instance_path.mkdir(exist_ok=True)
+                db_uri = f"sqlite:///{instance_path}/jarvus_app.db"
+                print(f"Using development SQLite database: {db_uri}")
+            else:
+                print("Using development database from TEST_DATABASE_URL")
+        
+        return db_uri
+    
+    SQLALCHEMY_DATABASE_URI = get_database_uri()
+    print(f"SQLALCHEMY_DATABASE_URI: {SQLALCHEMY_DATABASE_URI}")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # System prompt for the chatbot
