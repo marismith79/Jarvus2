@@ -21,10 +21,10 @@ class Config:
     DEBUG = True
 
     # Get the database URI from environment variable
-    db_uri = os.getenv("AZURE_SQL_CONNECTION_STRING")
+    db_uri = os.getenv("TEST_DATABASE_URL")
     if not db_uri:
         raise ValueError(
-            "AZURE_SQL_CONNECTION_STRING environment variable is not set"
+            "TEST_DATABASE_URL environment variable is not set"
         )
     
     SQLALCHEMY_DATABASE_URI = db_uri
