@@ -2,7 +2,7 @@
 Chatbot routes for handling chat interactions.
 """
 
-from flask import Blueprint, request, jsonify, session
+from flask import Blueprint, request, jsonify, session, redirect, url_for
 from flask_login import login_required
 from typing import Any, Dict, List, Optional
 import json
@@ -24,6 +24,7 @@ from azure.ai.inference.models import (
 from ..config import Config
 from jarvus_app.models.history import History
 from ..db import db
+from ..utils.token_utils import get_valid_jwt_token
 
 jarvus_ai = JarvusAIClient()
 
@@ -107,7 +108,11 @@ def handle_chat_message():
     data = request.get_json() or {}
     user_text = data.get('message', '')
     tool_choice = data.get('tool_choice', 'auto')
-    jwt_token = session.get('jwt_token')
+    jwt_token = get_valid_jwt_token()
+    if not jwt_token:
+        # Token refresh failed, force re-login
+        return redirect(url_for("auth.signin"))
+        # return jsonify({"error": "Session expired. Please log in again.", "reauth": True}), 401
     
     logger.info(f"Received message: {user_text}")
     logger.info(f"Tool choice: {tool_choice}")
