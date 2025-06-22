@@ -21,10 +21,18 @@ def landing():
 def chatbot():
     # Get connection status for each tool using centralized function
     connected_services = get_connected_services(current_user.id)
+    
+    # For Google Workspace, if connected, all individual services are available
+    google_workspace_connected = connected_services["google-workspace"]
 
     return render_template(
         "chatbot.html",
-        google_workspace_connected=connected_services["google-workspace"],
+        google_workspace_connected=google_workspace_connected,
+        # docs_connected=google_workspace_connected,
+        # slides_connected=google_workspace_connected,
+        # sheets_connected=google_workspace_connected,
+        # drive_connected=google_workspace_connected,
+        # calendar_connected=google_workspace_connected,
         notion_connected=connected_services["notion"],
         slack_connected=connected_services["slack"],
         zoom_connected=connected_services["zoom"],
