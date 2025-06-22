@@ -78,6 +78,7 @@
     window.notionConnected = {{ 'true' if notion_connected else 'false' }};
     window.slackConnected = {{ 'true' if slack_connected else 'false' }};
     window.zoomConnected = {{ 'true' if zoom_connected else 'false' }};
+    window.vercelConnected = {{ 'true' if vercel_connected else 'false' }};
 </script>
 <script src="{{ url_for('static', filename='js/chatbot.js') }}?v=3"></script>
 {% endblock %}

@@ -27,7 +27,6 @@ class ToolCategory(Enum):
     DOCS = "google-workspace.docs"
     SHEETS = "google-workspace.sheets"
     SLIDES = "google-workspace.slides"
-
     CALENDAR = "google-workspace.calendar"
 
 
@@ -186,6 +185,7 @@ class ToolRegistry:
             'sheets': ToolCategory.SHEETS,
             'drive': ToolCategory.DRIVE,
             'calendar': ToolCategory.CALENDAR,
+            'vercel': ToolCategory.CUSTOM,
         }
         
         category = module_to_category.get(module_name.lower())
@@ -199,7 +199,8 @@ class ToolRegistry:
                     ToolCategory.DRIVE: "Drive",
                     ToolCategory.DOCS: "Docs",
                     ToolCategory.SHEETS: "Sheets",
-                    ToolCategory.SLIDES: "Slides"
+                    ToolCategory.SLIDES: "Slides",
+                    ToolCategory.CUSTOM: "Vercel"
                 }
                 service_name = service_names.get(category, module_name.title())
                 scope_description = generate_scope_description(user_scopes, service_name)
@@ -259,7 +260,8 @@ from .tools import (
     register_drive_tools,
     register_docs_tools,
     register_sheets_tools,
-    register_slides_tools
+    register_slides_tools,
+    register_vercel_tools
 )
 
 # Register all tools
@@ -268,4 +270,5 @@ register_calendar_tools(tool_registry)
 register_drive_tools(tool_registry)
 register_docs_tools(tool_registry)
 register_sheets_tools(tool_registry)
-register_slides_tools(tool_registry) 
+register_slides_tools(tool_registry)
+register_vercel_tools(tool_registry) 

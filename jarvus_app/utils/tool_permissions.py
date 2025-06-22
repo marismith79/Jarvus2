@@ -13,6 +13,7 @@ TOOLS = {
     "notion": "Access to Notion functionality through MCP server",
     "slack": "Access to Slack functionality through MCP server",
     "zoom": "Access to Zoom functionality through MCP server",
+    "vercel": "Access to Vercel UI generation functionality through MCP server",
 }
 
 def grant_tool_access(user_id, tool_name, duration_days=None):
@@ -108,6 +109,10 @@ def get_connected_services(user_id):
             # Consider connected if OAuth credentials exist
             services[service] = creds is not None
             print(f"DEBUG: Final result for {service}: {services[service]}")
+        elif service == "vercel":
+            # Vercel is always available to all users (no OAuth required)
+            services[service] = True
+            print(f"DEBUG: Vercel access for user {user_id}: Always available")
         else:
             # Mark other services as not connected (coming soon)
             services[service] = False

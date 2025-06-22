@@ -1,7 +1,7 @@
 """update_schema_to_match_current_models
 
 Revision ID: fc59fc448c6c
-Revises: c03217693d85
+Revises: 377873f701bf
 Create Date: 2025-06-21 00:23:37.525692
 
 """
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = 'fc59fc448c6c'
-down_revision: Union[str, None] = 'c03217693d85'
+down_revision: Union[str, None] = '377873f701bf'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

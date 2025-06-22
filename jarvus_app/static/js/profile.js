@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', function() {
     window.disconnectZoom = function() { disconnectService('zoom'); }
 
     // Generic: For every tool marked as connected, call /api/connect_tool
-    const toolNames = ['google-workspace', 'notion', 'slack', 'zoom']; // Add future tools here
+    const toolNames = ['google-workspace', 'notion', 'slack', 'zoom', 'vercel'];
     toolNames.forEach(tool => {
         if (window[tool.replace('-', '_') + 'Connected']) {
             fetch('/api/connect_tool', {

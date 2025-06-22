@@ -28,6 +28,7 @@ def chatbot():
         notion_connected=connected_services["notion"],
         slack_connected=connected_services["slack"],
         zoom_connected=connected_services["zoom"],
+        vercel_connected=connected_services["vercel"],
     )
 
 
