@@ -205,6 +205,9 @@ def oauth2callback():
     print(f"DEBUG: Callback URL: {request.url}")
     print(f"DEBUG: Expected redirect URI: {GOOGLE_CLIENT_CONFIG['web']['redirect_uris'][0]}")
     print(f"DEBUG: Current user in OAuth callback: {getattr(current_user, 'id', None)}")
+    print(f"DEBUG: Error parameter: {request.args.get('error')}")
+    print(f"DEBUG: Error description: {request.args.get('error_description')}")
+    
 
     try:
         flow = Flow.from_client_config(

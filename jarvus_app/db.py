@@ -33,7 +33,7 @@ def init_db(app: Flask) -> None:
     """Initialize the database with the app."""
     # Get the database URI from config (already set by Config class)
     database_uri = app.config["SQLALCHEMY_DATABASE_URI"]
-    print(f"Database URI: {database_uri}")
+    # print(f"Database URI: {database_uri}")
 
     # Configure SQLAlchemy
     app.config["SQLALCHEMY_DATABASE_URI"] = database_uri

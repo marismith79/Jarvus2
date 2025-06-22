@@ -2,29 +2,21 @@ import os
 from pathlib import Path
 
 from dotenv import load_dotenv
-from azure.ai.inference.models import (
-    SystemMessage,
-    UserMessage,
-    AssistantMessage,
-    ToolMessage,
-    ChatCompletions
-)
 
 # Get the project root directory
 basedir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
-# Determine environment - default to development
+# Load .env file FIRST to ensure it has priority
+env_path = Path(basedir) / ".env"
+if env_path.exists():
+    load_dotenv(env_path)
+    print(f"Loaded environment from {env_path}")
+else:
+    print(f"Warning: .env file not found at {env_path}")
+
+# Determine environment AFTER loading .env file
 FLASK_ENV = os.getenv("FLASK_ENV", "development")
 print(f"Running in {FLASK_ENV} mode")
-
-# Load .env file in development
-if FLASK_ENV == "development":
-    env_path = Path(basedir) / ".env"
-    if env_path.exists():
-        load_dotenv(env_path)
-        print(f"Loaded environment from {env_path}")
-    else:
-        print(f"Warning: .env file not found at {env_path}")
 
 class Config:
     SECRET_KEY = os.getenv("SECRET_KEY", "default-dev-key")
