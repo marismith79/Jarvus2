@@ -3,6 +3,7 @@
 import os
 import sys
 import logging
+import time
 
 import msal
 from dotenv import load_dotenv
@@ -146,11 +147,18 @@ def authorized():
         user_claims[user_id] = claims
         session["user_claims"] = user_claims
 
-        # Store the JWT token in the session
+        # Store the JWT token, refresh token, and expiry in the session
         if "id_token" in result:
             session["jwt_token"] = result["id_token"]
+            session["refresh_token"] = result.get("refresh_token")
+            session["expires_at"] = result.get("expires_in")  # This is seconds from now
+            # Convert expires_in to an absolute timestamp
+            if result.get("expires_in"):
+                session["expires_at"] = int(time.time()) + int(result["expires_in"])
             logger.info("=== Token Storage Debug ===")
             logger.info(f"Stored JWT token in session: {result['id_token'][:10]}...")
+            logger.info(f"Stored refresh token in session: {str(result.get('refresh_token'))[:10]}...")
+            logger.info(f"Stored expires_at in session: {session['expires_at']}")
             logger.info(f"Session contents after token storage: {dict(session)}")
             logger.info("=========================")
         else:
