@@ -609,6 +609,38 @@ main {
     margin-top: 2rem;
     padding: 0 1rem;
 }
+/* Chatbot Dashboard */
+.chatbot-dashboard {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    width: 200px;
+    background: var(--bg-primary);
+    margin: 0px 0px 0px 0px;
+    height: 80vh;
+    border-right: 1px solid var(--border-color);
+}
+
+.dashboard-header {
+    width: 100%;
+    padding: 1.5rem 1rem 1rem 1rem;
+    background: var(--bg-primary);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.new-agent-btn {
+    width: 75%;
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    border-radius: 40px;
+}
 
 .chatbot-card {
     flex: 1 1 0;
@@ -637,56 +669,6 @@ main {
     margin-top: 0.25rem;
 }
 
-.suggestions-header {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.5rem;
-}
-.suggestions-label {
-    font-weight: 500;
-    color: var(--text-secondary);
-}
-.dropdown-btn {
-    background: none;
-    border: none;
-    color: var(--primary-color);
-    font-size: 1.1rem;
-    cursor: pointer;
-    transition: transform 0.3s ease;
-    padding: 1px 5px;
-    border-radius: 4px;
-}
-.dropdown-btn:hover {
-    background-color: var(--bg-secondary);
-}
-.suggestions-cards-wrapper {
-    margin-bottom: 1.5rem;
-    position: relative;
-}
-.suggestions-cards {
-    display: flex;
-    gap: 1rem;
-    flex-wrap: wrap;
-}
-.suggestions-cards .card {
-    min-width: 180px;
-    max-width: 220px;
-    flex: 1 1 180px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 1rem;
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-md);
-    background: var(--bg-secondary);
-    transition: box-shadow 0.2s, transform 0.2s;
-    cursor: pointer;
-}
-.suggestions-cards .card:hover {
-    box-shadow: var(--shadow-lg);
-    transform: translateY(-2px) scale(1.03);
-}
 .card-meta {
     color: var(--text-secondary);
     font-size: 0.95rem;
@@ -1202,4 +1184,188 @@ main {
 
 .hero .cta-buttons {
     margin-top: 2rem;
+}
+
+.dashboard-content {
+    flex: 1;
+    margin: 10px 0px 0px 10px;
+    width: 100%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem 0.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+}
+
+.chat-list::-webkit-scrollbar {
+    display: none; /* Chrome/Safari/Opera */
+}
+
+.chat-item {
+    margin: 2px;
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--text-primary);
+    transition: background-color 0.2s ease;
+    background: transparent;
+    border: none;
+    width: calc(100% - 4px);
+    text-align: left;
+    font-size: 0.95rem;
+}
+
+.chat-item:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Agent Creation View */
+#agent-creation-view {
+    flex: 1;
+    background: #fff;
+    padding: 3rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.creation-step {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    width: 100%;
+    max-width: 500px;
+}
+
+.creation-step.active {
+    display: flex;
+}
+
+.creation-step h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.creation-step input[type="text"],
+.creation-step textarea {
+    width: 100%;
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-size: 1rem;
+}
+
+.tool-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+}
+
+.tool-card {
+    background: transparent;
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.tool-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-md);
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+.tool-card.selected {
+    border-color: var(--primary-color);
+    background: #e0eaff;
+}
+
+.tool-card img {
+    width: 50px;
+    height: 50px;
+}
+
+.tool-card span {
+    font-weight: 500;
+}
+
+.next-step-btn {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.next-step-btn:hover {
+    background: var(--primary-hover);
+}
+
+#finish-creation-btn {
+    background: var(--primary-color);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius-md);
+    border: none;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+#finish-creation-btn:hover {
+    background: var(--primary-hover);
+}
+
+/* Styling for the tool list in agent creation */
+.tool-list-container {
+    width: 100%;
+    max-width: 500px;
+    max-height: 300px; /* Or adjust as needed */
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-secondary);
+}
+
+/* Ensure tool-item styles from chatbot.css are applied if needed */
+.tool-list-container .tool-item {
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-size: 1rem;
+}
+
+.tool-list-container .tool-item:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.tool-list-container .tool-item .checkmark {
+    color: var(--primary-color);
+    font-weight: bold;
 }

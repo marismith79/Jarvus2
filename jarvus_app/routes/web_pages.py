@@ -30,23 +30,10 @@ def chatbot():
         zoom_connected=connected_services["zoom"],
     )
 
-
 @web.route("/chatbot/send", methods=["POST"])
 @login_required
 def send_chat_message():
     return handle_chat_message()
-
-
-# @web.route("/flow-builder")
-# @login_required
-# def flow_builder():
-#     return render_template("flow_builder.html")
-
-# @web.route("/dashboard")
-# @login_required
-# def dashboard():
-#     return render_template("dashboard.html")
-
 
 @web.route("/privacy-policy")
 def privacy_policy():

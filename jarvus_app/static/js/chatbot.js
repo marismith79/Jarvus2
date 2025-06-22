@@ -1,27 +1,5 @@
 let selectedTools = [];
 
-
-function toggleSuggestions() {
-    const wrap = document.getElementById('suggestions-wrapper');
-    wrap.classList.toggle('hidden');  // or toggle display style
-  }
-
-  function insertSuggestion(text) {
-    const input = document.getElementById('chat-input');
-    input.value = text;
-    input.focus();
-  }
-
-  document.getElementById('atButton').addEventListener('click', e => {
-    e.stopPropagation();
-    const dd = document.getElementById('toolDropdown');
-    dd.style.display = dd.style.display === 'block' ? 'none' : 'block';
-  });
-  // And maybe a document‐click handler to close it when clicking elsewhere
-  document.addEventListener('click', () => {
-    document.getElementById('toolDropdown').style.display = 'none';
-  });
-
 // Store connection status
 const connectedTools = {
   gmail: window.gmailConnected || false,
@@ -71,10 +49,12 @@ const connectedTools = {
     }
   }
   
-  // Load available tools
+  // Load available tools into the agent creation view
   function loadAvailableTools() {
-    const toolDropdown = document.getElementById('toolDropdown');
-    toolDropdown.innerHTML = '';
+    const toolListContainer = document.getElementById('agent-creation-tool-list');
+    if (!toolListContainer) return; // Exit if the container isn't on the page
+    
+    toolListContainer.innerHTML = '';
     let hasConnected = false;
   
     for (const [tool, ok] of Object.entries(connectedTools)) {
@@ -86,24 +66,8 @@ const connectedTools = {
           <span>${tool[0].toUpperCase() + tool.slice(1)}</span>
           <span class="checkmark" style="display:none">✓</span>
         `;
-        item.onclick = e => {
-          e.stopPropagation();
-          const cm = item.querySelector('.checkmark');
-          cm.style.display = cm.style.display === 'none' ? 'inline-block' : 'none';
-          const name = item.querySelector('span').textContent.toLowerCase();
-            if (selectedTools.includes(name)) {
-                selectedTools = selectedTools.filter(x=>x!==name);
-            } else {
-                selectedTools.push(name);
-            }
-            // persist to server:
-            fetch('/chatbot/selected_tools', {
-                method: 'POST',
-                headers: {'Content-Type':'application/json'},
-                body: JSON.stringify({tools: selectedTools})
-            });
-        };
-        toolDropdown.appendChild(item);
+        // NOTE: onclick logic is now handled by event delegation in DOMContentLoaded
+        toolListContainer.appendChild(item);
       }
     }
   
@@ -111,13 +75,8 @@ const connectedTools = {
       const msg = document.createElement('div');
       msg.classList.add('tool-item');
       msg.textContent = 'No tools connected';
-      toolDropdown.appendChild(msg);
+      toolListContainer.appendChild(msg);
     }
-  }
-  
-  function getSelectedTool() {
-    const sel = document.querySelector('#toolDropdown .checkmark[style*="inline-block"]');
-    return sel ? sel.parentElement.querySelector('span').textContent.toLowerCase() : null;
   }
   
   // Send user message and update UI
@@ -134,7 +93,6 @@ const connectedTools = {
     // Show interim "thinking…" bubble
     const thinkingMsg = appendMessage('bot', '…');
   
-    // const tool = getSelectedTool();
     const options = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -163,12 +121,9 @@ const connectedTools = {
       } else {
         // Fallback: just show assistant or tool responses
         if (data.assistant) appendMessage('bot', data.assistant);
-        // if (Array.isArray(data.tool_responses)) {
-        //   data.tool_responses.forEach(tr => appendMessage('bot', tr.content));
-        // }
       }
     } catch (err) {
-      logger.debug('Fetch error:', err);
+      console.error('Fetch error:', err);
       thinkingMsg.remove();
       appendMessage('bot', '⚠️ Error: Failed to get response from the assistant.');
     }
@@ -186,7 +141,79 @@ const connectedTools = {
         sendCommand();
       }
     });
-    document.querySelector('.dropdown-btn').addEventListener('click', toggleSuggestions);
-    /* tool-dropdown open/close logic unchanged */
+
+    // Agent Creation Flow
+    const newAgentBtn = document.querySelector('.new-agent-btn');
+    const chatbotCard = document.querySelector('.chatbot-card');
+    const agentCreationView = document.getElementById('agent-creation-view');
+    const steps = agentCreationView.querySelectorAll('.creation-step');
+    const nextStepBtns = agentCreationView.querySelectorAll('.next-step-btn');
+    const toolListContainer = document.getElementById('agent-creation-tool-list');
+    const finishCreationBtn = document.getElementById('finish-creation-btn');
+    let currentStep = 0;
+
+    newAgentBtn.addEventListener('click', () => {
+        chatbotCard.style.display = 'none';
+        agentCreationView.style.display = 'flex';
+        steps[currentStep].classList.add('active');
+    });
+
+    nextStepBtns.forEach((btn, index) => {
+        btn.addEventListener('click', () => {
+            // If on the first step, add the new agent name to the dashboard list
+            if (index === 0) {
+                const agentNameInput = document.getElementById('agent-name');
+                const agentName = agentNameInput.value.trim();
+                if (agentName) {
+                    const chatList = document.querySelector('.chat-list');
+                    const newChatItem = document.createElement('div');
+                    newChatItem.classList.add('chat-item');
+                    newChatItem.textContent = agentName;
+                    chatList.prepend(newChatItem);
+                }
+            }
+
+            if (currentStep < steps.length - 1) {
+                steps[currentStep].classList.remove('active');
+                currentStep++;
+                steps[currentStep].classList.add('active');
+            }
+        });
+    });
+
+    // Use event delegation for dynamically created tool items
+    toolListContainer.addEventListener('click', e => {
+        const item = e.target.closest('.tool-item');
+        if (!item || item.textContent === 'No tools connected') return;
+
+        e.stopPropagation();
+        const cm = item.querySelector('.checkmark');
+        cm.style.display = cm.style.display === 'none' ? 'inline-block' : 'none';
+        const name = item.querySelector('span').textContent.toLowerCase();
+        if (selectedTools.includes(name)) {
+            selectedTools = selectedTools.filter(x => x !== name);
+        } else {
+            selectedTools.push(name);
+        }
+    });
+
+    finishCreationBtn.addEventListener('click', () => {
+        // Here you would typically send the data to the backend
+        const agentName = document.getElementById('agent-name').value.trim();
+        const agentDescription = document.getElementById('agent-description').value.trim();
+        console.log('Creating agent:', { name: agentName, tools: selectedTools, description: agentDescription });
+
+        // Switch back to the chatbot view
+        agentCreationView.style.display = 'none';
+        chatbotCard.style.display = 'flex';
+
+        // --- Reset the creation form for next time ---
+        steps.forEach(step => step.classList.remove('active'));
+        currentStep = 0;
+        document.getElementById('agent-name').value = '';
+        document.getElementById('agent-description').value = '';
+        toolListContainer.querySelectorAll('.checkmark').forEach(cm => cm.style.display = 'none');
+        selectedTools = [];
+    });
   });
   
