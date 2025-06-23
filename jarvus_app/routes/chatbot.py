@@ -137,6 +137,16 @@ def handle_chat_message():
 
     agent = get_agent(agent_id, current_user.id)
     messages = []
+    for m in (agent.messages or []):
+        role = m.get('role')
+        if role == 'user':
+            messages.append(UserMessage(content=m.get('content', '')))
+        elif role == 'assistant':
+            messages.append(AssistantMessage(content=m.get('content', ''), tool_calls=None))
+        elif role == 'system':
+            messages.append(SystemMessage(content=m.get('content', '')))
+        else:
+            messages.append(UserMessage(content=m.get('content', '')))
     messages.append(UserMessage(content=user_text))
 
     selected_tools = get_agent_tools(agent)
@@ -195,8 +205,6 @@ def handle_chat_message():
                 agent.messages.append({'role': 'user', 'content': m.content})
             elif isinstance(m, AssistantMessage):
                 agent.messages.append({'role': 'assistant', 'content': m.content})
-            elif isinstance(m, ToolMessage):
-                agent.messages.append({'role': 'tool', 'content': m.content, 'tool_call_id': getattr(m, 'tool_call_id', None)})
             elif isinstance(m, SystemMessage):
                 agent.messages.append({'role': 'system', 'content': m.content})
             else:
