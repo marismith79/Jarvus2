@@ -3,10 +3,11 @@ Chatbot routes for handling chat interactions.
 """
 
 from flask import Blueprint, request, jsonify, session, redirect, url_for
-from flask_login import login_required
+from flask_login import login_required, current_user
 from typing import Any, Dict, List, Optional
 import time
 import logging
+import json
 
 from ..llm.client import JarvusAIClient
 from ..services.tool_registry import tool_registry
@@ -25,15 +26,13 @@ from ..config import Config
 from jarvus_app.models.history import History
 from ..db import db
 from ..services.agent_service import get_agent, get_agent_tools, get_agent_history, append_message, create_agent
-# from ..utils.token_utils import get_valid_jwt_token
-
+from ..utils.token_utils import get_valid_jwt_token
 
 jarvus_ai = JarvusAIClient()
 
 chatbot_bp = Blueprint('chatbot', __name__)
 logger = logging.getLogger(__name__)
 tool_choice = 'required'
-
 
 @chatbot_bp.route('/tools', methods=['GET'])
 @login_required
@@ -128,8 +127,6 @@ def handle_chat_message():
     if not jwt_token:
         # Token refresh failed, force re-login
         return redirect(url_for("auth.signin"))
-        # return jsonify({"error": "Session expired. Please log in again.", "reauth": True}), 401
-    
     logger.info(f"Received message: {user_text}")
     logger.info(f"Agent ID: {agent_id}")
     logger.info(f"Tool choice: {tool_choice}")
@@ -139,11 +136,9 @@ def handle_chat_message():
         return jsonify({'error': 'Message and agent_id are required.'}), 400
 
     agent = get_agent(agent_id, current_user.id)
-    messages = agent.messages or []
-    # Append new user message
-    messages.append({'role': 'user', 'content': user_text})
+    messages = []
+    messages.append(UserMessage(content=user_text))
 
-    # Prepare tool definitions - FILTER BASED ON AGENT TOOLS
     selected_tools = get_agent_tools(agent)
     user_scopes = get_user_oauth_scopes(current_user.id, "google-workspace")
 
@@ -155,6 +150,7 @@ def handle_chat_message():
         logger.info("No tools selected for agent - sending empty tool list")
 
     try:
+        new_messages = []
         # Recursive tool calling loop
         while True:
             logger.info("Calling Azure AI for completion")
@@ -169,10 +165,11 @@ def handle_chat_message():
 
             choice = response.choices[0]
             msg = choice.message
-            assistant_msg = {'role': 'assistant', 'content': msg.content, 'tool_calls': msg.tool_calls}
+            # Always ensure content is a string
+            assistant_msg = AssistantMessage(content=msg.content if msg.content is not None else "", tool_calls=msg.tool_calls)
             messages.append(assistant_msg)
+            new_messages.append({'role': 'assistant', 'content': assistant_msg.content})
             logger.info(f"Assistant message: {assistant_msg}")
-
             if not msg.tool_calls:
                 logger.info("No tool calls in response - conversation complete")
                 break
@@ -187,19 +184,26 @@ def handle_chat_message():
                     parameters=tool_args,
                     jwt_token=jwt_token
                 )
-                tool_msg = {'role': 'tool', 'content': json.dumps(result), 'tool_call_id': call.id}
+                # ToolMessage must immediately follow the assistant message with tool_calls
+                tool_msg = ToolMessage(content=json.dumps(result), tool_call_id=call.id)
                 messages.append(tool_msg)
                 logger.info(f"Added tool result to conversation")
-
-        # Save updated messages to DB
-        agent.messages = messages
+        # Save updated messages to DB (as dicts)
+        agent.messages = []
+        for m in messages:
+            if isinstance(m, UserMessage):
+                agent.messages.append({'role': 'user', 'content': m.content})
+            elif isinstance(m, AssistantMessage):
+                agent.messages.append({'role': 'assistant', 'content': m.content})
+            elif isinstance(m, ToolMessage):
+                agent.messages.append({'role': 'tool', 'content': m.content, 'tool_call_id': getattr(m, 'tool_call_id', None)})
+            elif isinstance(m, SystemMessage):
+                agent.messages.append({'role': 'system', 'content': m.content})
+            else:
+                agent.messages.append({'role': 'user', 'content': getattr(m, 'content', '')})
         db.session.commit()
-
-        filtered_history = get_agent_history(agent)
-        logger.info(f"Returning response with {len(filtered_history)} messages in history")
-        logger.info(f"filtered_history: {filtered_history}")
-
-        return jsonify({"history": filtered_history})
+        agent = get_agent(agent_id, current_user.id)  # Re-fetch from DB
+        return jsonify({"new_messages": new_messages})
 
     except Exception as e:
         logger.error(f"Error processing message for agent {agent_id}: {str(e)}", exc_info=True)

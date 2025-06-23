@@ -162,7 +162,9 @@ async function sendCommand() {
   
     try {
         const res = await fetch('/chatbot/send', options);
+        console.log('Raw response:', res);
         const data = await res.json();
+        console.log('Parsed data:', data);
         thinkingMsg.remove();
   
         if (data.error) {
@@ -170,10 +172,8 @@ async function sendCommand() {
             return;
         }
   
-        if (Array.isArray(data.history)) {
-            const chatHistoryEl = document.getElementById('chat-history');
-            chatHistoryEl.innerHTML = '';
-            data.history.forEach(msg => {
+        if (Array.isArray(data.new_messages)) {
+            data.new_messages.forEach(msg => {
                 const cls = msg.role === 'user' ? 'user' : 'bot';
                 appendMessage(cls, msg.content);
             });

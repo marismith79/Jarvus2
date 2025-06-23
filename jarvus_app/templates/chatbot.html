@@ -74,11 +74,12 @@
 <script>
     // Pass connection status to JavaScript
     window.gmailConnected = {{ 'true' if google_workspace_connected else 'false' }};
-    window.calendarConnected = {{ 'true' if google_workspace_connected else 'false' }};
+    window.docsConnected = {{ 'true' if google_workspace_connected else 'false' }};
     window.slidesConnected = {{ 'true' if google_workspace_connected else 'false' }};
     window.meetConnected = {{ 'true' if google_workspace_connected else 'false' }};
     window.driveConnected = {{ 'true' if google_workspace_connected else 'false' }};
     window.sheetsConnected = {{ 'true' if google_workspace_connected else 'false' }};
+    window.calendarConnected = {{ 'true' if google_workspace_connected else 'false' }};
     window.notionConnected = {{ 'true' if notion_connected else 'false' }};
     window.slackConnected = {{ 'true' if slack_connected else 'false' }};
     window.zoomConnected = {{ 'true' if zoom_connected else 'false' }};

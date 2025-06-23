@@ -2,6 +2,9 @@ from jarvus_app.models.history import History
 from flask_login import current_user
 from flask import abort
 from ..db import db
+import logging
+
+logger = logging.getLogger(__name__)
 
 # --- Agent Service Functions ---
 
@@ -12,7 +15,14 @@ def get_agent_tools(agent):
     return agent.tools or []
 
 def get_agent_history(agent):
-    return [msg for msg in agent.messages if msg.get('role') in ['user', 'assistant'] and msg.get('content')]
+    logger.info(f"[DEBUG] get_agent_history called with agent.messages: {agent.messages}")
+    filtered = [msg for msg in agent.messages if msg.get('role') in ['user', 'assistant'] and msg.get('content')]
+    logger.info(f"[DEBUG] get_agent_history filtered result: {filtered}")
+    return filtered
+
+def get_agent_full_history(agent):
+    """Get full conversation history including tool messages for LLM processing"""
+    return agent.messages or []
 
 def append_message(agent, message):
     agent.messages.append(message)
