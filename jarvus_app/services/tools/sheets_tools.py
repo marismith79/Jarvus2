@@ -97,7 +97,7 @@ def register_sheets_tools(registry: 'ToolRegistry') -> None:
         parameters=[
             ToolParameter("spreadsheet_id", "string", "ID of the spreadsheet", required=True),
             ToolParameter("range", "string", "Range to update", required=True),
-            ToolParameter("values", "array", "Values to write", required=True, items_type="array"),
+            ToolParameter("values", "array", "Values to write", required=True, items=ToolParameter("row", "array", "Row of values", items_type="string")),
             ToolParameter("value_input_option", "string", "How input data should be interpreted", required=False),
             ToolParameter("include_values_in_response", "boolean", "Include values in response", required=False),
             ToolParameter("response_value_render_option", "string", "How response values should be rendered", required=False),
@@ -158,7 +158,7 @@ def register_sheets_tools(registry: 'ToolRegistry') -> None:
         parameters=[
             ToolParameter("spreadsheet_id", "string", "ID of the spreadsheet", required=True),
             ToolParameter("range", "string", "Range to append to", required=True),
-            ToolParameter("values", "array", "Values to append", required=True, items_type="array"),
+            ToolParameter("values", "array", "Values to append", required=True, items=ToolParameter("row", "array", "Row of values", items_type="string")),
             ToolParameter("value_input_option", "string", "How input data should be interpreted", required=False),
             ToolParameter("insert_data_option", "string", "How the input data should be inserted", required=False),
             ToolParameter("include_values_in_response", "boolean", "Include values in response", required=False),

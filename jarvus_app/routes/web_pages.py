@@ -7,6 +7,7 @@ from sqlalchemy.exc import ProgrammingError
 
 from ..utils.tool_permissions import get_connected_services
 from .chatbot import handle_chat_message
+from ..models.history import History
 
 web = Blueprint("web", __name__)
 
@@ -21,9 +22,13 @@ def landing():
 def chatbot():
     # Get connection status for each tool using centralized function
     connected_services = get_connected_services(current_user.id)
+    
+    # Add these lines to fetch the agents
+    agents = History.query.filter_by(user_id=current_user.id).order_by(History.created_at.desc()).all()
 
     return render_template(
         "chatbot.html",
+        agents=agents,
         google_workspace_connected=connected_services["google-workspace"],
         notion_connected=connected_services["notion"],
         slack_connected=connected_services["slack"],

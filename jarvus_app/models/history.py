@@ -5,10 +5,16 @@ class History(db.Model):
     __tablename__ = 'history'
 
     id = db.Column(db.Integer, primary_key=True)
-    session_id = db.Column(db.String(128), index=True, nullable=False)
-    messages = db.Column(db.JSON, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    tools = db.Column(db.JSON, nullable=True)
+    messages = db.Column(db.JSON, nullable=False, default=list)
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    # Relationship to user
+    user = db.relationship('User', back_populates='histories')
+
     def __repr__(self):
-        return f"<History session_id={self.session_id} id={self.id}>" 
+        return f"<History session_id={self.name} id={self.id}>" 

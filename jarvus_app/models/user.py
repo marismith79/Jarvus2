@@ -13,6 +13,9 @@ class User(UserMixin, db.Model):
     # The __init__ is now handled by SQLAlchemy.
     # We will create User instances by passing keyword arguments, e.g., User(id=..., name=...)
 
+    # Add this line
+    histories = db.relationship('History', back_populates='user', lazy=True, cascade="all, delete-orphan")
+
     @property
     def is_authenticated(self):
         return True

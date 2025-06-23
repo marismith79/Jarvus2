@@ -18,8 +18,11 @@
         </div>
         <div class="dashboard-content">
             <div class="chat-list">
-                <div class="chat-item">Sales Assistant</div>
-                <div class="chat-item">Customer Support</div>
+                {% for agent in agents %}
+                <div class="chat-item" data-agent-id="{{ agent.id }}">
+                    {{ agent.name }}
+                </div>
+                {% endfor %}
             </div>
         </div>
     </aside>
@@ -28,8 +31,8 @@
     <section class="chatbot-card">
         <!-- Greeting -->
         <div class="greeting-section">
-            <h1 class="greeting-title">Hello, {{ current_user.name or 'User' }}</h1>
-            <p class="greeting-subtitle">How can I help you today?</p>
+            <h1 class="greeting-title" id="agent-greeting">Select an agent to start chatting</h1>
+            <p class="greeting-subtitle" id="agent-subtitle">Choose an agent from the sidebar or create a new one</p>
         </div>
 
         <!-- Chat history -->

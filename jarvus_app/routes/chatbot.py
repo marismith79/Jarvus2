@@ -2,10 +2,10 @@
 Chatbot routes for handling chat interactions.
 """
 
-from flask import Blueprint, request, jsonify, session
+from flask import Blueprint, request, jsonify, session, redirect, url_for
 from flask_login import login_required
 from typing import Any, Dict, List, Optional
-import json
+import time
 import logging
 
 from ..llm.client import JarvusAIClient
@@ -24,6 +24,9 @@ from azure.ai.inference.models import (
 from ..config import Config
 from jarvus_app.models.history import History
 from ..db import db
+from ..services.agent_service import get_agent, get_agent_tools, get_agent_history, append_message, create_agent
+# from ..utils.token_utils import get_valid_jwt_token
+
 
 jarvus_ai = JarvusAIClient()
 
@@ -62,7 +65,31 @@ def save_selected_tools():
     session['selected_tools'] = data.get('tools', [])
     return ('', 204)
 
-@chatbot_bp.route('/send', methods=['GET', 'POST'])
+@chatbot_bp.route('/agents', methods=['POST'])
+@login_required
+def create_agent_route():
+    """Creates a new, named agent in the database."""
+    data = request.get_json() or {}
+    agent_name = data.get('name')
+    tools = data.get('tools', [])
+    description = data.get('description', '')
+
+    agent = create_agent(current_user.id, agent_name, tools, description)
+    return jsonify({
+        'id': agent.id,
+        'name': agent.name,
+        'description': agent.description,
+        'tools': agent.tools or []
+    }), 201
+
+@chatbot_bp.route('/agents/<int:agent_id>/history', methods=['GET'])
+@login_required
+def get_agent_history_route(agent_id):
+    agent = get_agent(agent_id, current_user.id)
+    filtered_history = get_agent_history(agent)
+    return jsonify({'history': filtered_history})
+
+@chatbot_bp.route('/send', methods=['POST'])
 @login_required
 def handle_chat_message():
     """Handle incoming chat messages, invoking LLM and tools as needed."""
@@ -92,65 +119,44 @@ def handle_chat_message():
         logger.info(f"Session key: {k} | type: {type(v).__name__} | size: {size} bytes")
     logger.info(f"Total session size (approx): {session_total_size} bytes")
     logger.info("====================================")
-    
-    # Use session.sid as the session_id
-    session_id = getattr(session, 'sid', None)
-    if not session_id:
-        # Fallback: use _id if sid is not available
-        session_id = session.get('_id')
-    if not session_id:
-        # Fallback: use user id (not ideal for multi-device)
-        session_id = str(current_user.id)
 
-    # POST: process new user message
-    logger.info("Processing POST request - handling new message")
     data = request.get_json() or {}
     user_text = data.get('message', '')
+    agent_id = data.get('agent_id')
     tool_choice = data.get('tool_choice', 'auto')
-    jwt_token = session.get('jwt_token')
+    jwt_token = get_valid_jwt_token()
+    if not jwt_token:
+        # Token refresh failed, force re-login
+        return redirect(url_for("auth.signin"))
+        # return jsonify({"error": "Session expired. Please log in again.", "reauth": True}), 401
     
     logger.info(f"Received message: {user_text}")
+    logger.info(f"Agent ID: {agent_id}")
     logger.info(f"Tool choice: {tool_choice}")
     logger.info(f"JWT token present: {bool(jwt_token)}")
 
-    # Load or initialize conversation
-    # history_obj = History.query.filter_by(session_id=session_id).first()
-    # if history_obj and history_obj.messages:
-    #     messages = [SystemMessage(content=Config.CHATBOT_SYSTEM_PROMPT)]
-    #     for m in history_obj.messages:
-    #         if m['role'] == 'user':
-    #             messages.append(UserMessage(content=m['content']))
-    #         elif m['role'] == 'assistant':
-    #             messages.append(AssistantMessage(content=m['content']))
-    #         elif m['role'] == 'tool':
-    #             messages.append(ToolMessage(content=m['content'], tool_call_id=m.get('tool_call_id')))
-    #     logger.info(f"Loaded existing conversation with {len(history_obj.messages)} messages from DB")
-    # else:
-        # logger.info("No existing conversation - initializing with system prompt")
-    messages = [SystemMessage(content=Config.CHATBOT_SYSTEM_PROMPT)]
+    if not all([user_text, agent_id]):
+        return jsonify({'error': 'Message and agent_id are required.'}), 400
 
-    # Append user message
-    user_msg = UserMessage(content=user_text)
-    messages.append(user_msg)
-    logger.info("Added user message to conversation")
+    agent = get_agent(agent_id, current_user.id)
+    messages = agent.messages or []
+    # Append new user message
+    messages.append({'role': 'user', 'content': user_text})
 
-    # Prepare tool definitions - FILTER BASED ON USER SELECTION
-    selected_tools = session.get('selected_tools', [])
+    # Prepare tool definitions - FILTER BASED ON AGENT TOOLS
+    selected_tools = get_agent_tools(agent)
     user_scopes = get_user_oauth_scopes(current_user.id, "google-workspace")
 
     if selected_tools:
-        # Get tools only for selected services
         sdk_tools = tool_registry.get_sdk_tools_by_modules(selected_tools, user_scopes)
-        logger.info(f"Loaded {len(sdk_tools)} tools for selected services: {selected_tools}")
+        logger.info(f"Loaded {len(sdk_tools)} tools for agent {agent_id}: {selected_tools}")
     else:
-        # If no services selected, send empty list
         sdk_tools = []
-        logger.info("No services selected - sending empty tool list")
+        logger.info("No tools selected for agent - sending empty tool list")
 
     try:
         # Recursive tool calling loop
         while True:
-            # Call Azure AI for completion (non-streaming)
             logger.info("Calling Azure AI for completion")
             response: ChatCompletions = jarvus_ai.client.complete(
                 messages=messages,
@@ -161,74 +167,40 @@ def handle_chat_message():
             )
             logger.info("Received response from Azure AI")
 
-            choice = response.choices[0]  # ChatChoice
-            msg = choice.message           # ChatResponseMessage
-            assistant_msg = AssistantMessage(
-                content=msg.content,
-                tool_calls=msg.tool_calls
-            )
+            choice = response.choices[0]
+            msg = choice.message
+            assistant_msg = {'role': 'assistant', 'content': msg.content, 'tool_calls': msg.tool_calls}
             messages.append(assistant_msg)
             logger.info(f"Assistant message: {assistant_msg}")
 
-            # If no tool calls, we're done
             if not msg.tool_calls:
                 logger.info("No tool calls in response - conversation complete")
                 break
 
-            # Handle function/tool calls if present
             logger.info(f"Processing {len(msg.tool_calls)} tool calls")
             for call in msg.tool_calls:
                 tool_name = call.function.name
                 tool_args = json.loads(call.function.arguments) if call.function.arguments else {}
                 logger.info(f"Executing tool: {tool_name} with args: {tool_args}")
-                
-                # Execute the tool
                 result = tool_registry.execute_tool(
                     tool_name=tool_name,
                     parameters=tool_args,
                     jwt_token=jwt_token
                 )
-
-                # Append ToolMessage
-                tool_msg = ToolMessage(
-                    content=json.dumps(result),
-                    tool_call_id=call.id,
-                )
+                tool_msg = {'role': 'tool', 'content': json.dumps(result), 'tool_call_id': call.id}
                 messages.append(tool_msg)
                 logger.info(f"Added tool result to conversation")
 
         # Save updated messages to DB
-        history_data = [
-            {
-                "role": m.role, 
-                "content": getattr(m, "content", ""), 
-                **({"tool_call_id": m.tool_call_id} if hasattr(m, "tool_call_id") and m.tool_call_id else {})
-            } 
-            for m in messages
-        ]
-        
-        # if history_obj:
-        #     history_obj.messages = history_data
-        # else:
-        history_obj = History(session_id=session_id, messages=history_data)
-        db.session.add(history_obj)
+        agent.messages = messages
         db.session.commit()
 
-        # Build minimal history for frontend
-        filtered_history = [
-            {"role": m.role, "content": getattr(m, "content", "")}
-            for m in messages
-            if m.role not in ['tool'] and getattr(m, "content", None)
-        ]
+        filtered_history = get_agent_history(agent)
         logger.info(f"Returning response with {len(filtered_history)} messages in history")
         logger.info(f"filtered_history: {filtered_history}")
 
-        return jsonify(
-            {
-                "history": filtered_history,  # Return the complete history
-            }
-        )
+        return jsonify({"history": filtered_history})
 
     except Exception as e:
-        logger.error(f"Error processing message: {str(e)}", exc_info=True)
+        logger.error(f"Error processing message for agent {agent_id}: {str(e)}", exc_info=True)
         return jsonify({'error': str(e)}), 500
