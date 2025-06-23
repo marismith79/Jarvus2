@@ -25,7 +25,7 @@ from azure.ai.inference.models import (
 from ..config import Config
 from jarvus_app.models.history import History
 from ..db import db
-from ..services.agent_service import get_agent, get_agent_tools, get_agent_history, append_message, create_agent
+from ..services.agent_service import get_agent, get_agent_tools, get_agent_history, append_message, create_agent, delete_agent
 from ..utils.token_utils import get_valid_jwt_token
 
 jarvus_ai = JarvusAIClient()
@@ -215,4 +215,18 @@ def handle_chat_message():
 
     except Exception as e:
         logger.error(f"Error processing message for agent {agent_id}: {str(e)}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
+@chatbot_bp.route('/agents/<int:agent_id>', methods=['DELETE'])
+@login_required
+def delete_agent_route(agent_id):
+    """Delete an agent and all its associated data."""
+    try:
+        success = delete_agent(agent_id, current_user.id)
+        if success:
+            return jsonify({'message': 'Agent deleted successfully'}), 200
+        else:
+            return jsonify({'error': 'Failed to delete agent'}), 500
+    except Exception as e:
+        logger.error(f"Error deleting agent {agent_id}: {str(e)}", exc_info=True)
         return jsonify({'error': str(e)}), 500

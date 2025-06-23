@@ -40,4 +40,19 @@ def create_agent(user_id, name, tools=None, description=None):
     )
     db.session.add(new_agent)
     db.session.commit()
-    return new_agent 
+    return new_agent
+
+def delete_agent(agent_id, user_id):
+    """Delete an agent and all its associated data from the database."""
+    agent = get_agent(agent_id, user_id)  # This will 404 if agent doesn't exist or doesn't belong to user
+    
+    try:
+        # Delete the agent (History record)
+        db.session.delete(agent)
+        db.session.commit()
+        logger.info(f"Successfully deleted agent {agent_id} for user {user_id}")
+        return True
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Failed to delete agent {agent_id}: {str(e)}")
+        raise 

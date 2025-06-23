@@ -54,7 +54,27 @@ async function createAgent(name, tools = [], description = '') {
         const newChatItem = document.createElement('div');
         newChatItem.classList.add('chat-item');
         newChatItem.dataset.agentId = newAgent.id;
-        newChatItem.textContent = newAgent.name;
+        
+        // Create the agent name span
+        const agentName = document.createElement('span');
+        agentName.classList.add('agent-name');
+        agentName.textContent = newAgent.name;
+        
+        // Create the delete button
+        const deleteBtn = document.createElement('button');
+        deleteBtn.classList.add('delete-agent-btn');
+        deleteBtn.title = 'Delete agent';
+        deleteBtn.onclick = () => deleteAgent(newAgent.id);
+        deleteBtn.innerHTML = `
+            <svg class="trash-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        `;
+        
+        // Append elements to the chat item
+        newChatItem.appendChild(agentName);
+        newChatItem.appendChild(deleteBtn);
+        
         chatList.prepend(newChatItem);
         
         // Automatically select the new agent
@@ -185,6 +205,42 @@ async function sendCommand() {
     }
 }
 
+async function deleteAgent(agentId) {
+    if (!confirm('Are you sure you want to delete this agent? This action cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        const res = await fetch(`/chatbot/agents/${agentId}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        
+        if (!res.ok) {
+            const errData = await res.json();
+            throw new Error(errData.error || `Status ${res.status}`);
+        }
+        
+        // Remove from UI
+        const chatItem = document.querySelector(`.chat-item[data-agent-id="${agentId}"]`);
+        if (chatItem) {
+            chatItem.remove();
+        }
+        
+        // If this was the currently selected agent, clear the chat
+        if (currentAgentId == agentId) {
+            await loadAgentHistory(null);
+        }
+        
+        // Show success message
+        alert('Agent deleted successfully');
+        
+    } catch (err) {
+        console.error('Failed to delete agent:', err);
+        alert(`Error deleting agent: ${err.message}`);
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     loadAvailableTools();
   
@@ -198,8 +254,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- Agent Creation and Selection Flow ---
-    const newAgentBtn = document.querySelector('.new-agent-btn');
-    const chatbotCard = document.querySelector('.chatbot-card');
+    const newAgentBtn = document.querySelectorAll('.new-agent-btn');
+    const chatbotCard = document.getElementById('main-chat-area');
     const agentCreationView = document.getElementById('agent-creation-view');
     const steps = agentCreationView.querySelectorAll('.creation-step');
     const nextStepBtns = agentCreationView.querySelectorAll('.next-step-btn');
@@ -208,11 +264,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatList = document.querySelector('.chat-list');
     let currentStep = 0;
 
-    newAgentBtn.addEventListener('click', () => {
-        chatbotCard.style.display = 'none';
+    // Show most recent agent if present
+    if (window.mostRecentAgentId && window.mostRecentAgentId !== 'null') {
+        if (chatbotCard) chatbotCard.style.display = 'flex';
+        const emptyState = document.getElementById('empty-state');
+        if (emptyState) emptyState.style.display = 'none';
+        loadAgentHistory(window.mostRecentAgentId, window.mostRecentAgentName);
+    } else {
+        if (chatbotCard) chatbotCard.style.display = 'none';
+        const emptyState = document.getElementById('empty-state');
+        if (emptyState) emptyState.style.display = 'flex';
+    }
+
+    newAgentBtn.forEach(btn => btn.addEventListener('click', () => {
+        if (chatbotCard) chatbotCard.style.display = 'none';
+        if (document.getElementById('empty-state')) document.getElementById('empty-state').style.display = 'none';
         agentCreationView.style.display = 'flex';
         steps[currentStep].classList.add('active');
-    });
+    }));
 
     nextStepBtns.forEach((btn, index) => {
         btn.addEventListener('click', async () => {
@@ -238,7 +307,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const item = e.target.closest('.chat-item');
         if (item) {
             const agentId = item.dataset.agentId;
-            const agentName = item.textContent.trim();
+            const agentName = item.querySelector('.agent-name').textContent.trim();
+            if (chatbotCard) chatbotCard.style.display = 'flex';
+            if (document.getElementById('empty-state')) document.getElementById('empty-state').style.display = 'none';
+            agentCreationView.style.display = 'none';
             loadAgentHistory(agentId, agentName);
         }
     });
@@ -264,11 +336,10 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (agentName) {
             await createAgent(agentName, selectedTools, agentDescription);
-            
             // Switch back to chat view
             agentCreationView.style.display = 'none';
-            chatbotCard.style.display = 'flex';
-            
+            if (chatbotCard) chatbotCard.style.display = 'flex';
+            if (document.getElementById('empty-state')) document.getElementById('empty-state').style.display = 'none';
             // Reset form
             steps.forEach(step => step.classList.remove('active'));
             currentStep = 0;

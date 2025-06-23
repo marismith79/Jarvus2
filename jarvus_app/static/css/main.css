@@ -1223,6 +1223,9 @@ main {
     width: calc(100% - 4px);
     text-align: left;
     font-size: 0.95rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .chat-item:hover {
@@ -1231,6 +1234,49 @@ main {
 
 .chat-item.active {
     background-color: rgba(0, 0, 0, 0.1);
+}
+
+.agent-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.delete-agent-btn {
+    background: none;
+    border: none;
+    color: #ff4444;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    opacity: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+}
+
+.chat-item:hover .delete-agent-btn {
+    opacity: 1;
+}
+
+.delete-agent-btn:hover {
+    background-color: #ff4444;
+    color: white;
+    transform: scale(1.1);
+}
+
+.trash-icon {
+    width: 16px;
+    height: 16px;
+    transition: all 0.2s ease;
+}
+
+.delete-agent-btn:hover .trash-icon {
+    transform: scale(1.1);
 }
 
 /* Agent Creation View */
@@ -1372,4 +1418,16 @@ main {
 .tool-list-container .tool-item .checkmark {
     color: var(--primary-color);
     font-weight: bold;
+}
+
+#empty-state .cta-button {
+    font-size: 1rem;
+    padding: 0.75rem 2rem;
+    min-width: 180px;
+    max-width: 260px;
+    width: 100%;
+    border-radius: 40px;
+    box-shadow: var(--shadow-md);
+    margin: 0 auto;
+    display: block;
 }

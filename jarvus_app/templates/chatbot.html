@@ -20,7 +20,12 @@
             <div class="chat-list">
                 {% for agent in agents %}
                 <div class="chat-item" data-agent-id="{{ agent.id }}">
-                    {{ agent.name }}
+                    <span class="agent-name">{{ agent.name }}</span>
+                    <button class="delete-agent-btn" onclick="deleteAgent({{ agent.id }})" title="Delete agent">
+                        <svg class="trash-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
                 </div>
                 {% endfor %}
             </div>
@@ -28,22 +33,27 @@
     </aside>
 
     <!-- Chat Main Area -->
-    <section class="chatbot-card">
+    <section class="chatbot-card" id="main-chat-area" {% if not most_recent_agent %}style="display:none"{% endif %}>
         <!-- Greeting -->
         <div class="greeting-section">
             <h1 class="greeting-title" id="agent-greeting">Select an agent to start chatting</h1>
             <p class="greeting-subtitle" id="agent-subtitle">Choose an agent from the sidebar or create a new one</p>
         </div>
-
         <!-- Chat history -->
         <div id="chat-history" class="chat-history"></div>
-
         <!-- Chat input bar -->
         <form class="chat-input-bar" onsubmit="event.preventDefault(); sendCommand();">
             <input type="text" id="chat-input" class="chat-input" placeholder="Ask or search for anything..." autocomplete="off">
             <button type="submit" class="icon-btn send-btn" id="send-btn">➔</button>
         </form>
     </section>
+
+    <!-- Centered New Agent Button if no agents -->
+    {% if not most_recent_agent %}
+    <section id="empty-state" style="flex:1;display:flex;align-items:center;justify-content:center;">
+        <button class="cta-button new-agent-btn" style="font-size:1.2rem;padding:1.5rem 2.5rem;">New Agent +</button>
+    </section>
+    {% endif %}
 
     <!-- Agent Creation View -->
     <section id="agent-creation-view" style="display: none;">
@@ -52,7 +62,6 @@
             <input type="text" id="agent-name" placeholder="Morning Brew Agent...">
             <button class="next-step-btn">↓</button>
         </div>
-
         <div class="creation-step" id="step-2">
             <h2>Choose my tools...</h2>
             <div id="agent-creation-tool-list" class="tool-list-container">
@@ -60,7 +69,6 @@
             </div>
             <button class="next-step-btn">↓</button>
         </div>
-
         <div class="creation-step" id="step-3">
             <h2>Describe what I do (optional)</h2>
             <textarea id="agent-description" placeholder="You are an agent that manages my inbox and tells me if people reply to my outreach messages."></textarea>
@@ -72,6 +80,8 @@
 
 {% block extra_js %}
 <script>
+    window.mostRecentAgentId = {{ most_recent_agent.id if most_recent_agent else 'null' }};
+    window.mostRecentAgentName = {{ most_recent_agent.name|tojson if most_recent_agent else 'null' }};
     // Pass connection status to JavaScript
     window.gmailConnected = {{ 'true' if google_workspace_connected else 'false' }};
     window.docsConnected = {{ 'true' if google_workspace_connected else 'false' }};

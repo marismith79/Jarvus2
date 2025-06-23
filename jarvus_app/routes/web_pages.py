@@ -25,10 +25,12 @@ def chatbot():
     
     # Add these lines to fetch the agents
     agents = History.query.filter_by(user_id=current_user.id).order_by(History.created_at.desc()).all()
+    most_recent_agent = agents[0] if agents else None
 
     return render_template(
         "chatbot.html",
         agents=agents,
+        most_recent_agent=most_recent_agent,
         google_workspace_connected=connected_services["google-workspace"],
         notion_connected=connected_services["notion"],
         slack_connected=connected_services["slack"],
