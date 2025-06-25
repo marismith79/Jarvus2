@@ -89,9 +89,6 @@ async function createAgent(name, tools = [], description = '') {
 async function loadAgentHistory(agentId, agentName = null) {
     if (!agentId) {
         document.getElementById('chat-history').innerHTML = '';
-        // Reset greeting to default
-        document.getElementById('agent-greeting').textContent = 'Select an agent to start chatting';
-        document.getElementById('agent-subtitle').textContent = 'Choose an agent from the sidebar or create a new one';
         return;
     }
     currentAgentId = agentId;
@@ -100,12 +97,6 @@ async function loadAgentHistory(agentId, agentName = null) {
     document.querySelectorAll('.chat-item').forEach(item => {
         item.classList.toggle('active', item.dataset.agentId == agentId);
     });
-
-    // Update greeting with agent name
-    if (agentName) {
-        document.getElementById('agent-greeting').textContent = agentName;
-        document.getElementById('agent-subtitle').textContent = 'How can I help you today?';
-    }
 
     try {
         const res = await fetch(`/chatbot/agents/${agentId}/history`);
@@ -241,17 +232,31 @@ async function deleteAgent(agentId) {
     }
 }
 
+// Auto-resize textarea function
+function autoResizeTextarea(textarea) {
+    textarea.style.height = 'auto';
+    textarea.style.height = textarea.scrollHeight + 'px';
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     loadAvailableTools();
   
     const inputEl = document.getElementById('chat-input');
-    document.getElementById('send-btn').addEventListener('click', sendCommand);
-    inputEl.addEventListener('keydown', e => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        sendCommand();
-      }
+    
+    // Add auto-resize functionality
+    inputEl.addEventListener('input', function() {
+        autoResizeTextarea(this);
     });
+    
+    // Handle Enter key for sending (but allow Shift+Enter for new line)
+    inputEl.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendCommand();
+        }
+    });
+    
+    document.getElementById('send-btn').addEventListener('click', sendCommand);
 
     // --- Agent Creation and Selection Flow ---
     const newAgentBtn = document.querySelectorAll('.new-agent-btn');
@@ -282,6 +287,21 @@ document.addEventListener('DOMContentLoaded', () => {
         agentCreationView.style.display = 'flex';
         steps[currentStep].classList.add('active');
     }));
+
+    // Add Enter key support - just trigger the appropriate button
+    document.addEventListener('keydown', (e) => {
+        if (agentCreationView.style.display === 'flex' && e.key === 'Enter') {
+            e.preventDefault();
+            
+            // If we're on the last step, click the finish button
+            if (currentStep === steps.length - 1) {
+                finishCreationBtn.click();
+            } else {
+                // Otherwise, click the next step button
+                nextStepBtns[currentStep].click();
+            }
+        }
+    });
 
     nextStepBtns.forEach((btn, index) => {
         btn.addEventListener('click', async () => {
