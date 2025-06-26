@@ -13,7 +13,7 @@ from ..llm.client import JarvusAIClient
 from ..services.tool_registry import tool_registry
 from flask_login import login_required, current_user
 from flask import Blueprint, jsonify, request, session
-from ..utils.tool_permissions import check_tool_access, get_user_oauth_scopes
+from ..utils.tool_permissions import check_tool_access, get_user_oauth_scopes, get_user_tools
 import logging
 from azure.ai.inference.models import (
     SystemMessage,
@@ -149,15 +149,80 @@ def handle_chat_message():
             messages.append(UserMessage(content=m.get('content', '')))
     messages.append(UserMessage(content=user_text))
 
-    selected_tools = get_agent_tools(agent)
-    user_scopes = get_user_oauth_scopes(current_user.id, "google-workspace")
+    # Helper: map user_scopes to tool module names
+    def scopes_to_tools(user_scopes):
+        SCOPE_KEYWORDS = {
+            'gmail': ['gmail'],
+            'calendar': ['calendar'],
+            'drive': ['drive'],
+            'docs': ['documents'],
+            'sheets': ['spreadsheets'],
+            'slides': ['presentations'],
+        }
+        tool_set = set()
+        for tool, keywords in SCOPE_KEYWORDS.items():
+            for keyword in keywords:
+                if any(keyword in scope for scope in user_scopes):
+                    tool_set.add(tool)
+        return tool_set
 
-    if selected_tools:
-        sdk_tools = tool_registry.get_sdk_tools_by_modules(selected_tools, user_scopes)
-        logger.info(f"Loaded {len(sdk_tools)} tools for agent {agent_id}: {selected_tools}")
-    else:
-        sdk_tools = []
-        logger.info("No tools selected for agent - sending empty tool list")
+    agent_tools = set(get_agent_tools(agent))
+    user_scopes = get_user_oauth_scopes(current_user.id, "google-workspace")
+    user_tools = scopes_to_tools(user_scopes)
+    allowed_tools = list(agent_tools & user_tools)
+    print('DEBUG agent_tools', agent_tools)
+    print('DEBUG user_tools', user_tools)
+    print('DEBUG allowed_tools', allowed_tools)
+    print('DEBUG user_scopes', user_scopes)
+
+    # # Get tool categories for allowed tools
+    # allowed_tool_objs = [tool_registry.get_tool(t) for t in allowed_tools if tool_registry.get_tool(t)]
+    # allowed_categories = list(set([t.category.value for t in allowed_tool_objs if t and hasattr(t, 'category')]))
+    # print('DEBUG allowed_tool_objs', allowed_tool_objs)
+    # print('DEBUG allowed_categories', allowed_categories)
+
+    # Step 1: Ask LLM which tool/category is needed
+    tool_selection_prompt = (
+        "Given the following user message and these tool categories, "
+        "which tool(s) or tool category(ies) would you use to answer the message? "
+        "Respond with a JSON list of tool names or categories. If none, return an empty list."
+    )
+    tool_selection_messages = [
+        {"role": "system", "content": tool_selection_prompt},
+        {"role": "user", "content": user_text},
+        {"role": "system", "content": f"Available tool categories: {allowed_tools}"}
+    ]
+    tool_selection_response = jarvus_ai.create_chat_completion(tool_selection_messages)
+    # Helper to parse tool names/categories from LLM response
+    import re
+    import json as pyjson
+    def parse_tools_from_response(resp):
+        # Try to extract a JSON list from the response
+        try:
+            if isinstance(resp, dict) and 'assistant' in resp and 'content' in resp['assistant']:
+                content = resp['assistant']['content']
+            elif isinstance(resp, dict) and 'choices' in resp and resp['choices']:
+                content = resp['choices'][0]['message']['content']
+            else:
+                content = str(resp)
+            match = re.search(r'\[.*\]', content, re.DOTALL)
+            if match:
+                return pyjson.loads(match.group(0))
+            # fallback: try to parse whole content
+            return pyjson.loads(content)
+        except Exception:
+            return []
+    print("DEBUG tool_selection_response", tool_selection_response)
+    needed_tools_or_categories = set(parse_tools_from_response(tool_selection_response))
+
+    # Step 2: Filter allowed tools to only those needed
+    filtered_tools = [
+        t for t in allowed_tools
+        if t in needed_tools_or_categories or (hasattr(t, 'category') and t.category.value in needed_tools_or_categories)
+    ]
+    sdk_tools = tool_registry.get_sdk_tools_by_modules(filtered_tools, user_scopes)
+    logger.info(f"Filtered tools for LLM: {filtered_tools}")
+    # --- END: Two-step tool selection orchestration ---
 
     try:
         new_messages = []
