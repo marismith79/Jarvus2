@@ -41,7 +41,7 @@ class MCPClient:
     def __init__(self, base_url: Optional[str] = None):
         self.base_url = base_url or os.getenv("MCP_SERVER_URL", "http://localhost:8000")
         print(f"\nMCP Client initialized with URL: {self.base_url}")
-        self.default_timeout = 30  # 30 second default timeout
+        self.default_timeout = 60  # 60 second default timeout
 
     def _handle_response(self, response: requests.Response) -> Dict[str, Any]:
         """Handle HTTP response and raise appropriate exceptions."""

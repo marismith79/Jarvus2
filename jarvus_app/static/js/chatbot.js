@@ -21,7 +21,13 @@ function appendMessage(who, text) {
     wrapper.classList.add('message', who);
   
     const p = document.createElement('p');
-    p.innerHTML = text.replace(/\n/g, '<br>');
+    if (who === 'bot' && window.marked) {
+        // Render markdown for bot replies
+        p.innerHTML = window.marked.parse(text);
+    } else {
+        // Render plain text with line breaks for user
+        p.innerHTML = text.replace(/\n/g, '<br>');
+    }
     wrapper.appendChild(p);
   
     history.appendChild(wrapper);

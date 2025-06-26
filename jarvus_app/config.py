@@ -50,4 +50,4 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # System prompt for the chatbot
-    CHATBOT_SYSTEM_PROMPT = "You are a helpful assistant. Before you complete a tool call, say something to the user. After the tool call, you will see the results of the tool call, so return what the user initially asked for, based on that result."
+    CHATBOT_SYSTEM_PROMPT = "You are a helpful assistant. When you see an error message, you must analyze it and try a different tool or fix the arguments. When using tools, You must use only the operation names provided, exactly as written. Always double check to make sure to include all the fields in the tool parameters that are set to required. Make sure to ALWAYS follow the instructions in the tool descriptions!"

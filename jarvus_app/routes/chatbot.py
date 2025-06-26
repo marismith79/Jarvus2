@@ -251,18 +251,71 @@ def handle_chat_message():
 
             logger.info(f"Processing {len(msg.tool_calls)} tool calls")
             for call in msg.tool_calls:
-                tool_name = call.function.name
-                tool_args = json.loads(call.function.arguments) if call.function.arguments else {}
-                logger.info(f"Executing tool: {tool_name} with args: {tool_args}")
-                result = tool_registry.execute_tool(
-                    tool_name=tool_name,
-                    parameters=tool_args,
-                    jwt_token=jwt_token
-                )
-                # ToolMessage must immediately follow the assistant message with tool_calls
-                tool_msg = ToolMessage(content=json.dumps(result), tool_call_id=call.id)
-                messages.append(tool_msg)
-                logger.info(f"Added tool result to conversation")
+                retries = 0
+                max_retries = 3
+                current_call = call
+                while retries < max_retries:
+                    tool_name = current_call.function.name
+                    tool_args = json.loads(current_call.function.arguments) if current_call.function.arguments else {}
+                    logger.info(f"Executing tool: {tool_name} with args: {tool_args}")
+                    try:
+                        tool_result = tool_registry.execute_tool(
+                            tool_name=tool_name,
+                            parameters=tool_args,
+                            jwt_token=jwt_token,
+                        )
+                        # On success, append a ToolMessage with the result
+                        tool_msg = ToolMessage(content=json.dumps(tool_result), tool_call_id=current_call.id)
+                        messages.append(tool_msg)
+                        # Prompt the LLM again to get the final response after tool execution
+                        logger.info("Prompting LLM for final response after tool execution")
+                        response = jarvus_ai.client.complete(
+                            messages=messages,
+                            model=jarvus_ai.deployment_name,
+                            stream=False,
+                        )
+                        choice = response.choices[0]
+                        msg = choice.message
+                        assistant_msg = AssistantMessage(content=msg.content if msg.content is not None else "", tool_calls=msg.tool_calls)
+                        messages.append(assistant_msg)
+                        new_messages.append({'role': 'assistant', 'content': assistant_msg.content})
+                        break  # Exit retry loop on success
+                    except Exception as e:
+                        error_msg = f"Tool call '{tool_name}' failed with error: {str(e)}"
+                        logger.error(error_msg)
+                        # Insert a ToolMessage with the error for this tool_call_id
+                        tool_msg = ToolMessage(content=json.dumps({"error": error_msg}), tool_call_id=current_call.id)
+                        messages.append(tool_msg)
+                        # Inject a clear, actionable error as a user message for the LLM to see
+                        messages.append(UserMessage(content=f"{error_msg}. Please analyze the error and try a different tool or fix the arguments and call a tool again. Do not just suggest alternatives in text—actually call a tool."))
+                        # Add a system message to reinforce the instruction
+                        messages.append(SystemMessage(content="When you see an error message, you must analyze it and try a different tool or fix the arguments and call a tool again. Do not just suggest alternatives in text—actually call a tool."))
+                        retries += 1
+                        if retries >= max_retries:
+                            logger.error(f"Max retries reached for tool call '{tool_name}'. Moving on.")
+                            break
+                        # Prompt the LLM again for a new tool call after error
+                        logger.info("Prompting LLM again after tool call failure")
+                        response = jarvus_ai.client.complete(
+                            messages=messages,
+                            model=jarvus_ai.deployment_name,
+                            tools=sdk_tools,
+                            stream=False,
+                            tool_choice="required"
+                        )
+                        logger.info("Received response from Azure AI (retry)")
+                        choice = response.choices[0]
+                        msg = choice.message
+                        assistant_msg = AssistantMessage(content=msg.content if msg.content is not None else "", tool_calls=msg.tool_calls)
+                        messages.append(assistant_msg)
+                        new_messages.append({'role': 'assistant', 'content': assistant_msg.content})
+                        logger.info(f"Assistant message (retry): {assistant_msg}")
+                        if not msg.tool_calls:
+                            logger.info("No tool calls in response after retry - conversation complete")
+                            break
+                        # Use the first tool call from the new LLM response
+                        current_call = msg.tool_calls[0]
+
         # Save updated messages to DB (as dicts)
         agent.messages = []
         for m in messages:
