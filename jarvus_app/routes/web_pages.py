@@ -35,6 +35,7 @@ def chatbot():
         notion_connected=connected_services["notion"],
         slack_connected=connected_services["slack"],
         zoom_connected=connected_services["zoom"],
+        web_connected=connected_services["web"],
     )
 
 @web.route("/chatbot/send", methods=["POST"])

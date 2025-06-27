@@ -170,6 +170,11 @@ def handle_chat_message():
     user_scopes = get_user_oauth_scopes(current_user.id, "google-workspace")
     user_tools = scopes_to_tools(user_scopes)
     allowed_tools = list(agent_tools & user_tools)
+    
+    # Web tools are always available regardless of agent assignment or OAuth scopes
+    if 'web' not in allowed_tools:
+        allowed_tools.append('web')
+    
     print('DEBUG agent_tools', agent_tools)
     print('DEBUG user_tools', user_tools)
     print('DEBUG allowed_tools', allowed_tools)

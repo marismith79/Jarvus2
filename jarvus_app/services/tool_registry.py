@@ -20,6 +20,7 @@ class ToolCategory(Enum):
     GOOGLE_WORKSPACE = "google-workspace"
     MICROSOFT_365 = "microsoft-365"
     CUSTOM = "custom"
+    WEB = "web"
     
     # Google Workspace Service Categories
     GMAIL = "google-workspace.gmail"
@@ -186,6 +187,7 @@ class ToolRegistry:
             'sheets': ToolCategory.SHEETS,
             'drive': ToolCategory.DRIVE,
             'calendar': ToolCategory.CALENDAR,
+            'web': ToolCategory.WEB,
         }
         
         category = module_to_category.get(module_name.lower())
@@ -199,7 +201,8 @@ class ToolRegistry:
                     ToolCategory.DRIVE: "Drive",
                     ToolCategory.DOCS: "Docs",
                     ToolCategory.SHEETS: "Sheets",
-                    ToolCategory.SLIDES: "Slides"
+                    ToolCategory.SLIDES: "Slides",
+                    ToolCategory.WEB: "Web"
                 }
                 service_name = service_names.get(category, module_name.title())
                 scope_description = generate_scope_description(user_scopes, service_name)
@@ -259,7 +262,8 @@ from .tools import (
     register_drive_tools,
     register_docs_tools,
     register_sheets_tools,
-    register_slides_tools
+    register_slides_tools,
+    register_web_tools
 )
 
 # Register all tools
@@ -268,4 +272,5 @@ register_calendar_tools(tool_registry)
 register_drive_tools(tool_registry)
 register_docs_tools(tool_registry)
 register_sheets_tools(tool_registry)
-register_slides_tools(tool_registry) 
+register_slides_tools(tool_registry)
+register_web_tools(tool_registry) 

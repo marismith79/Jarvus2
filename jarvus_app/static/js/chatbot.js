@@ -11,7 +11,8 @@ const connectedTools = {
   calendar: window.calendarConnected || false,
   notion: window.notionConnected || false,
   slack: window.slackConnected || false,
-  zoom: window.zoomConnected || false
+  zoom: window.zoomConnected || false,
+  web: window.webConnected || false
 };
   
 // Helper to append a message bubble into #chat-history
