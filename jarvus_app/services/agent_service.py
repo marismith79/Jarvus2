@@ -16,7 +16,26 @@ def get_agent_tools(agent):
 
 def get_agent_history(agent):
     logger.info(f"[DEBUG] get_agent_history called with agent.messages: {agent.messages}")
-    filtered = [msg for msg in agent.messages if msg.get('role') in ['user', 'assistant'] and msg.get('content')]
+    messages = agent.messages or []
+    filtered = []
+    i = 0
+    n = len(messages)
+    while i < n:
+        msg = messages[i]
+        if msg.get('role') == 'user' and msg.get('content'):
+            filtered.append(msg)
+            # Find the next assistant message after this user message
+            j = i + 1
+            last_assistant = None
+            while j < n and messages[j].get('role') != 'user':
+                if messages[j].get('role') == 'assistant' and messages[j].get('content'):
+                    last_assistant = messages[j]
+                j += 1
+            if last_assistant:
+                filtered.append(last_assistant)
+            i = j
+        else:
+            i += 1
     logger.info(f"[DEBUG] get_agent_history filtered result: {filtered}")
     return filtered
 

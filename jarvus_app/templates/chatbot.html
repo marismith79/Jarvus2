@@ -34,6 +34,11 @@
 
     <!-- Chat Main Area -->
     <section class="chatbot-card" id="main-chat-area" {% if not most_recent_agent %}style="display:none"{% endif %}>
+        <!-- Greeting Section -->
+        <div class="greeting-section">
+            <div id="agent-greeting" class="greeting-title">Select an agent to start chatting</div>
+            <div id="agent-subtitle" class="greeting-subtitle">Choose an agent from the sidebar or create a new one</div>
+        </div>
         <!-- Chat history -->
         <div id="chat-history" class="chat-history"></div>
         <!-- Chat input bar -->
