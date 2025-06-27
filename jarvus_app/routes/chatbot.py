@@ -325,17 +325,23 @@ def handle_chat_message():
                         # Use the first tool call from the new LLM response
                         current_call = msg.tool_calls[0]
 
-        # Save updated messages to DB (as dicts)
+        # Save updated messages to DB (as dicts) - only user messages and final assistant message
         agent.messages = []
+        user_messages = []
+        assistant_messages = []
+        
         for m in messages:
             if isinstance(m, UserMessage):
-                agent.messages.append({'role': 'user', 'content': m.content})
+                user_messages.append({'role': 'user', 'content': m.content})
             elif isinstance(m, AssistantMessage):
-                agent.messages.append({'role': 'assistant', 'content': m.content})
-            elif isinstance(m, SystemMessage):
-                agent.messages.append({'role': 'system', 'content': m.content})
-            else:
-                agent.messages.append({'role': 'user', 'content': getattr(m, 'content', '')})
+                assistant_messages.append({'role': 'assistant', 'content': m.content})
+            # Skip ToolMessage and SystemMessage for display purposes
+        
+        # Add all user messages and only the last assistant message
+        agent.messages.extend(user_messages)
+        if assistant_messages:
+            agent.messages.append(assistant_messages[-1])  # Only the final assistant message
+            
         db.session.commit()
         agent = get_agent(agent_id, current_user.id)  # Re-fetch from DB
         return jsonify({"new_messages": new_messages})
