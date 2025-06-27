@@ -123,6 +123,7 @@ def handle_chat_message():
     user_text = data.get('message', '')
     agent_id = data.get('agent_id')
     tool_choice = data.get('tool_choice', 'auto')
+    web_search_enabled = data.get('web_search_enabled', True)
     jwt_token = get_valid_jwt_token()
     if not jwt_token:
         # Token refresh failed, force re-login
@@ -170,6 +171,8 @@ def handle_chat_message():
     user_scopes = get_user_oauth_scopes(current_user.id, "google-workspace")
     user_tools = scopes_to_tools(user_scopes)
     allowed_tools = list(agent_tools & user_tools)
+    if web_search_enabled:
+        allowed_tools.append('web')
     print('DEBUG agent_tools', agent_tools)
     print('DEBUG user_tools', user_tools)
     print('DEBUG allowed_tools', allowed_tools)
@@ -220,6 +223,12 @@ def handle_chat_message():
         t for t in allowed_tools
         if t in needed_tools_or_categories or (hasattr(t, 'category') and t.category.value in needed_tools_or_categories)
     ]
+    # Filter out web tools if web_search_enabled is False
+    if not web_search_enabled:
+        filtered_tools = [
+            t for t in filtered_tools
+            if not (hasattr(tool_registry.get_tool(t), 'category') and getattr(tool_registry.get_tool(t), 'category', None) and tool_registry.get_tool(t).category.value == 'web')
+        ]
     sdk_tools = tool_registry.get_sdk_tools_by_modules(filtered_tools, user_scopes)
     logger.info(f"Filtered tools for LLM: {filtered_tools}")
     # --- END: Two-step tool selection orchestration ---

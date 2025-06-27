@@ -34,12 +34,17 @@
 
     <!-- Chat Main Area -->
     <section class="chatbot-card" id="main-chat-area" {% if not most_recent_agent %}style="display:none"{% endif %}>
+        <!-- Web Search Toggle -->
+        <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+            <label for="web-search-toggle" style="margin-right: 0.5rem; font-weight: 500;">Enable Web Search</label>
+            <input type="checkbox" id="web-search-toggle" checked />
+        </div>
         <!-- Chat history -->
         <div id="chat-history" class="chat-history"></div>
         <!-- Chat input bar -->
         <form class="chat-input-bar" onsubmit="event.preventDefault(); sendCommand();">
             <input type="text" id="chat-input" class="chat-input" placeholder="Ask or search for anything..." autocomplete="off">
-            <button type="submit" class="icon-btn send-btn" id="send-btn">➔</button>
+            <button type="submit" class="icon-btn send-btn" id="send-btn">→</button>
         </form>
     </section>
 

@@ -177,12 +177,17 @@ async function sendCommand() {
   
     const thinkingMsg = appendMessage('bot', '…');
   
+    // Get the web search toggle state
+    const webSearchToggle = document.getElementById('web-search-toggle');
+    const webSearchEnabled = webSearchToggle ? webSearchToggle.checked : true;
+
     const options = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
             message: raw,
-            agent_id: currentAgentId 
+            agent_id: currentAgentId,
+            web_search_enabled: webSearchEnabled
         })
     };
   
