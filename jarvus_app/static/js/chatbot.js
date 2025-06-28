@@ -203,8 +203,12 @@ async function sendCommand() {
             return;
         }
   
-        // Always reload the full agent history after sending a message
-        await loadAgentHistory(currentAgentId);
+        if (Array.isArray(data.new_messages)) {
+            data.new_messages.forEach(msg => {
+                const cls = msg.role === 'user' ? 'user' : 'bot';
+                appendMessage(cls, msg.content);
+            });
+        }
     } catch (err) {
         console.error('Fetch error:', err);
         thinkingMsg.remove();

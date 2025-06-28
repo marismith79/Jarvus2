@@ -25,7 +25,7 @@ from azure.ai.inference.models import (
 from ..config import Config
 from jarvus_app.models.history import History
 from ..db import db
-from ..services.agent_service import get_agent, get_agent_tools, get_agent_history, append_message, create_agent, delete_agent
+from ..services.agent_service import get_agent, get_agent_tools, get_agent_history, append_message, create_agent, delete_agent, save_interaction
 from ..utils.token_utils import get_valid_jwt_token
 
 jarvus_ai = JarvusAIClient()
@@ -325,23 +325,30 @@ def handle_chat_message():
                         # Use the first tool call from the new LLM response
                         current_call = msg.tool_calls[0]
 
-        # Save updated messages to DB (as dicts) - only user messages and final assistant message
+        # Save updated messages to DB (as dicts) - this is the detailed conversation history
         agent.messages = []
-        user_messages = []
-        assistant_messages = []
-        
         for m in messages:
             if isinstance(m, UserMessage):
-                user_messages.append({'role': 'user', 'content': m.content})
+                agent.messages.append({'role': 'user', 'content': m.content})
             elif isinstance(m, AssistantMessage):
-                assistant_messages.append({'role': 'assistant', 'content': m.content})
-            # Skip ToolMessage and SystemMessage for display purposes
+                agent.messages.append({'role': 'assistant', 'content': m.content})
+            elif isinstance(m, SystemMessage):
+                agent.messages.append({'role': 'system', 'content': m.content})
+            else:
+                agent.messages.append({'role': 'user', 'content': getattr(m, 'content', '')})
         
-        # Add all user messages and only the last assistant message
-        agent.messages.extend(user_messages)
-        if assistant_messages:
-            agent.messages.append(assistant_messages[-1])  # Only the final assistant message
-            
+        # Save the user-facing interaction history (initial user message + final assistant response)
+        final_assistant_message = ""
+        if new_messages:
+            # Get the last assistant message as the final response
+            for msg in reversed(new_messages):
+                if msg.get('role') == 'assistant' and msg.get('content'):
+                    final_assistant_message = msg.get('content')
+                    break
+        
+        # Save to interaction history table
+        save_interaction(agent_id, current_user.id, user_text, final_assistant_message)
+        
         db.session.commit()
         agent = get_agent(agent_id, current_user.id)  # Re-fetch from DB
         return jsonify({"new_messages": new_messages})

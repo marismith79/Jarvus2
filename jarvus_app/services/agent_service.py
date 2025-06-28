@@ -1,4 +1,4 @@
-from jarvus_app.models.history import History
+from jarvus_app.models.history import History, InteractionHistory
 from flask_login import current_user
 from flask import abort
 from ..db import db
@@ -9,33 +9,33 @@ logger = logging.getLogger(__name__)
 # --- Agent Service Functions ---
 
 def get_agent(agent_id, user_id):
-    return History.query.filter_by(id=agent_id, user_id=user_id).first_or_404()
+    agent = History.query.filter_by(id=agent_id, user_id=user_id).first_or_404()
+    # Refresh the specific object to ensure we have the latest data
+    try:
+        db.session.refresh(agent)
+    except:
+        # If refresh fails, the object might not be in the session, which is fine
+        pass
+    return agent
 
 def get_agent_tools(agent):
     return agent.tools or []
 
 def get_agent_history(agent):
-    logger.info(f"[DEBUG] get_agent_history called with agent.messages: {agent.messages}")
-    messages = agent.messages or []
+    """Get user-facing interaction history (clean messages for frontend display)"""
+    logger.info(f"[DEBUG] get_agent_history called for agent {agent.id}")
+    
+    # Get interaction history from the separate table
+    interactions = InteractionHistory.query.filter_by(agent_id=agent.id).order_by(InteractionHistory.created_at.asc()).all()
+    
+    # Convert to the format expected by frontend
     filtered = []
-    i = 0
-    n = len(messages)
-    while i < n:
-        msg = messages[i]
-        if msg.get('role') == 'user' and msg.get('content'):
-            filtered.append(msg)
-            # Find the next assistant message after this user message
-            j = i + 1
-            last_assistant = None
-            while j < n and messages[j].get('role') != 'user':
-                if messages[j].get('role') == 'assistant' and messages[j].get('content'):
-                    last_assistant = messages[j]
-                j += 1
-            if last_assistant:
-                filtered.append(last_assistant)
-            i = j
-        else:
-            i += 1
+    for interaction in interactions:
+        # Add user message
+        filtered.append({'role': 'user', 'content': interaction.user_message})
+        # Add assistant message
+        filtered.append({'role': 'assistant', 'content': interaction.assistant_message})
+    
     logger.info(f"[DEBUG] get_agent_history filtered result: {filtered}")
     return filtered
 
@@ -46,6 +46,18 @@ def get_agent_full_history(agent):
 def append_message(agent, message):
     agent.messages.append(message)
     return agent
+
+def save_interaction(agent_id, user_id, user_message, assistant_message):
+    """Save a user-assistant interaction to the interaction history table"""
+    interaction = InteractionHistory(
+        agent_id=agent_id,
+        user_id=user_id,
+        user_message=user_message,
+        assistant_message=assistant_message
+    )
+    db.session.add(interaction)
+    db.session.commit()
+    return interaction
 
 def create_agent(user_id, name, tools=None, description=None):
     if not name:
@@ -66,7 +78,7 @@ def delete_agent(agent_id, user_id):
     agent = get_agent(agent_id, user_id)  # This will 404 if agent doesn't exist or doesn't belong to user
     
     try:
-        # Delete the agent (History record)
+        # Delete the agent (History record) - this will cascade delete interaction_history
         db.session.delete(agent)
         db.session.commit()
         logger.info(f"Successfully deleted agent {agent_id} for user {user_id}")
