@@ -22,22 +22,40 @@ def get_agent_tools(agent):
     return agent.tools or []
 
 def get_agent_history(agent):
-    """Get user-facing interaction history (clean messages for frontend display)"""
-    logger.info(f"[DEBUG] get_agent_history called for agent {agent.id}")
+    logger.info(f"[DEBUG] get_agent_history called with agent.messages: {agent.messages}")
+    messages = agent.messages or []
+    logger.info(f"[DEBUG] Total messages in agent: {len(messages)}")
     
-    # Get interaction history from the separate table
-    interactions = InteractionHistory.query.filter_by(agent_id=agent.id).order_by(InteractionHistory.created_at.asc()).all()
-    
-    # Convert to the format expected by frontend
+    # Return all messages in chronological order (user + assistant pairs)
+    # Filter out any messages without content
     filtered = []
-    for interaction in interactions:
-        # Add user message
-        filtered.append({'role': 'user', 'content': interaction.user_message})
-        # Add assistant message
-        filtered.append({'role': 'assistant', 'content': interaction.assistant_message})
+    for msg in messages:
+        if msg.get('content') and msg.get('role') in ['user', 'assistant']:
+            filtered.append(msg)
+            logger.info(f"[DEBUG] Added message: {msg.get('role')} - {msg.get('content', '')[:50]}...")
     
     logger.info(f"[DEBUG] get_agent_history filtered result: {filtered}")
     return filtered
+
+def get_agent_interaction_history(agent):
+    """Get only user input and final assistant responses for frontend display"""
+    interactions = InteractionHistory.query.filter_by(
+        history_id=agent.id, 
+        user_id=agent.user_id
+    ).order_by(InteractionHistory.created_at.asc()).all()
+    
+    history = []
+    for interaction in interactions:
+        history.append({
+            'role': 'user',
+            'content': interaction.user_message
+        })
+        history.append({
+            'role': 'assistant', 
+            'content': interaction.assistant_message
+        })
+    
+    return history
 
 def get_agent_full_history(agent):
     """Get full conversation history including tool messages for LLM processing"""
@@ -47,11 +65,11 @@ def append_message(agent, message):
     agent.messages.append(message)
     return agent
 
-def save_interaction(agent_id, user_id, user_message, assistant_message):
-    """Save a user-assistant interaction to the interaction history table"""
+def save_interaction(agent, user_message, assistant_message):
+    """Save a user-assistant interaction pair to InteractionHistory"""
     interaction = InteractionHistory(
-        agent_id=agent_id,
-        user_id=user_id,
+        history_id=agent.id,
+        user_id=agent.user_id,
         user_message=user_message,
         assistant_message=assistant_message
     )
@@ -78,7 +96,7 @@ def delete_agent(agent_id, user_id):
     agent = get_agent(agent_id, user_id)  # This will 404 if agent doesn't exist or doesn't belong to user
     
     try:
-        # Delete the agent (History record) - this will cascade delete interaction_history
+        # Delete the agent (History record)
         db.session.delete(agent)
         db.session.commit()
         logger.info(f"Successfully deleted agent {agent_id} for user {user_id}")
