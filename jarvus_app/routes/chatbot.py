@@ -25,7 +25,7 @@ from azure.ai.inference.models import (
 from ..config import Config
 from jarvus_app.models.history import History
 from ..db import db
-from ..services.agent_service import get_agent, get_agent_tools, get_agent_history, append_message, create_agent, delete_agent, save_interaction
+from ..services.agent_service import get_agent, get_agent_tools, get_agent_history, get_agent_interaction_history, append_message, create_agent, delete_agent, save_interaction
 from ..utils.token_utils import get_valid_jwt_token
 
 jarvus_ai = JarvusAIClient()
@@ -85,8 +85,8 @@ def create_agent_route():
 @login_required
 def get_agent_history_route(agent_id):
     agent = get_agent(agent_id, current_user.id)
-    filtered_history = get_agent_history(agent)
-    return jsonify({'history': filtered_history})
+    interaction_history = get_agent_interaction_history(agent)
+    return jsonify({'history': interaction_history})
 
 @chatbot_bp.route('/send', methods=['POST'])
 @login_required
@@ -325,7 +325,7 @@ def handle_chat_message():
                         # Use the first tool call from the new LLM response
                         current_call = msg.tool_calls[0]
 
-        # Save updated messages to DB (as dicts) - this is the detailed conversation history
+        # Save updated messages to DB (as dicts)
         agent.messages = []
         for m in messages:
             if isinstance(m, UserMessage):
@@ -336,22 +336,22 @@ def handle_chat_message():
                 agent.messages.append({'role': 'system', 'content': m.content})
             else:
                 agent.messages.append({'role': 'user', 'content': getattr(m, 'content', '')})
+        db.session.commit()
         
-        # Save the user-facing interaction history (initial user message + final assistant response)
+        # Save the user input and final assistant response to interaction history
         final_assistant_message = ""
         if new_messages:
-            # Get the last assistant message as the final response
+            # Get the last assistant message from new_messages
             for msg in reversed(new_messages):
                 if msg.get('role') == 'assistant' and msg.get('content'):
                     final_assistant_message = msg.get('content')
                     break
         
-        # Save to interaction history table
-        save_interaction(agent_id, current_user.id, user_text, final_assistant_message)
+        if final_assistant_message:
+            save_interaction(agent, user_text, final_assistant_message)
         
-        db.session.commit()
         agent = get_agent(agent_id, current_user.id)  # Re-fetch from DB
-        return jsonify({"new_messages": new_messages})
+        return jsonify({"new_messages": [final_assistant_message]})
 
     except Exception as e:
         logger.error(f"Error processing message for agent {agent_id}: {str(e)}", exc_info=True)

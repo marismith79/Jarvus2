@@ -205,8 +205,15 @@ async function sendCommand() {
   
         if (Array.isArray(data.new_messages)) {
             data.new_messages.forEach(msg => {
-                const cls = msg.role === 'user' ? 'user' : 'bot';
-                appendMessage(cls, msg.content);
+                // Handle both string messages and object messages
+                if (typeof msg === 'string') {
+                    // If msg is just a string, treat it as assistant content
+                    appendMessage('bot', msg);
+                } else if (msg.role && msg.content) {
+                    // If msg is an object with role and content
+                    const cls = msg.role === 'user' ? 'user' : 'bot';
+                    appendMessage(cls, msg.content);
+                }
             });
         }
     } catch (err) {
