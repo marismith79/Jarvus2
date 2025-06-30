@@ -1,0 +1,105 @@
+{
+  "benchmark_info": {
+    "task": "go to google.com",
+    "examples_file": "1",
+    "headless": true,
+    "runs_with_examples": 1,
+    "runs_without_examples": 5,
+    "total_benchmark_time": 30.258485078811646,
+    "started_at": "2025-06-27T14:51:00.772437"
+  },
+  "statistics": {
+    "with_examples": {
+      "count": 1,
+      "success_count": 1,
+      "success_rate": 100.0,
+      "avg_time": 17.99957299232483,
+      "min_time": 17.99957299232483,
+      "max_time": 17.99957299232483,
+      "median_time": 17.99957299232483,
+      "avg_steps": 0,
+      "min_steps": 0,
+      "max_steps": 0
+    },
+    "without_examples": {
+      "count": 5,
+      "success_count": 5,
+      "success_rate": 100.0,
+      "avg_time": 16.76099181175232,
+      "min_time": 13.797890901565552,
+      "max_time": 17.999986171722412,
+      "median_time": 17.5484619140625,
+      "avg_steps": 0.4,
+      "min_steps": 0,
+      "max_steps": 1
+    }
+  },
+  "individual_results": [
+    {
+      "run_id": "without_examples_1",
+      "has_examples": false,
+      "success": true,
+      "execution_time": 16.459604024887085,
+      "error": null,
+      "result": "AgentHistoryList(all_results=[ActionResult(is_done=False, success=None, error=None, attachments=None, long_term_memory='Navigated to https://www.google.com', extracted_content='\ud83d\udd17 Navigated to https://www.google.com', include_extracted_content_only_once=False, include_in_memory=True), ActionResult(is_done=True, success=True, error=None, attachments=[], long_term_memory='Task completed: True - Successfully navigated to google.com as requested.', extracted_content='Successfully navigated to google.com as requested.', include_extracted_content_only_once=False, include_in_memory=False)], all_model_outputs=[{'go_to_url': {'url': 'https://www.google.com'}, 'interacted_element': None}, {'done': {'text': 'Successfully navigated to google.com as requested.', 'success': True}, 'interacted_element': None}])",
+      "steps_taken": 1,
+      "start_time": "14:50:30",
+      "end_time": "14:50:46"
+    },
+    {
+      "run_id": "without_examples_4",
+      "has_examples": false,
+      "success": true,
+      "execution_time": 17.5484619140625,
+      "error": null,
+      "result": "AgentHistoryList(all_results=[], all_model_outputs=[])",
+      "steps_taken": 0,
+      "start_time": "14:50:30",
+      "end_time": "14:50:48"
+    },
+    {
+      "run_id": "with_examples_1",
+      "has_examples": true,
+      "success": true,
+      "execution_time": 17.99957299232483,
+      "error": null,
+      "result": "AgentHistoryList(all_results=[], all_model_outputs=[])",
+      "steps_taken": 0,
+      "start_time": "14:50:30",
+      "end_time": "14:50:48"
+    },
+    {
+      "run_id": "without_examples_2",
+      "has_examples": false,
+      "success": true,
+      "execution_time": 17.999016046524048,
+      "error": null,
+      "result": "AgentHistoryList(all_results=[], all_model_outputs=[])",
+      "steps_taken": 0,
+      "start_time": "14:50:30",
+      "end_time": "14:50:48"
+    },
+    {
+      "run_id": "without_examples_3",
+      "has_examples": false,
+      "success": true,
+      "execution_time": 17.999986171722412,
+      "error": null,
+      "result": "AgentHistoryList(all_results=[], all_model_outputs=[])",
+      "steps_taken": 0,
+      "start_time": "14:50:30",
+      "end_time": "14:50:48"
+    },
+    {
+      "run_id": "without_examples_5",
+      "has_examples": false,
+      "success": true,
+      "execution_time": 13.797890901565552,
+      "error": null,
+      "result": "AgentHistoryList(all_results=[ActionResult(is_done=False, success=None, error=None, attachments=None, long_term_memory='Navigated to https://www.google.com', extracted_content='\ud83d\udd17 Navigated to https://www.google.com', include_extracted_content_only_once=False, include_in_memory=True), ActionResult(is_done=True, success=True, error=None, attachments=[], long_term_memory='Task completed: True - I have successfully navigated to the Google homepage as requested.', extracted_content='I have successfully navigated to the Google homepage as requested.', include_extracted_content_only_once=False, include_in_memory=False)], all_model_outputs=[{'go_to_url': {'url': 'https://www.google.com'}, 'interacted_element': None}, {'done': {'text': 'I have successfully navigated to the Google homepage as requested.', 'success': True}, 'interacted_element': None}])",
+      "steps_taken": 1,
+      "start_time": "14:50:46",
+      "end_time": "14:51:00"
+    }
+  ]
+}

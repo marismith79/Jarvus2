@@ -1,0 +1,61 @@
+{
+  "benchmark_info": {
+    "task": "go through ycombinator.com and travel to the startup directory. On the startup directory page, filter for startups that are in fintech. Click on the first startup that appears on the list and travel to their company website. On the company website, find the privacy policy and return the contents of it. If you cannot find a privacy policy, go back to the ycombinator page and go to the next company. You are finished once one privacy policy has been found.",
+    "examples_file": "example.json",
+    "headless": true,
+    "runs_with_examples": 1,
+    "runs_without_examples": 1,
+    "total_benchmark_time": 2.085928201675415,
+    "started_at": "2025-06-27T15:41:48.094731"
+  },
+  "statistics": {
+    "with_examples": {
+      "count": 1,
+      "success_count": 0,
+      "success_rate": 0.0,
+      "avg_time": 0,
+      "min_time": 0,
+      "max_time": 0,
+      "median_time": 0,
+      "avg_steps": 0,
+      "min_steps": 0,
+      "max_steps": 0
+    },
+    "without_examples": {
+      "count": 1,
+      "success_count": 0,
+      "success_rate": 0.0,
+      "avg_time": 0,
+      "min_time": 0,
+      "max_time": 0,
+      "median_time": 0,
+      "avg_steps": 0,
+      "min_steps": 0,
+      "max_steps": 0
+    }
+  },
+  "individual_results": [
+    {
+      "run_id": "with_examples_1",
+      "has_examples": true,
+      "success": false,
+      "execution_time": 2.0855836868286133,
+      "error": "Agent.__init__() got an unexpected keyword argument 'headless'",
+      "result": null,
+      "steps_taken": null,
+      "start_time": "15:41:46",
+      "end_time": "15:41:48"
+    },
+    {
+      "run_id": "without_examples_1",
+      "has_examples": false,
+      "success": false,
+      "execution_time": 1.1918799877166748,
+      "error": "Agent.__init__() got an unexpected keyword argument 'headless'",
+      "result": null,
+      "steps_taken": null,
+      "start_time": "15:41:46",
+      "end_time": "15:41:48"
+    }
+  ]
+}
