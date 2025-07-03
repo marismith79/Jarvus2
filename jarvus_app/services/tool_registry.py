@@ -263,7 +263,7 @@ from .tools import (
     register_docs_tools,
     register_sheets_tools,
     register_slides_tools,
-    register_web_tools
+    register_web_search_tools
 )
 
 # Register all tools
@@ -273,4 +273,4 @@ register_drive_tools(tool_registry)
 register_docs_tools(tool_registry)
 register_sheets_tools(tool_registry)
 register_slides_tools(tool_registry)
-register_web_tools(tool_registry) 
+register_web_search_tools(tool_registry) 

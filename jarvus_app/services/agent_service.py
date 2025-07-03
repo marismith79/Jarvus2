@@ -1,4 +1,4 @@
-from jarvus_app.models.history import History
+from jarvus_app.models.history import History, InteractionHistory
 from flask_login import current_user
 from flask import abort
 from ..db import db
@@ -9,16 +9,53 @@ logger = logging.getLogger(__name__)
 # --- Agent Service Functions ---
 
 def get_agent(agent_id, user_id):
-    return History.query.filter_by(id=agent_id, user_id=user_id).first_or_404()
+    agent = History.query.filter_by(id=agent_id, user_id=user_id).first_or_404()
+    # Refresh the specific object to ensure we have the latest data
+    try:
+        db.session.refresh(agent)
+    except:
+        # If refresh fails, the object might not be in the session, which is fine
+        pass
+    return agent
 
 def get_agent_tools(agent):
     return agent.tools or []
 
 def get_agent_history(agent):
     logger.info(f"[DEBUG] get_agent_history called with agent.messages: {agent.messages}")
-    filtered = [msg for msg in agent.messages if msg.get('role') in ['user', 'assistant'] and msg.get('content')]
+    messages = agent.messages or []
+    logger.info(f"[DEBUG] Total messages in agent: {len(messages)}")
+    
+    # Return all messages in chronological order (user + assistant pairs)
+    # Filter out any messages without content
+    filtered = []
+    for msg in messages:
+        if msg.get('content') and msg.get('role') in ['user', 'assistant']:
+            filtered.append(msg)
+            logger.info(f"[DEBUG] Added message: {msg.get('role')} - {msg.get('content', '')[:50]}...")
+    
     logger.info(f"[DEBUG] get_agent_history filtered result: {filtered}")
     return filtered
+
+def get_agent_interaction_history(agent):
+    """Get only user input and final assistant responses for frontend display"""
+    interactions = InteractionHistory.query.filter_by(
+        history_id=agent.id, 
+        user_id=agent.user_id
+    ).order_by(InteractionHistory.created_at.asc()).all()
+    
+    history = []
+    for interaction in interactions:
+        history.append({
+            'role': 'user',
+            'content': interaction.user_message
+        })
+        history.append({
+            'role': 'assistant', 
+            'content': interaction.assistant_message
+        })
+    
+    return history
 
 def get_agent_full_history(agent):
     """Get full conversation history including tool messages for LLM processing"""
@@ -27,6 +64,18 @@ def get_agent_full_history(agent):
 def append_message(agent, message):
     agent.messages.append(message)
     return agent
+
+def save_interaction(agent, user_message, assistant_message):
+    """Save a user-assistant interaction pair to InteractionHistory"""
+    interaction = InteractionHistory(
+        history_id=agent.id,
+        user_id=agent.user_id,
+        user_message=user_message,
+        assistant_message=assistant_message
+    )
+    db.session.add(interaction)
+    db.session.commit()
+    return interaction
 
 def create_agent(user_id, name, tools=None, description=None):
     if not name:

@@ -21,7 +21,7 @@
                 {% for agent in agents %}
                 <div class="chat-item" data-agent-id="{{ agent.id }}">
                     <span class="agent-name">{{ agent.name }}</span>
-                    <button class="delete-agent-btn" onclick="deleteAgent({{ agent.id }})" title="Delete agent">
+                    <button class="delete-agent-btn" onclick="deleteAgent('{{ agent.id }}')" title="Delete agent">
                         <svg class="trash-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
@@ -34,12 +34,25 @@
 
     <!-- Chat Main Area -->
     <section class="chatbot-card" id="main-chat-area" {% if not most_recent_agent %}style="display:none"{% endif %}>
+
+        <!-- Web Search Toggle -->
+        <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+            <label for="web-search-toggle" style="margin-right: 0.5rem; font-weight: 500;">Enable Web Search</label>
+            <input type="checkbox" id="web-search-toggle" checked />
+        </div>
+
+        <!-- Greeting Section -->
+        <div class="greeting-section">
+            <div id="agent-greeting" class="greeting-title">Select an agent to start chatting</div>
+            <div id="agent-subtitle" class="greeting-subtitle">Choose an agent from the sidebar or create a new one</div>
+        </div>
+        
         <!-- Chat history -->
         <div id="chat-history" class="chat-history"></div>
         <!-- Chat input bar -->
         <form class="chat-input-bar" onsubmit="event.preventDefault(); sendCommand();">
             <input type="text" id="chat-input" class="chat-input" placeholder="Ask or search for anything..." autocomplete="off">
-            <button type="submit" class="icon-btn send-btn" id="send-btn">➔</button>
+            <button type="submit" class="icon-btn send-btn" id="send-btn">→</button>
         </form>
     </section>
 
