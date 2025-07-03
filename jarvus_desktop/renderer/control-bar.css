@@ -16,32 +16,34 @@ body {
 
 /* Control bar container */
 .control-bar-container {
-    position: relative;
-    width: 100vw;
-    height: 100vh;
-    pointer-events: none;
+    position: fixed;
+    top: 23px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    width: auto;
+    height: auto;
+    pointer-events: auto;
+    overflow: visible;
 }
 
 /* Main control bar */
 .control-bar {
-    position: absolute;
-    top: 23px;
-    left: 50%;
-    transform: translateX(-50%);
+    position: relative;
     width: 300px;
     height: 30px;
-    background: rgba(0, 0, 0, 0.7); /* Semi-translucent grey */
+    background: rgba(0, 0, 0, 0.7);
     border-radius: 30px;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-    border: none;
+    border: 1px solid #585656;
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0 16px;
     pointer-events: auto;
     transition: all 0.3s ease;
-    border: 1px solid #585656;
-    /* Prevent vertical movement visually */
+    z-index: 10;
+    overflow: visible;
 }
 
 .control-bar:hover {
@@ -95,121 +97,85 @@ body {
     color: #fff;
 }
 
-/* Chat area */
-.chat-area {
-    position: absolute;
-    top: 50px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 320px;
-    max-height: 300px;
-    background: #333;
+/* New chat popup styles (now child of control bar) */
+.chat-popup {
+    position: fixed;
+    /* top, left will be set by JS */
+    width: 300px;
+    background: rgba(0, 0, 0, 0.7);
     border-radius: 20px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-    border: none;
+    border: 1px solid #585656;
+    color: #fff;
+    z-index: 100;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    display: none;
+    flex-direction: column;
     pointer-events: auto;
-    overflow: hidden;
-    transition: all 0.3s ease;
+    overflow: visible;
 }
 
-.chat-area.show {
-    display: block;
-    animation: slideDown 0.3s ease;
+.chat-popup.open {
+    display: flex;
 }
 
-@keyframes slideDown {
-    from {
-        opacity: 0;
-        transform: translateX(-50%) translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(-50%) translateY(0);
-    }
-}
-
-/* Chat messages */
-.chat-messages {
-    padding: 12px;
-    max-height: 200px;
+.chat-popup-messages {
+    padding: 10px 10px 6px 10px;
+    max-height: 120px;
     overflow-y: auto;
-}
-
-.chat-message {
-    margin-bottom: 8px;
-    padding: 8px 12px;
-    border-radius: 16px;
+    color: #fff;
     font-size: 12px;
-    line-height: 1.4;
-    word-wrap: break-word;
-    color: #fff;
-    background: #444;
+    border-bottom-left-radius: 20px;
+    border-bottom-right-radius: 20px;
+    min-height: 0;
 }
 
-.chat-message.user {
-    background: #555;
-    color: #fff;
-    margin-left: 30px;
-    border-bottom-right-radius: 6px;
-}
-
-.chat-message.assistant {
-    background: #444;
-    color: #fff;
-    margin-right: 30px;
-    border-bottom-left-radius: 6px;
-}
-
-/* Chat input container */
-.chat-input-container {
+.chat-popup-input-row {
     display: flex;
     align-items: center;
-    padding: 10px 12px;
-    border-top: 1px solid rgba(255,255,255,0.08);
-    background: #333;
+    padding: 8px 10px;
+    border-bottom: 1px solid #585656;
+    background: rgba(0, 0, 0, 0.7); /* match popup background */
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
 }
 
-.chat-input {
-    flex: 1;
+.chat-popup-input {
+    /* flex: 1; */
     border: none;
     outline: none;
-    background: #444;
-    border-radius: 20px;
-    padding: 8px 14px;
+    background: rgba(255,255,255,0.08); /* subtle see-through */
+    border-radius: 16px;
+    padding: 6px 12px;
     font-size: 12px;
     color: #fff;
     margin-right: 6px;
+    box-shadow: none;
 }
 
-.chat-input::placeholder {
+.chat-popup-input::placeholder {
     color: #bbb;
 }
 
-.send-button {
+.chat-popup-send {
     background: #007AFF;
     border: none;
-    border-radius: 50%;
-    width: 28px;
+    border-radius: 16px;
+    padding: 0 14px;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+    min-width: 44px;
     height: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
-    color: white;
-    transition: all 0.2s ease;
+    line-height: 1;
 }
 
-.send-button svg {
-    color: #fff;
-}
-
-.send-button:hover {
+.chat-popup-send:hover {
     background: #0056CC;
-    transform: scale(1.05);
-}
-
-.send-button:active {
-    transform: scale(0.95);
 }
 
 /* Scrollbar styling for chat messages */

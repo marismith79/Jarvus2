@@ -2,19 +2,17 @@
 class ControlBar {
     constructor() {
         this.controlBar = document.getElementById('controlBar');
-        this.chatArea = document.getElementById('chatArea');
-        this.chatButton = document.getElementById('chatButton');
         this.loginButton = document.getElementById('loginButton');
+        this.chatButton = document.getElementById('chatButton');
         this.optionsButton = document.getElementById('optionsButton');
-        this.chatInput = document.getElementById('chatInput');
-        this.sendButton = document.getElementById('sendButton');
-        this.chatMessages = document.getElementById('chatMessages');
-        
+        this.chatPopup = document.getElementById('chatPopup');
+        this.chatPopupMessages = document.getElementById('chatPopupMessages');
+        this.chatPopupInput = document.getElementById('chatPopupInput');
+        this.chatPopupSend = document.getElementById('chatPopupSend');
         this.isDragging = false;
         this.dragStartX = 0;
         this.windowStartX = 0;
         this.isChatOpen = false;
-        
         this.initializeEventListeners();
     }
     
@@ -23,10 +21,8 @@ class ControlBar {
         this.loginButton.addEventListener('click', this.handleLoginClick.bind(this));
         this.chatButton.addEventListener('click', this.handleChatClick.bind(this));
         this.optionsButton.addEventListener('click', this.handleOptionsClick.bind(this));
-        this.sendButton.addEventListener('click', this.handleSendMessage.bind(this));
-        
-        // Chat input handlers
-        this.chatInput.addEventListener('keypress', this.handleChatInputKeypress.bind(this));
+        this.chatPopupSend.addEventListener('click', this.handleSendMessage.bind(this));
+        this.chatPopupInput.addEventListener('keypress', this.handleInputKeypress.bind(this));
         
         // Dragging handlers
         this.controlBar.addEventListener('mousedown', this.handleMouseDown.bind(this));
@@ -38,57 +34,65 @@ class ControlBar {
         
         // Handle window resize
         window.addEventListener('resize', this.handleWindowResize.bind(this));
+        
+        // Mouse enter/leave for click-through logic
+        this.controlBar.addEventListener('mouseenter', () => {
+            window.electronAPI.setIgnoreMouseEvents(false);
+        });
+        this.controlBar.addEventListener('mouseleave', (e) => {
+            // Only re-enable click-through if not hovering popup
+            if (!this.chatPopup.matches(':hover')) {
+                window.electronAPI.setIgnoreMouseEvents(true);
+            }
+        });
+        this.chatPopup.addEventListener('mouseenter', () => {
+            window.electronAPI.setIgnoreMouseEvents(false);
+        });
+        this.chatPopup.addEventListener('mouseleave', (e) => {
+            // Only re-enable click-through if not hovering bar
+            if (!this.controlBar.matches(':hover')) {
+                window.electronAPI.setIgnoreMouseEvents(true);
+            }
+        });
     }
     
     handleLoginClick() {
         console.log('Login button clicked');
-        window.electronAPI.loginClick().then(() => {
-            // Handle login response
-            this.addMessage('System', 'Login functionality will be implemented soon.', 'assistant');
-        });
+        window.electronAPI.loginClick();
     }
     
     handleChatClick() {
-        this.toggleChat();
+        this.isChatOpen = !this.isChatOpen;
+        console.log('[DEBUG] Chat button clicked. isChatOpen:', this.isChatOpen);
+        if (this.isChatOpen) {
+            this.positionChatPopup();
+            this.chatPopup.classList.add('open');
+            this.chatPopupInput.focus();
+            console.log('[DEBUG] chatPopup after open:', this.chatPopup, this.chatPopup.getBoundingClientRect(), window.getComputedStyle(this.chatPopup));
+        } else {
+            this.chatPopup.classList.remove('open');
+            console.log('[DEBUG] chatPopup after close:', this.chatPopup, this.chatPopup.getBoundingClientRect(), window.getComputedStyle(this.chatPopup));
+        }
     }
     
     handleOptionsClick() {
         console.log('Options button clicked');
-        window.electronAPI.optionsClick().then(() => {
-            // Handle options response
-            this.addMessage('System', 'Options menu will be implemented soon.', 'assistant');
-        });
-    }
-    
-    toggleChat() {
-        this.isChatOpen = !this.isChatOpen;
-        
-        if (this.isChatOpen) {
-            this.chatArea.style.display = 'block';
-            this.chatArea.classList.add('show');
-            this.chatInput.focus();
-        } else {
-            this.chatArea.classList.remove('show');
-            setTimeout(() => {
-                this.chatArea.style.display = 'none';
-            }, 300);
-        }
+        window.electronAPI.optionsClick();
     }
     
     handleSendMessage() {
-        const message = this.chatInput.value.trim();
+        const message = this.chatPopupInput.value.trim();
         if (message) {
             this.addMessage('You', message, 'user');
-            this.chatInput.value = '';
-            
-            // Simulate AI response (replace with actual API call)
+            this.chatPopupInput.value = '';
+            // Simulate assistant response
             setTimeout(() => {
-                this.addMessage('Assistant', 'This is a placeholder response. Chat functionality will be integrated with your Flask backend soon.', 'assistant');
+                this.addMessage('Assistant', 'This is a placeholder response.', 'assistant');
             }, 1000);
         }
     }
     
-    handleChatInputKeypress(event) {
+    handleInputKeypress(event) {
         if (event.key === 'Enter') {
             this.handleSendMessage();
         }
@@ -98,9 +102,8 @@ class ControlBar {
         const messageDiv = document.createElement('div');
         messageDiv.className = `chat-message ${type}`;
         messageDiv.textContent = text;
-        
-        this.chatMessages.appendChild(messageDiv);
-        this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+        this.chatPopupMessages.appendChild(messageDiv);
+        this.chatPopupMessages.scrollTop = this.chatPopupMessages.scrollHeight;
     }
     
     handleMouseDown(event) {
@@ -109,12 +112,10 @@ class ControlBar {
         this.isDragging = true;
         this.dragStartX = event.screenX;
         this.windowStartX = 0;
-        
         // Get current window position from main process
         window.electronAPI.getWindowBounds().then(bounds => {
             this.windowStartX = bounds.x;
         });
-        
         // Prevent text selection
         document.body.style.userSelect = 'none';
     }
@@ -127,6 +128,10 @@ class ControlBar {
             const maxX = window.screen.width - 300; // control bar width
             const constrainedX = Math.max(0, Math.min(newX, maxX));
             window.electronAPI.setWindowPosition(constrainedX, 20);
+            // Reposition chat popup if open
+            if (this.isChatOpen) {
+                this.positionChatPopup();
+            }
         }
     }
     
@@ -142,23 +147,45 @@ class ControlBar {
         // Reposition control bar if needed
         const controlBarRect = this.controlBar.getBoundingClientRect();
         const maxX = window.innerWidth - controlBarRect.width;
-        
         if (controlBarRect.left > maxX) {
             this.controlBar.style.left = `${maxX}px`;
             this.controlBar.style.transform = 'none';
         }
+        // Reposition chat popup if open
+        if (this.isChatOpen) {
+            this.positionChatPopup();
+        }
+    }
+
+    positionChatPopup() {
+        // Get the bounding rect of the control bar
+        const barRect = this.controlBar.getBoundingClientRect();
+        // Set the popup width to match the control bar
+        this.chatPopup.style.width = `${barRect.width}px`;
+        // Calculate vertical position
+        const gap = 6;
+        let top = barRect.bottom + gap;
+        // If popup would overflow window, show above the bar
+        const popupHeight = this.chatPopup.offsetHeight || 180; // fallback height
+        if (top + popupHeight > window.innerHeight) {
+            top = barRect.top - popupHeight - gap;
+        }
+        this.chatPopup.style.left = `${barRect.left}px`;
+        this.chatPopup.style.top = `${top}px`;
+        console.log('[DEBUG] positionChatPopup:', {
+            left: this.chatPopup.style.left,
+            top: this.chatPopup.style.top,
+            width: this.chatPopup.style.width,
+            barRect,
+            popupRect: this.chatPopup.getBoundingClientRect(),
+            computed: window.getComputedStyle(this.chatPopup)
+        });
     }
 }
 
 // Initialize the control bar when the DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     new ControlBar();
-    
-    // Add a welcome message
-    setTimeout(() => {
-        const controlBar = new ControlBar();
-        controlBar.addMessage('System', 'Welcome to Jarvus Desktop! Click the chat button to start a conversation.', 'assistant');
-    }, 500);
 });
 
 // Handle keyboard shortcuts

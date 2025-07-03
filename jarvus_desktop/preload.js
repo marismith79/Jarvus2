@@ -20,5 +20,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   optionsClick: () => ipcRenderer.invoke('options-click'),
   
   // Platform info
-  platform: process.platform
+  platform: process.platform,
+
+  // Click-through toggle
+  setIgnoreMouseEvents: (ignore) => ipcRenderer.send('set-ignore-mouse-events', ignore)
 }); 
