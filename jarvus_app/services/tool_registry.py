@@ -21,6 +21,7 @@ class ToolCategory(Enum):
     MICROSOFT_365 = "microsoft-365"
     CUSTOM = "custom"
     WEB = "web"
+    CHROME = "chrome"
     
     # Google Workspace Service Categories
     GMAIL = "google-workspace.gmail"
@@ -201,7 +202,8 @@ class ToolRegistry:
                     ToolCategory.DRIVE: "Drive",
                     ToolCategory.DOCS: "Docs",
                     ToolCategory.SHEETS: "Sheets",
-                    ToolCategory.SLIDES: "Slides"
+                    ToolCategory.SLIDES: "Slides",
+                    ToolCategory.WEB: "Web"
                 }
                 service_name = service_names.get(category, module_name.title())
                 scope_description = generate_scope_description(user_scopes, service_name)
@@ -251,10 +253,65 @@ def format_calendar_result(result: Any) -> Dict[str, Any]:
     return {"result": str(result)}
 
 
+def format_font_result(result: Any) -> str:
+    """Format font detection results into a human-readable string."""
+    if not isinstance(result, dict):
+        return str(result)
+    
+    if not result.get("success"):
+        return f"Font detection failed: {result.get('error', 'Unknown error')}"
+    
+    font_data = result.get("fonts", {})
+    if not font_data:
+        return "No font data found"
+    
+    # Build a comprehensive font report
+    report = []
+    report.append("🎨 FONT ANALYSIS REPORT")
+    report.append("=" * 50)
+    
+    # Unique fonts
+    unique_fonts = font_data.get("uniqueFonts", [])
+    report.append(f"📝 Unique Fonts Found: {len(unique_fonts)}")
+    for font in unique_fonts:
+        report.append(f"   • {font}")
+    
+    # Font usage statistics
+    font_usage = font_data.get("fontUsage", {})
+    if font_usage:
+        report.append(f"\n📊 FONT USAGE STATISTICS:")
+        for font_name, usage in font_usage.items():
+            report.append(f"\n🔤 {font_name}:")
+            report.append(f"   • Full family: {usage.get('fontFamily', 'Unknown')}")
+            report.append(f"   • Used {usage.get('usageCount', 0)} times")
+            report.append(f"   • Sizes: {', '.join(usage.get('sizes', []))}")
+            report.append(f"   • Weights: {', '.join(usage.get('weights', []))}")
+            report.append(f"   • Elements: {', '.join(usage.get('elements', []))}")
+    
+    # @font-face rules
+    font_faces = font_data.get("fontFaces", [])
+    if font_faces:
+        report.append(f"\n🔗 @FONT-FACE RULES ({len(font_faces)} found):")
+        for face in font_faces[:5]:  # Show first 5
+            report.append(f"   • {face.get('fontFamily', 'Unknown')}: {face.get('src', 'No source')}")
+        if len(font_faces) > 5:
+            report.append(f"   ... and {len(font_faces) - 5} more")
+    
+    # Summary
+    total_elements = font_data.get("totalElements", 0)
+    elements_with_fonts = font_data.get("elementsWithFonts", 0)
+    report.append(f"\n📈 SUMMARY:")
+    report.append(f"   • Total elements analyzed: {total_elements}")
+    report.append(f"   • Elements with fonts: {elements_with_fonts}")
+    report.append(f"   • Font coverage: {(elements_with_fonts/total_elements*100):.1f}%" if total_elements > 0 else "   • Font coverage: N/A")
+    
+    return "\n".join(report)
+
+
 # Instantiate registry
 tool_registry = ToolRegistry()
 
-# Import tool registrations from separate modules
+# Import all tool registration functions
 from .tools import (
     register_gmail_tools,
     register_calendar_tools,
@@ -262,6 +319,7 @@ from .tools import (
     register_docs_tools,
     register_sheets_tools,
     register_slides_tools,
+    register_chrome_tools,
     register_web_search_tools
 )
 
@@ -272,4 +330,5 @@ register_drive_tools(tool_registry)
 register_docs_tools(tool_registry)
 register_sheets_tools(tool_registry)
 register_slides_tools(tool_registry)
+register_chrome_tools(tool_registry)
 register_web_search_tools(tool_registry) 

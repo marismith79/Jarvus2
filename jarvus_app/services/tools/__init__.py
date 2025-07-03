@@ -1,6 +1,7 @@
 """Tool registration modules for different Google Workspace services."""
 
 from .gmail_tools import register_gmail_tools
+from .chrome_tools import register_chrome_tools
 from .calendar_tools import register_calendar_tools
 from .drive_tools import register_drive_tools
 from .docs_tools import register_docs_tools
@@ -15,5 +16,6 @@ __all__ = [
     'register_docs_tools',
     'register_sheets_tools',
     'register_slides_tools',
-    'register_web_search_tools'
+    'register_chrome_tools',
+    'register_web_search_tools',
 ] 
