@@ -21,7 +21,13 @@ function appendMessage(who, text) {
     wrapper.classList.add('message', who);
   
     const p = document.createElement('p');
-    p.innerHTML = text.replace(/\n/g, '<br>');
+    if (who === 'bot' && window.marked) {
+        // Render markdown for bot replies
+        p.innerHTML = window.marked.parse(text);
+    } else {
+        // Render plain text with line breaks for user
+        p.innerHTML = text.replace(/\n/g, '<br>');
+    }
     wrapper.appendChild(p);
   
     history.appendChild(wrapper);
@@ -162,12 +168,17 @@ async function sendCommand() {
   
     const thinkingMsg = appendMessage('bot', '…');
   
+    // Get the web search toggle state
+    const webSearchToggle = document.getElementById('web-search-toggle');
+    const webSearchEnabled = webSearchToggle ? webSearchToggle.checked : true;
+
     const options = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
             message: raw,
-            agent_id: currentAgentId 
+            agent_id: currentAgentId,
+            web_search_enabled: webSearchEnabled
         })
     };
   
@@ -185,8 +196,15 @@ async function sendCommand() {
   
         if (Array.isArray(data.new_messages)) {
             data.new_messages.forEach(msg => {
-                const cls = msg.role === 'user' ? 'user' : 'bot';
-                appendMessage(cls, msg.content);
+                // Handle both string messages and object messages
+                if (typeof msg === 'string') {
+                    // If msg is just a string, treat it as assistant content
+                    appendMessage('bot', msg);
+                } else if (msg.role && msg.content) {
+                    // If msg is an object with role and content
+                    const cls = msg.role === 'user' ? 'user' : 'bot';
+                    appendMessage(cls, msg.content);
+                }
             });
         }
     } catch (err) {

@@ -319,7 +319,8 @@ from .tools import (
     register_docs_tools,
     register_sheets_tools,
     register_slides_tools,
-    register_chrome_tools
+    register_chrome_tools,
+    register_web_search_tools
 )
 
 # Register all tools
@@ -330,11 +331,4 @@ register_docs_tools(tool_registry)
 register_sheets_tools(tool_registry)
 register_slides_tools(tool_registry)
 register_chrome_tools(tool_registry)
-
-# Register web search tools if available
-try:
-    from .tools.web_search_tools import register_web_search_tools
-    register_web_search_tools(tool_registry)
-    print("✅ Web search tools registered successfully")
-except ImportError:
-    print("⚠️  Web search tools not available") 
+register_web_search_tools(tool_registry) 

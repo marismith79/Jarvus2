@@ -17,5 +17,5 @@ __all__ = [
     'register_sheets_tools',
     'register_slides_tools',
     'register_chrome_tools',
-    'register_web_search_tools'
+    'register_web_search_tools',
 ] 

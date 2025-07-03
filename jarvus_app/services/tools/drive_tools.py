@@ -61,7 +61,11 @@ def register_drive_tools(registry: 'ToolRegistry') -> None:
 
     registry.register(ToolMetadata(
         name="update_file",
-        description="Update an existing file in Google Drive",
+        description=(
+            "Update an existing file in Google Drive. "
+            "Do NOT include the parents field in the update body. "
+            "To change parents, use addParents/removeParents query parameters as per Google Drive API."
+        ),
         category=ToolCategory.DRIVE,
         server_path="drive",
         requires_auth=True,

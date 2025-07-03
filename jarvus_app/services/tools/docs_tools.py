@@ -38,7 +38,7 @@ def register_docs_tools(registry: 'ToolRegistry') -> None:
 
     registry.register(ToolMetadata(
         name="update_document",
-        description="Update a Google Docs document",
+        description="Update a Google Docs document that already exists",
         category=ToolCategory.DOCS,
         server_path="docs",
         requires_auth=True,
@@ -52,7 +52,7 @@ def register_docs_tools(registry: 'ToolRegistry') -> None:
 
     registry.register(ToolMetadata(
         name="batch_update_document",
-        description="Batch update a Google Docs document",
+        description="Batch update a Google Docs document that already exists",
         category=ToolCategory.DOCS,
         server_path="docs",
         requires_auth=True,
