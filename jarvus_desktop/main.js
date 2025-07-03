@@ -1,6 +1,9 @@
 const { app, BrowserWindow, ipcMain, screen, globalShortcut } = require('electron');
 const path = require('path');
 const Store = require('electron-store');
+const { spawn } = require('child_process');
+const os = require('os');
+const fs = require('fs');
 
 const store = new Store();
 
@@ -8,6 +11,7 @@ let controlBarWindow = null;
 let isDragging = false;
 let dragStartX = 0;
 let windowStartX = 0;
+let chromeProcess = null;
 
 function createControlBarWindow() {
   const primaryDisplay = screen.getPrimaryDisplay();
@@ -121,10 +125,200 @@ function createControlBarWindow() {
   });
 }
 
+function getChromePath() {
+  const platform = os.platform();
+  
+  if (platform === 'darwin') {
+    return '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+  } else if (platform === 'win32') {
+    return 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+  } else if (platform === 'linux') {
+    return '/usr/bin/google-chrome';
+  } else {
+    throw new Error(`Unsupported platform: ${platform}`);
+  }
+}
+
+function getUserProfilePath() {
+  const platform = os.platform();
+  const home = os.homedir();
+  
+  if (platform === 'darwin') {
+    return path.join(home, 'Library', 'Application Support', 'Google', 'Chrome');
+  } else if (platform === 'win32') {
+    return path.join(home, 'AppData', 'Local', 'Google', 'Chrome', 'User Data');
+  } else if (platform === 'linux') {
+    return path.join(home, '.config', 'google-chrome');
+  } else {
+    throw new Error(`Unsupported platform: ${platform}`);
+  }
+}
+
+function getDebugProfilePath() {
+  const platform = os.platform();
+  const home = os.homedir();
+  
+  if (platform === 'darwin') {
+    return path.join(home, 'Desktop', 'Private Chrome Data Sync');
+  } else if (platform === 'win32') {
+    return path.join(home, 'Desktop', 'Private Chrome Data Sync');
+  } else if (platform === 'linux') {
+    return path.join(home, 'Desktop', 'Private Chrome Data Sync');
+  } else {
+    throw new Error(`Unsupported platform: ${platform}`);
+  }
+}
+
+function copyProfileData(sourceProfile, targetProfile) {
+  try {
+    // Remove existing debug profile directory if it exists
+    if (fs.existsSync(targetProfile)) {
+      console.log('[MAIN] Removing existing debug profile...');
+      fs.rmSync(targetProfile, { recursive: true, force: true });
+    }
+    
+    // Create fresh target directory
+    fs.mkdirSync(targetProfile, { recursive: true });
+    
+    console.log('[MAIN] Starting profile data copy...');
+    
+    // Copy all profile folders (Default, Profile 1, Profile 2, etc.)
+    const items = fs.readdirSync(sourceProfile);
+    
+    for (const item of items) {
+      const sourcePath = path.join(sourceProfile, item);
+      const targetPath = path.join(targetProfile, item);
+      
+      // Skip certain files/folders that shouldn't be copied
+      if (['Crashpad', 'Crash Reports', 'Network', 'Network Persistent State', 'Service Worker'].includes(item)) {
+        continue;
+      }
+      
+      const stats = fs.statSync(sourcePath);
+      
+      if (stats.isDirectory()) {
+        // Copy entire profile directories
+        if (!fs.existsSync(targetPath)) {
+          fs.mkdirSync(targetPath, { recursive: true });
+        }
+        
+        // Copy all files in the profile directory
+        const profileFiles = fs.readdirSync(sourcePath);
+        for (const file of profileFiles) {
+          const sourceFile = path.join(sourcePath, file);
+          const targetFile = path.join(targetPath, file);
+          
+          try {
+            fs.copyFileSync(sourceFile, targetFile);
+            console.log(`[MAIN] Copied ${item}/${file}`);
+          } catch (copyError) {
+            console.log(`[MAIN] Skipped ${item}/${file} (may be locked)`);
+          }
+        }
+      } else {
+        // Copy root level files
+        try {
+          fs.copyFileSync(sourcePath, targetPath);
+          console.log(`[MAIN] Copied ${item}`);
+        } catch (copyError) {
+          console.log(`[MAIN] Skipped ${item} (may be locked)`);
+        }
+      }
+    }
+    
+    console.log('[MAIN] Profile data copied successfully');
+    console.log(`[MAIN] Debug profile location: ${targetProfile}`);
+    
+  } catch (error) {
+    console.error('[MAIN] Error copying profile data:', error);
+  }
+}
+
+function launchChromeWithDebugging() {
+  try {
+    const chromePath = getChromePath();
+    const userProfile = getUserProfilePath();
+    const debugProfile = getDebugProfilePath();
+    const debugPort = 9222;
+    
+    console.log('[MAIN] Launching Chrome with remote debugging...');
+    console.log(`[MAIN] Chrome path: ${chromePath}`);
+    console.log(`[MAIN] Debug port: ${debugPort}`);
+    console.log(`[MAIN] User profile: ${userProfile}`);
+    console.log(`[MAIN] Debug profile: ${debugProfile}`);
+    
+    // Copy profile data to debug profile
+    copyProfileData(userProfile, debugProfile);
+    
+    const chromeArgs = [
+      `--remote-debugging-port=${debugPort}`,
+      `--user-data-dir=${debugProfile}`,
+      '--no-first-run',
+      '--no-default-browser-check',
+      '--disable-background-timer-throttling',
+      '--disable-backgrounding-occluded-windows',
+      '--disable-renderer-backgrounding',
+      '--disable-features=TranslateUI',
+      '--disable-ipc-flooding-protection',
+      '--new-window',
+      '--force-new-window',
+      '--disable-session-crashed-bubble',
+      '--disable-infobars',
+      '--disable-web-security',
+      '--disable-features=VizDisplayCompositor',
+      '--no-default-browser-check',
+      '--disable-default-apps',
+      '--disable-sync',
+      '--disable-background-networking',
+      '--disable-component-extensions-with-background-pages',
+      '--disable-extensions-file-access-check',
+      '--disable-extensions-http-throttling',
+      '--disable-hang-monitor',
+      '--disable-prompt-on-repost',
+      '--disable-domain-reliability',
+      '--disable-client-side-phishing-detection',
+      '--disable-component-update',
+      '--disable-background-mode'
+    ];
+    
+    chromeProcess = spawn(chromePath, chromeArgs, {
+      stdio: 'pipe',
+      detached: false
+    });
+    
+    chromeProcess.stdout.on('data', (data) => {
+      console.log(`[CHROME] ${data.toString().trim()}`);
+    });
+    
+    chromeProcess.stderr.on('data', (data) => {
+      console.log(`[CHROME ERROR] ${data.toString().trim()}`);
+    });
+    
+    chromeProcess.on('close', (code) => {
+      console.log(`[MAIN] Chrome process exited with code ${code}`);
+      chromeProcess = null;
+    });
+    
+    chromeProcess.on('error', (error) => {
+      console.error('[MAIN] Failed to start Chrome:', error);
+      chromeProcess = null;
+    });
+    
+    console.log(`[MAIN] Chrome launched with PID: ${chromeProcess.pid}`);
+    console.log(`[MAIN] DevTools Protocol available at: http://localhost:${debugPort}`);
+    
+  } catch (error) {
+    console.error('[MAIN] Error launching Chrome:', error);
+  }
+}
+
 // App event handlers
 app.whenReady().then(() => {
   createControlBarWindow();
   console.log('[MAIN] App ready, control bar window created');
+  
+  // Launch Chrome with remote debugging
+  launchChromeWithDebugging();
 
   // Register DevTools shortcut
   globalShortcut.register('CommandOrControl+Alt+I', () => {
@@ -154,6 +348,26 @@ app.on('before-quit', (event) => {
   event.preventDefault();
   app.hide();
   console.log('[MAIN] App before quit, hiding');
+});
+
+// Clean up Chrome process when app quits
+app.on('will-quit', () => {
+  if (chromeProcess) {
+    console.log('[MAIN] Terminating Chrome process...');
+    chromeProcess.kill();
+  }
+  
+  // Clean up debug profile
+  try {
+    const debugProfile = getDebugProfilePath();
+    if (fs.existsSync(debugProfile)) {
+      console.log('[MAIN] Cleaning up debug profile...');
+      fs.rmSync(debugProfile, { recursive: true, force: true });
+      console.log('[MAIN] Debug profile cleaned up');
+    }
+  } catch (error) {
+    console.error('[MAIN] Error cleaning up debug profile:', error);
+  }
 });
 
 // Handle app hiding/showing
