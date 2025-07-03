@@ -1,0 +1,24 @@
+const { contextBridge, ipcRenderer } = require('electron');
+
+// Expose protected methods that allow the renderer process to use
+// the ipcRenderer without exposing the entire object
+contextBridge.exposeInMainWorld('electronAPI', {
+  // Window management
+  getWindowBounds: () => ipcRenderer.invoke('get-window-bounds'),
+  setWindowPosition: (x, y) => ipcRenderer.invoke('set-window-position', x, y),
+  showWindow: () => ipcRenderer.invoke('show-window'),
+  hideWindow: () => ipcRenderer.invoke('hide-window'),
+  
+  // Dragging
+  startDrag: (startX) => ipcRenderer.send('start-drag', startX),
+  drag: (currentX) => ipcRenderer.send('drag', currentX),
+  endDrag: () => ipcRenderer.send('end-drag'),
+  
+  // Button actions
+  loginClick: () => ipcRenderer.invoke('login-click'),
+  chatClick: () => ipcRenderer.invoke('chat-click'),
+  optionsClick: () => ipcRenderer.invoke('options-click'),
+  
+  // Platform info
+  platform: process.platform
+}); 
