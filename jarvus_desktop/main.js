@@ -77,12 +77,6 @@ function createControlBarWindow() {
     console.log('[MAIN] Control bar window closed (hidden)');
   });
 
-  // Handle window focus to prevent stealing focus from other apps
-  controlBarWindow.on('focus', () => {
-    controlBarWindow.blur();
-    console.log('[MAIN] Control bar window focused (blurred to avoid stealing focus)');
-  });
-
   // Handle IPC messages from renderer
   ipcMain.handle('get-window-bounds', () => {
     return controlBarWindow.getBounds();
@@ -305,9 +299,9 @@ function copyProfileData(sourceProfile, targetProfile) {
         // Copy root level files
         try {
           fs.copyFileSync(sourcePath, targetPath);
-          console.log(`[MAIN] Copied ${item}`);
+          // console.log(`[MAIN] Copied ${item}`);
         } catch (copyError) {
-          console.log(`[MAIN] Skipped ${item} (may be locked)`);
+          // console.log(`[MAIN] Skipped ${item} (may be locked)`);
         }
       }
     }

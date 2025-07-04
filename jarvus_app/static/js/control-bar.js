@@ -186,15 +186,54 @@ class ControlBar {
         window.electronAPI.optionsClick();
     }
     
-    handleSendMessage() {
+    async handleSendMessage() {
         const message = this.chatPopupInput.value.trim();
         if (message) {
             this.addMessage('You', message, 'user');
             this.chatPopupInput.value = '';
-            // Simulate assistant response
-            setTimeout(() => {
-                this.addMessage('Assistant', 'This is a placeholder response.', 'assistant');
-            }, 1000);
+            // Ensure we have the most recent agent
+            if (!this.mostRecentAgentId) {
+                await this.fetchMostRecentAgent();
+            }
+            const agentId = this.mostRecentAgentId;
+            // Show thinking message
+            const thinkingDiv = this.addMessage('Assistant', '…', 'assistant');
+            try {
+                if (!agentId) {
+                    this.addMessage('Assistant', '⚠️ No agent available. Please create an agent first.', 'assistant');
+                    if (thinkingDiv) thinkingDiv.remove();
+                    return;
+                }
+                const res = await fetch('/chatbot/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: message,
+                        agent_id: agentId,
+                        web_search_enabled: true
+                    })
+                });
+                const data = await res.json();
+                if (thinkingDiv) thinkingDiv.remove();
+                if (data.error) {
+                    this.addMessage('Assistant', `⚠️ Error: ${data.error}`, 'assistant');
+                    return;
+                }
+                if (Array.isArray(data.new_messages)) {
+                    data.new_messages.forEach(msg => {
+                        if (typeof msg === 'string') {
+                            this.addMessage('Assistant', msg, 'assistant');
+                        } else if (msg.role && msg.content) {
+                            const sender = msg.role === 'user' ? 'You' : 'Assistant';
+                            const type = msg.role === 'user' ? 'user' : 'assistant';
+                            this.addMessage(sender, msg.content, type);
+                        }
+                    });
+                }
+            } catch (err) {
+                if (thinkingDiv) thinkingDiv.remove();
+                this.addMessage('Assistant', '⚠️ Error: Failed to get response from the assistant.', 'assistant');
+            }
         }
     }
     
@@ -210,6 +249,7 @@ class ControlBar {
         messageDiv.textContent = text;
         this.chatPopupMessages.appendChild(messageDiv);
         this.chatPopupMessages.scrollTop = this.chatPopupMessages.scrollHeight;
+        return messageDiv;
     }
     
     handleMouseDown(event) {
@@ -329,6 +369,23 @@ class ControlBar {
         } catch (error) {
             console.error('[CONTROL-BAR] ❌ Auto-login error:', error);
             await window.electronAPI?.clearAuthTokens();
+        }
+    }
+
+    async fetchMostRecentAgent() {
+        try {
+            const res = await fetch('/chatbot/agents/most-recent', { credentials: 'include' });
+            if (res.ok) {
+                const data = await res.json();
+                this.mostRecentAgentId = data.id;
+                this.mostRecentAgentName = data.name;
+            } else {
+                this.mostRecentAgentId = null;
+                this.mostRecentAgentName = null;
+            }
+        } catch (err) {
+            this.mostRecentAgentId = null;
+            this.mostRecentAgentName = null;
         }
     }
 }
