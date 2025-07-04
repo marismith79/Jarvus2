@@ -247,6 +247,15 @@ body {
     margin-right: 20px;
 }
 
+.chat-message.system {
+    background: rgba(255, 193, 7, 0.2);
+    color: #fff;
+    margin: 0 10px;
+    text-align: center;
+    font-style: italic;
+    font-size: 10px;
+}
+
 .chat-message:last-child {
     margin-bottom: 0;
 }
