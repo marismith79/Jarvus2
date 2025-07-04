@@ -33,12 +33,29 @@ function createControlBarWindow() {
       nodeIntegration: false,
       contextIsolation: true,
       enableRemoteModule: false,
-      preload: path.join(__dirname, 'preload.js')
+      preload: path.join(__dirname, 'preload.js'),
+      partition: 'persist:main' // Add session sharing for authentication
     }
   });
 
-  // Load the control bar HTML
-  controlBarWindow.loadFile(path.join(__dirname, 'renderer', 'control-bar.html'));
+  // Try to load from Flask server first, fallback to local files
+  const flaskUrl = 'http://localhost:5001/control-bar';
+  console.log('[MAIN] Attempting to load control bar from Flask server:', flaskUrl);
+  
+  controlBarWindow.loadURL(flaskUrl)
+    .then(() => {
+      console.log('[MAIN] Successfully loaded control bar from Flask server');
+    })
+    .catch((error) => {
+      console.log('[MAIN] Flask server not available, falling back to local files:', error.message);
+      controlBarWindow.loadFile(path.join(__dirname, 'renderer', 'control-bar.html'))
+        .then(() => {
+          console.log('[MAIN] Successfully loaded control bar from local files');
+        })
+        .catch((fallbackError) => {
+          console.error('[MAIN] Failed to load control bar from both Flask and local files:', fallbackError);
+        });
+    });
 
   // Set window properties for macOS
   if (process.platform === 'darwin') {
@@ -115,6 +132,53 @@ function createControlBarWindow() {
 
   ipcMain.handle('options-click', () => {
     console.log('[MAIN] Options button clicked');
+  });
+
+  // Handle login modal
+  ipcMain.on('open-login-modal', (event, signinUrl) => {
+    console.log('[MAIN] Opening login modal with URL:', signinUrl);
+    
+    const loginWin = new BrowserWindow({
+      width: 500,
+      height: 700,
+      parent: controlBarWindow,
+      modal: true,
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true,
+        partition: 'persist:main', // Share session with control bar
+      },
+    });
+    
+    loginWin.loadURL(signinUrl);
+    
+    // Monitor for successful login
+    let hasLoggedIn = false;
+    
+    loginWin.webContents.on('did-navigate', (event, url) => {
+      console.log('[MAIN] Login modal navigated to:', url);
+      if (!hasLoggedIn && url.includes('/profile?just_logged_in=1')) {
+        hasLoggedIn = true;
+        console.log('[MAIN] Login successful, closing modal');
+        loginWin.close();
+        controlBarWindow.webContents.send('login-modal-closed');
+      }
+    });
+
+    loginWin.webContents.on('did-finish-load', () => {
+      const currentUrl = loginWin.webContents.getURL();
+      console.log('[MAIN] Login modal finished loading:', currentUrl);
+      if (!hasLoggedIn && currentUrl.includes('/profile?just_logged_in=1')) {
+        hasLoggedIn = true;
+        console.log('[MAIN] Login successful (did-finish-load), closing modal');
+        loginWin.close();
+        controlBarWindow.webContents.send('login-modal-closed');
+      }
+    });
+
+    loginWin.on('closed', () => {
+      console.log('[MAIN] Login modal closed');
+    });
   });
 
   // Enable click-through except for interactive elements

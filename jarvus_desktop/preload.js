@@ -19,6 +19,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   chatClick: () => ipcRenderer.invoke('chat-click'),
   optionsClick: () => ipcRenderer.invoke('options-click'),
   
+  // Login modal support
+  openLoginModal: (url) => ipcRenderer.send('open-login-modal', url),
+  onLoginModalClosed: (callback) => {
+    ipcRenderer.removeAllListeners('login-modal-closed');
+    ipcRenderer.on('login-modal-closed', callback);
+  },
+  
   // Platform info
   platform: process.platform,
 
