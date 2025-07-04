@@ -17,6 +17,21 @@ def get_jwt():
         return jsonify({"error": "Not authenticated"}), 401
 
 
+@api.route("/api/auth-tokens")
+def get_auth_tokens():
+    """Return auth tokens for Electron storage."""
+    if current_user.is_authenticated and session.get("jwt_token"):
+        tokens = {
+            "id_token": session["jwt_token"],
+            "refresh_token": session.get("refresh_token"),
+            "expires_at": session.get("expires_at"),
+            "user_id": current_user.id
+        }
+        return jsonify({"success": True, "tokens": tokens})
+    else:
+        return jsonify({"error": "Not authenticated"}), 401
+
+
 @api.route("/api/signup", methods=["POST"])
 def handle_signup():
     data = request.get_json()

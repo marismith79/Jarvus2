@@ -4,6 +4,7 @@ import os
 import sys
 import logging
 import time
+import json
 
 import msal
 from dotenv import load_dotenv
@@ -204,6 +205,68 @@ def forgot_password():
         scopes=SCOPE, redirect_uri=REDIRECT_URI
     )
     return redirect(auth_url)
+
+
+@auth.route("/refresh-token", methods=["POST"])
+def refresh_token():
+    """Refresh token endpoint for Electron auto-login."""
+    logger.info("🔄 Refresh token endpoint called")
+    try:
+        data = request.get_json()
+        refresh_token = data.get("refresh_token")
+        
+        if not refresh_token:
+            logger.error("❌ No refresh token provided")
+            return jsonify({"error": "No refresh token provided"}), 400
+            
+        logger.info(f"🔄 Attempting to refresh token: {refresh_token[:10]}...")
+        
+        msal_app = msal.ConfidentialClientApplication(
+            CLIENT_ID, authority=SIGNIN_AUTHORITY, client_credential=CLIENT_SECRET
+        )
+        
+        result = msal_app.acquire_token_by_refresh_token(
+            refresh_token, scopes=SCOPE
+        )
+        
+        logger.info(f"🔄 Refresh result: {result}")
+        
+        if "id_token" in result:
+            # Update session
+            session["jwt_token"] = result["id_token"]
+            session["refresh_token"] = result.get("refresh_token", refresh_token)
+            
+            # Calculate expires_at safely
+            expires_at = None
+            if result.get("expires_in"):
+                expires_at = int(time.time()) + int(result["expires_in"])
+                session["expires_at"] = expires_at
+            
+            # Get user from token claims
+            claims = result["id_token_claims"]
+            user_id = claims.get("sub")
+            user = User.query.get(user_id)
+            
+            if user:
+                login_user(user, remember=True)
+                tokens_for_electron = {
+                    "id_token": result["id_token"],
+                    "refresh_token": result.get("refresh_token", refresh_token),
+                    "expires_at": expires_at,  # Use the calculated value, not from session
+                    "user_id": user_id
+                }
+                logger.info(f"✅ Token refresh successful for user: {user_id}")
+                return jsonify({
+                    "success": True,
+                    "tokens": tokens_for_electron
+                })
+        
+        logger.error("❌ Token refresh failed")
+        return jsonify({"error": "Token refresh failed"}), 401
+        
+    except Exception as e:
+        logger.error(f"❌ Token refresh error: {str(e)}")
+        return jsonify({"error": "Token refresh failed"}), 500
 
 
 @auth.route("/close-modal")

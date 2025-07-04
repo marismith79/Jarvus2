@@ -20,6 +20,7 @@ class ControlBar {
         
         this.initializeEventListeners();
         this.checkAuthenticationStatus();
+        this.checkForStoredCredentials();
     }
     
     initializeEventListeners() {
@@ -285,6 +286,76 @@ class ControlBar {
             popupRect: this.chatPopup.getBoundingClientRect(),
             computed: window.getComputedStyle(this.chatPopup)
         });
+    }
+
+    async checkForStoredCredentials() {
+        try {
+            console.log('[CONTROL-BAR] 🔍 Checking for stored credentials...');
+            if (window.electronAPI && window.electronAPI.getAuthTokens) {
+                const tokens = await window.electronAPI.getAuthTokens();
+                if (tokens && tokens.refresh_token) {
+                    console.log('[CONTROL-BAR] ✅ Found stored tokens, attempting auto-login');
+                    await this.attemptAutoLogin(tokens);
+                } else {
+                    console.log('[CONTROL-BAR] ℹ️ No stored tokens found');
+                }
+            } else {
+                console.log('[CONTROL-BAR] ⚠️ electronAPI.getAuthTokens not available');
+            }
+        } catch (error) {
+            console.error('[CONTROL-BAR] ❌ Error checking stored credentials:', error);
+        }
+    }
+    
+    async attemptAutoLogin(tokens) {
+        try {
+            console.log('[CONTROL-BAR] 🔄 Attempting auto-login with refresh token...');
+            const response = await fetch('/refresh-token', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    refresh_token: tokens.refresh_token
+                }),
+                credentials: 'include'
+            });
+            
+            console.log('[CONTROL-BAR] 🔄 Refresh response status:', response.status);
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log('[CONTROL-BAR] 🔄 Refresh response data:', data);
+                
+                if (data.success) {
+                    // Store updated tokens
+                    if (window.electronAPI && window.electronAPI.storeAuthTokens) {
+                        await window.electronAPI.storeAuthTokens(data.tokens);
+                        console.log('[CONTROL-BAR] ✅ Updated tokens stored in Keychain');
+                    }
+                    
+                    this.isAuthenticated = true;
+                    this.jwtToken = data.tokens.id_token;
+                    this.updateUIForAuthenticatedUser();
+                    console.log('[CONTROL-BAR] ✅ Auto-login successful');
+                } else {
+                    console.log('[CONTROL-BAR] ❌ Auto-login failed - no success in response');
+                    if (window.electronAPI && window.electronAPI.clearAuthTokens) {
+                        await window.electronAPI.clearAuthTokens();
+                    }
+                }
+            } else {
+                console.log('[CONTROL-BAR] ❌ Auto-login failed - HTTP error:', response.status);
+                if (window.electronAPI && window.electronAPI.clearAuthTokens) {
+                    await window.electronAPI.clearAuthTokens();
+                }
+            }
+        } catch (error) {
+            console.error('[CONTROL-BAR] ❌ Auto-login error:', error);
+            if (window.electronAPI && window.electronAPI.clearAuthTokens) {
+                await window.electronAPI.clearAuthTokens();
+            }
+        }
     }
 }
 

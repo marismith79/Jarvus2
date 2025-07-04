@@ -26,6 +26,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('login-modal-closed', callback);
   },
   
+  // Token management
+  storeAuthTokens: (tokens) => ipcRenderer.invoke('store-auth-tokens', tokens),
+  getAuthTokens: () => ipcRenderer.invoke('get-auth-tokens'),
+  clearAuthTokens: () => ipcRenderer.invoke('clear-auth-tokens'),
+  
   // Platform info
   platform: process.platform,
 
