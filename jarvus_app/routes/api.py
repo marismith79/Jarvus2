@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, session
 from flask_login import current_user, login_required
 
 from jarvus_app.db import db
@@ -6,6 +6,15 @@ from jarvus_app.models.user import User
 from jarvus_app.models.user_tool import UserTool
 
 api = Blueprint("api", __name__)
+
+
+@api.route("/api/jwt")
+def get_jwt():
+    """Return the JWT token if the user is authenticated."""
+    if current_user.is_authenticated and session.get("jwt_token"):
+        return jsonify({"jwt": session["jwt_token"]})
+    else:
+        return jsonify({"error": "Not authenticated"}), 401
 
 
 @api.route("/api/signup", methods=["POST"])

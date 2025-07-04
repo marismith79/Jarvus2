@@ -168,7 +168,7 @@ def authorized():
             login_user(user, remember=True)
             logger.info(f"User logged in successfully: {user.id}")
             next_url = session.pop("next_url", None)
-            return redirect(next_url or url_for("web.landing"))
+            return redirect(url_for("profile.profile") + "?just_logged_in=1")
         else:
             logger.error("User object is None after creation/retrieval")
             return render_template(
@@ -190,13 +190,8 @@ def logout():
     # Log out from Flask-Login
     logout_user()
 
-    post_logout = url_for("web.landing", _external=True)
-    logout_url = (
-        f"https://{TENANT_NAME}.b2clogin.com/{TENANT_DOMAIN}/{SIGNIN_FLOW}"
-        "/oauth2/v2.0/logout"
-        f"?post_logout_redirect_uri={post_logout}"
-    )
-    return redirect(logout_url)
+    # Return a simple JSON response instead of redirecting
+    return jsonify({"success": True, "message": "Logged out successfully"})
 
 
 @auth.route("/forgot_password")
@@ -209,3 +204,24 @@ def forgot_password():
         scopes=SCOPE, redirect_uri=REDIRECT_URI
     )
     return redirect(auth_url)
+
+
+@auth.route("/close-modal")
+def close_modal():
+    return """
+    <html>
+    <body>
+    <script>
+        // Notify Electron to close the modal
+        if (window && window.close) {
+            window.close();
+        }
+        // For extra safety, try to send a message to Electron
+        if (window.electronAPI && window.electronAPI.closeLoginModal) {
+            window.electronAPI.closeLoginModal();
+        }
+    </script>
+    <p>You have been logged in. You can close this window.</p>
+    </body>
+    </html>
+    """

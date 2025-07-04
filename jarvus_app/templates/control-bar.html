@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jarvus Control Bar</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/control-bar.css') }}">
+</head>
+<body>
+    <div class="control-bar-container">
+        <div class="control-bar" id="controlBar">
+            <button class="control-button login-button" id="loginButton">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+                    <polyline points="10,17 15,12 10,7"/>
+                    <line x1="15" y1="12" x2="3" y2="12"/>
+                </svg>
+                <span>Login</span>
+            </button>
+            
+            <button class="control-button chat-button" id="chatButton">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+                <span>Chat</span>
+            </button>
+            
+            <button class="control-button options-button" id="optionsButton">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="1"/>
+                    <circle cx="19" cy="12" r="1"/>
+                    <circle cx="5" cy="12" r="1"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+    <div class="chat-popup" id="chatPopup">
+        <div class="chat-popup-input-row">
+            <input type="text" class="chat-popup-input" id="chatPopupInput" placeholder="Type your message...">
+            <button class="chat-popup-send" id="chatPopupSend">Send</button>
+        </div>
+        <div class="chat-popup-messages" id="chatPopupMessages"></div>
+    </div>
+    <script src="{{ url_for('static', filename='js/control-bar.js') }}"></script>
+</body>
+</html> 
