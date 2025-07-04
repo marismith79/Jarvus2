@@ -157,84 +157,44 @@ function createControlBarWindow() {
     // Monitor for successful login
     let hasLoggedIn = false;
     
+    const captureTokensAndClose = () => {
+      if (hasLoggedIn) return;
+      hasLoggedIn = true;
+      console.log('[MAIN] Login successful, capturing tokens...');
+      
+      loginWin.webContents.executeJavaScript(`
+        fetch('/api/auth-tokens')
+          .then(response => response.json())
+          .then(data => {
+            if (data.success && data.tokens) {
+              console.log('[MAIN] Storing tokens in Keychain');
+              window.electronAPI.storeAuthTokens(data.tokens);
+            }
+          })
+          .catch(error => {
+            console.error('[MAIN] Error capturing tokens:', error);
+          });
+      `);
+      
+      setTimeout(() => {
+        console.log('[MAIN] Closing login modal');
+        loginWin.close();
+        controlBarWindow.webContents.send('login-modal-closed');
+      }, 2000);
+    };
+    
     loginWin.webContents.on('did-navigate', (event, url) => {
       console.log('[MAIN] Login modal navigated to:', url);
-      if (!hasLoggedIn && url.includes('/profile?just_logged_in=1')) {
-        hasLoggedIn = true;
-        console.log('[MAIN] Login successful, capturing tokens...');
-        
-        // Capture tokens from session after successful login
-        loginWin.webContents.executeJavaScript(`
-          console.log('[MAIN] Starting token capture...');
-          fetch('/api/auth-tokens')
-            .then(response => {
-              console.log('[MAIN] Auth tokens response status:', response.status);
-              return response.json();
-            })
-            .then(data => {
-              console.log('[MAIN] Auth tokens response data:', data);
-              if (data.success && data.tokens) {
-                console.log('[MAIN] Storing tokens in Keychain');
-                return window.electronAPI.storeAuthTokens(data.tokens);
-              } else {
-                console.log('[MAIN] No tokens in response');
-              }
-            })
-            .catch(error => {
-              console.error('[MAIN] Error capturing tokens:', error);
-            })
-            .finally(() => {
-              console.log('[MAIN] Token capture complete');
-            });
-        `);
-        
-        // Wait a bit before closing to ensure tokens are captured
-        setTimeout(() => {
-          console.log('[MAIN] Closing login modal');
-          loginWin.close();
-          controlBarWindow.webContents.send('login-modal-closed');
-        }, 2000);
+      if (url.includes('/profile?just_logged_in=1')) {
+        captureTokensAndClose();
       }
     });
 
     loginWin.webContents.on('did-finish-load', () => {
       const currentUrl = loginWin.webContents.getURL();
       console.log('[MAIN] Login modal finished loading:', currentUrl);
-      if (!hasLoggedIn && currentUrl.includes('/profile?just_logged_in=1')) {
-        hasLoggedIn = true;
-        console.log('[MAIN] Login successful (did-finish-load), capturing tokens...');
-        
-        // Capture tokens from session after successful login
-        loginWin.webContents.executeJavaScript(`
-          console.log('[MAIN] Starting token capture (did-finish-load)...');
-          fetch('/api/auth-tokens')
-            .then(response => {
-              console.log('[MAIN] Auth tokens response status:', response.status);
-              return response.json();
-            })
-            .then(data => {
-              console.log('[MAIN] Auth tokens response data:', data);
-              if (data.success && data.tokens) {
-                console.log('[MAIN] Storing tokens in Keychain');
-                return window.electronAPI.storeAuthTokens(data.tokens);
-              } else {
-                console.log('[MAIN] No tokens in response');
-              }
-            })
-            .catch(error => {
-              console.error('[MAIN] Error capturing tokens:', error);
-            })
-            .finally(() => {
-              console.log('[MAIN] Token capture complete');
-            });
-        `);
-        
-        // Wait a bit before closing to ensure tokens are captured
-        setTimeout(() => {
-          console.log('[MAIN] Closing login modal');
-          loginWin.close();
-          controlBarWindow.webContents.send('login-modal-closed');
-        }, 2000);
+      if (currentUrl.includes('/profile?just_logged_in=1')) {
+        captureTokensAndClose();
       }
     });
 
@@ -513,9 +473,8 @@ app.on('show', () => {
 
 async function storeAuthTokens(tokens) {
   try {
-    console.log('[MAIN] Storing tokens in Keychain...');
     await keytar.setPassword('JarvusApp', 'auth_tokens', JSON.stringify(tokens));
-    console.log('[MAIN] ✅ Auth tokens stored in Keychain successfully');
+    console.log('[MAIN] ✅ Tokens stored in Keychain');
   } catch (error) {
     console.error('[MAIN] ❌ Error storing tokens:', error);
   }
@@ -523,15 +482,8 @@ async function storeAuthTokens(tokens) {
 
 async function getAuthTokens() {
   try {
-    console.log('[MAIN] Retrieving tokens from Keychain...');
     const tokens = await keytar.getPassword('JarvusApp', 'auth_tokens');
-    if (tokens) {
-      console.log('[MAIN] ✅ Found tokens in Keychain');
-      return JSON.parse(tokens);
-    } else {
-      console.log('[MAIN] ℹ️ No tokens found in Keychain');
-      return null;
-    }
+    return tokens ? JSON.parse(tokens) : null;
   } catch (error) {
     console.error('[MAIN] ❌ Error getting tokens:', error);
     return null;
@@ -540,9 +492,8 @@ async function getAuthTokens() {
 
 async function clearAuthTokens() {
   try {
-    console.log('[MAIN] Clearing tokens from Keychain...');
     await keytar.deletePassword('JarvusApp', 'auth_tokens');
-    console.log('[MAIN] ✅ Auth tokens cleared from Keychain');
+    console.log('[MAIN] ✅ Tokens cleared from Keychain');
   } catch (error) {
     console.error('[MAIN] ❌ Error clearing tokens:', error);
   }
