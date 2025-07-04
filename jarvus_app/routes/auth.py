@@ -16,7 +16,7 @@ from flask import (
     url_for,
 )
 from flask_login import login_user, logout_user
-
+from flask import jsonify
 from jarvus_app.models.user import User
 
 from ..db import db
