@@ -20,8 +20,8 @@ function createControlBarWindow() {
   
   // Create the control bar window
   controlBarWindow = new BrowserWindow({
-    width: 300,
-    height: 300, // Increased height to allow chat popup to be visible below the bar
+    width: 500,
+    height: 400, // Increased height to allow chat popup to be visible below the bar
     x: Math.floor((width - 300) / 2), // Center horizontally
     y: 20, // 20px from top
     frame: false,
@@ -92,6 +92,10 @@ function createControlBarWindow() {
 
   ipcMain.handle('hide-window', () => {
     controlBarWindow.hide();
+  });
+
+  ipcMain.handle('is-window-visible', () => {
+    return controlBarWindow.isVisible();
   });
 
   // Handle window dragging
@@ -219,177 +223,49 @@ function getChromePath() {
   }
 }
 
-function getUserProfilePath() {
-  const platform = os.platform();
-  const home = os.homedir();
+function setupWebDriver() {
+  console.log('[MAIN] Setting up WebDriver for browser control...');
   
-  if (platform === 'darwin') {
-    return path.join(home, 'Library', 'Application Support', 'Google', 'Chrome');
-  } else if (platform === 'win32') {
-    return path.join(home, 'AppData', 'Local', 'Google', 'Chrome', 'User Data');
-  } else if (platform === 'linux') {
-    return path.join(home, '.config', 'google-chrome');
-  } else {
-    throw new Error(`Unsupported platform: ${platform}`);
-  }
-}
-
-function getDebugProfilePath() {
-  const platform = os.platform();
-  const home = os.homedir();
+  // Launch Chrome with remote debugging (for WebDriver connection)
+  const chromeArgs = [
+    '--remote-debugging-port=9222',  // Only this flag needed
+    '--no-first-run',
+    '--no-default-browser-check',
+    // NO --disable-web-security
+    // NO profile copying needed
+    '--disable-background-timer-throttling',
+    '--disable-backgrounding-occluded-windows',
+    '--disable-renderer-backgrounding',
+    '--disable-features=TranslateUI',
+    '--disable-ipc-flooding-protection',
+    '--new-window',
+    '--force-new-window',
+    '--disable-session-crashed-bubble',
+    '--disable-infobars',
+    '--disable-features=VizDisplayCompositor',
+    '--no-default-browser-check',
+    '--disable-default-apps',
+    '--disable-sync',
+    '--disable-background-networking',
+    '--disable-component-extensions-with-background-pages',
+    '--disable-extensions-file-access-check',
+    '--disable-extensions-http-throttling',
+    '--disable-hang-monitor',
+    '--disable-prompt-on-repost',
+    '--disable-domain-reliability',
+    '--disable-client-side-phishing-detection',
+    '--disable-component-update',
+    '--disable-background-mode'
+  ];
   
-  if (platform === 'darwin') {
-    return path.join(home, 'Desktop', 'Private Chrome Data Sync');
-  } else if (platform === 'win32') {
-    return path.join(home, 'Desktop', 'Private Chrome Data Sync');
-  } else if (platform === 'linux') {
-    return path.join(home, 'Desktop', 'Private Chrome Data Sync');
-  } else {
-    throw new Error(`Unsupported platform: ${platform}`);
-  }
-}
-
-function copyProfileData(sourceProfile, targetProfile) {
-  try {
-    // Remove existing debug profile directory if it exists
-    if (fs.existsSync(targetProfile)) {
-      console.log('[MAIN] Removing existing debug profile...');
-      fs.rmSync(targetProfile, { recursive: true, force: true });
-    }
-    
-    // Create fresh target directory
-    fs.mkdirSync(targetProfile, { recursive: true });
-    
-    console.log('[MAIN] Starting profile data copy...');
-    
-    // Copy all profile folders (Default, Profile 1, Profile 2, etc.)
-    const items = fs.readdirSync(sourceProfile);
-    
-    for (const item of items) {
-      const sourcePath = path.join(sourceProfile, item);
-      const targetPath = path.join(targetProfile, item);
-      
-      // Skip certain files/folders that shouldn't be copied
-      if (['Crashpad', 'Crash Reports', 'Network', 'Network Persistent State', 'Service Worker'].includes(item)) {
-        continue;
-      }
-      
-      const stats = fs.statSync(sourcePath);
-      
-      if (stats.isDirectory()) {
-        // Copy entire profile directories
-        if (!fs.existsSync(targetPath)) {
-          fs.mkdirSync(targetPath, { recursive: true });
-        }
-        
-        // Copy all files in the profile directory
-        const profileFiles = fs.readdirSync(sourcePath);
-        for (const file of profileFiles) {
-          const sourceFile = path.join(sourcePath, file);
-          const targetFile = path.join(targetPath, file);
-          
-          try {
-            fs.copyFileSync(sourceFile, targetFile);
-            console.log(`[MAIN] Copied ${item}/${file}`);
-          } catch (copyError) {
-            console.log(`[MAIN] Skipped ${item}/${file} (may be locked)`);
-          }
-        }
-      } else {
-        // Copy root level files
-        try {
-          fs.copyFileSync(sourcePath, targetPath);
-          // console.log(`[MAIN] Copied ${item}`);
-        } catch (copyError) {
-          // console.log(`[MAIN] Skipped ${item} (may be locked)`);
-        }
-      }
-    }
-    
-    console.log('[MAIN] Profile data copied successfully');
-    console.log(`[MAIN] Debug profile location: ${targetProfile}`);
-    
-  } catch (error) {
-    console.error('[MAIN] Error copying profile data:', error);
-  }
-}
-
-function launchChromeWithDebugging() {
-  try {
-    const chromePath = getChromePath();
-    const userProfile = getUserProfilePath();
-    const debugProfile = getDebugProfilePath();
-    const debugPort = 9222;
-    
-    console.log('[MAIN] Launching Chrome with remote debugging...');
-    console.log(`[MAIN] Chrome path: ${chromePath}`);
-    console.log(`[MAIN] Debug port: ${debugPort}`);
-    console.log(`[MAIN] User profile: ${userProfile}`);
-    console.log(`[MAIN] Debug profile: ${debugProfile}`);
-    
-    // Copy profile data to debug profile
-    copyProfileData(userProfile, debugProfile);
-    
-    const chromeArgs = [
-      `--remote-debugging-port=${debugPort}`,
-      `--user-data-dir=${debugProfile}`,
-      '--no-first-run',
-      '--no-default-browser-check',
-      '--disable-background-timer-throttling',
-      '--disable-backgrounding-occluded-windows',
-      '--disable-renderer-backgrounding',
-      '--disable-features=TranslateUI',
-      '--disable-ipc-flooding-protection',
-      '--new-window',
-      '--force-new-window',
-      '--disable-session-crashed-bubble',
-      '--disable-infobars',
-      '--disable-web-security',
-      '--disable-features=VizDisplayCompositor',
-      '--no-default-browser-check',
-      '--disable-default-apps',
-      '--disable-sync',
-      '--disable-background-networking',
-      '--disable-component-extensions-with-background-pages',
-      '--disable-extensions-file-access-check',
-      '--disable-extensions-http-throttling',
-      '--disable-hang-monitor',
-      '--disable-prompt-on-repost',
-      '--disable-domain-reliability',
-      '--disable-client-side-phishing-detection',
-      '--disable-component-update',
-      '--disable-background-mode'
-    ];
-    
-    chromeProcess = spawn(chromePath, chromeArgs, {
-      stdio: 'pipe',
-      detached: false
-    });
-    
-    chromeProcess.stdout.on('data', (data) => {
-      console.log(`[CHROME] ${data.toString().trim()}`);
-    });
-    
-    chromeProcess.stderr.on('data', (data) => {
-      console.log(`[CHROME ERROR] ${data.toString().trim()}`);
-    });
-    
-    chromeProcess.on('close', (code) => {
-      console.log(`[MAIN] Chrome process exited with code ${code}`);
-      chromeProcess = null;
-    });
-    
-    chromeProcess.on('error', (error) => {
-      console.error('[MAIN] Failed to start Chrome:', error);
-      chromeProcess = null;
-    });
-    
-    console.log(`[MAIN] Chrome launched with PID: ${chromeProcess.pid}`);
-    console.log(`[MAIN] DevTools Protocol available at: http://localhost:${debugPort}`);
-    
-  } catch (error) {
-    console.error('[MAIN] Error launching Chrome:', error);
-  }
+  // Launch Chrome normally (no profile copying needed)
+  const chromePath = getChromePath();
+  chromeProcess = spawn(chromePath, chromeArgs, {
+    stdio: 'pipe',
+    detached: false
+  });
+  
+  console.log('[MAIN] Chrome launched with WebDriver support');
 }
 
 // App event handlers
@@ -397,14 +273,52 @@ app.whenReady().then(() => {
   createControlBarWindow();
   console.log('[MAIN] App ready, control bar window created');
   
-  // Launch Chrome with remote debugging
-  launchChromeWithDebugging();
+  // Setup WebDriver instead of direct Chrome control
+  setupWebDriver();
 
   // Register DevTools shortcut
   globalShortcut.register('CommandOrControl+Alt+I', () => {
     if (controlBarWindow) {
       controlBarWindow.webContents.openDevTools({ mode: 'detach' });
       console.log('[MAIN] DevTools opened via shortcut');
+    }
+  });
+
+  // Register chat toggle shortcut
+  globalShortcut.register('CommandOrControl+Enter', () => {
+    if (controlBarWindow) {
+      controlBarWindow.webContents.send('toggle-chat');
+      console.log('[MAIN] Chat toggle shortcut triggered');
+    }
+  });
+
+  // Register control bar movement shortcuts
+  globalShortcut.register('CommandOrControl+Left', () => {
+    if (controlBarWindow) {
+      controlBarWindow.webContents.send('move-control-bar', 'left');
+      console.log('[MAIN] Move control bar left shortcut triggered');
+    }
+  });
+
+  globalShortcut.register('CommandOrControl+Right', () => {
+    if (controlBarWindow) {
+      controlBarWindow.webContents.send('move-control-bar', 'right');
+      console.log('[MAIN] Move control bar right shortcut triggered');
+    }
+  });
+
+  // Register control bar visibility toggle shortcuts
+  globalShortcut.register('CommandOrControl+Up', () => {
+    if (controlBarWindow) {
+      controlBarWindow.webContents.send('toggle-control-bar-visibility');
+      console.log('[MAIN] Toggle control bar visibility shortcut triggered (Up)');
+    }
+  });
+
+  globalShortcut.register('CommandOrControl+Down', () => {
+    if (controlBarWindow) {
+      controlBarWindow.webContents.send('toggle-control-bar-visibility');
+      console.log('[MAIN] Toggle control bar visibility shortcut triggered (Down)');
     }
   });
 
@@ -437,17 +351,7 @@ app.on('will-quit', () => {
     chromeProcess.kill();
   }
   
-  // Clean up debug profile
-  try {
-    const debugProfile = getDebugProfilePath();
-    if (fs.existsSync(debugProfile)) {
-      console.log('[MAIN] Cleaning up debug profile...');
-      fs.rmSync(debugProfile, { recursive: true, force: true });
-      console.log('[MAIN] Debug profile cleaned up');
-    }
-  } catch (error) {
-    console.error('[MAIN] Error cleaning up debug profile:', error);
-  }
+  // No profile cleanup needed anymore
 });
 
 // Handle app hiding/showing

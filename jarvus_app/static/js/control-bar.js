@@ -10,8 +10,8 @@ class ControlBar {
         this.chatPopupInput = document.getElementById('chatPopupInput');
         this.chatPopupSend = document.getElementById('chatPopupSend');
         this.isDragging = false;
-        this.dragStartX = 0;
-        this.windowStartX = 0;
+        this.dragStartX = null;
+        this.windowStartX = null;
         this.isChatOpen = false;
         
         // Authentication state
@@ -38,9 +38,6 @@ class ControlBar {
         
         // Prevent context menu
         this.controlBar.addEventListener('contextmenu', (e) => e.preventDefault());
-        
-        // Handle window resize
-        window.addEventListener('resize', this.handleWindowResize.bind(this));
         
         // Mouse enter/leave for click-through logic
         this.controlBar.addEventListener('mouseenter', () => {
@@ -69,6 +66,37 @@ class ControlBar {
                 this.handleLoginModalClosed();
             });
         }
+
+        // Handle chat toggle shortcut from main process
+        if (window.electronAPI && window.electronAPI.onToggleChat) {
+            window.electronAPI.onToggleChat(() => {
+                console.log('[CONTROL-BAR] Chat toggle shortcut received from main process');
+                this.handleChatClick();
+            });
+        }
+
+        // Handle control bar movement shortcuts from main process
+        if (window.electronAPI && window.electronAPI.onMoveControlBar) {
+            window.electronAPI.onMoveControlBar((event, direction) => {
+                console.log('[CONTROL-BAR] Move control bar shortcut received:', direction);
+                this.moveControlBar(direction);
+            });
+        }
+
+        // Handle control bar visibility toggle shortcuts from main process
+        if (window.electronAPI && window.electronAPI.onToggleControlBarVisibility) {
+            window.electronAPI.onToggleControlBarVisibility(() => {
+                console.log('[CONTROL-BAR] Toggle control bar visibility shortcut received');
+                this.toggleControlBarVisibility();
+            });
+        }
+
+        // Handle keyboard shortcuts
+        document.addEventListener('keydown', this.handleKeyDown.bind(this));
+        console.log('[DEBUG] Keyboard event listener attached');
+        
+        // Update hotkey display based on platform
+        this.updateHotkeyDisplay();
     }
     
     async checkAuthenticationStatus() {
@@ -173,7 +201,11 @@ class ControlBar {
         if (this.isChatOpen) {
             this.positionChatPopup();
             this.chatPopup.classList.add('open');
-            this.chatPopupInput.focus();
+            // Focus the input with a small delay to ensure the popup is fully rendered
+            setTimeout(() => {
+                this.chatPopupInput.focus();
+                console.log('[DEBUG] Input focused');
+            }, 50);
             console.log('[DEBUG] chatPopup after open:', this.chatPopup, this.chatPopup.getBoundingClientRect(), window.getComputedStyle(this.chatPopup));
         } else {
             this.chatPopup.classList.remove('open');
@@ -191,6 +223,8 @@ class ControlBar {
         if (message) {
             this.addMessage('You', message, 'user');
             this.chatPopupInput.value = '';
+            // Focus back to input for continued typing
+            this.chatPopupInput.focus();
             // Ensure we have the most recent agent
             if (!this.mostRecentAgentId) {
                 await this.fetchMostRecentAgent();
@@ -255,7 +289,6 @@ class ControlBar {
     handleMouseDown(event) {
         // Only left mouse button
         if (event.button !== 0) return;
-        this.isDragging = true;
         this.dragStartX = event.screenX;
         this.windowStartX = 0;
         // Get current window position from main process
@@ -267,16 +300,22 @@ class ControlBar {
     }
     
     handleMouseMove(event) {
-        if (this.isDragging) {
+        if (this.dragStartX !== null) {
             const deltaX = event.screenX - this.dragStartX;
-            const newX = this.windowStartX + deltaX;
-            // Constrain to screen bounds
-            const maxX = window.screen.width - 300; // control bar width
-            const constrainedX = Math.max(0, Math.min(newX, maxX));
-            window.electronAPI.setWindowPosition(constrainedX, 20);
-            // Reposition chat popup if open
-            if (this.isChatOpen) {
-                this.positionChatPopup();
+            // Only start dragging if moved more than 5 pixels
+            if (!this.isDragging && Math.abs(deltaX) > 5) {
+                this.isDragging = true;
+            }
+            if (this.isDragging) {
+                const newX = this.windowStartX + deltaX;
+                // Constrain to screen bounds
+                const maxX = window.screen.width - 300; // control bar width
+                const constrainedX = Math.max(0, Math.min(newX, maxX));
+                window.electronAPI.setWindowPosition(constrainedX, 20);
+                // Reposition chat popup if open
+                if (this.isChatOpen) {
+                    this.positionChatPopup();
+                }
             }
         }
     }
@@ -287,22 +326,9 @@ class ControlBar {
             document.body.style.userSelect = '';
             window.electronAPI.endDrag();
         }
+        this.dragStartX = null;
     }
     
-    handleWindowResize() {
-        // Reposition control bar if needed
-        const controlBarRect = this.controlBar.getBoundingClientRect();
-        const maxX = window.innerWidth - controlBarRect.width;
-        if (controlBarRect.left > maxX) {
-            this.controlBar.style.left = `${maxX}px`;
-            this.controlBar.style.transform = 'none';
-        }
-        // Reposition chat popup if open
-        if (this.isChatOpen) {
-            this.positionChatPopup();
-        }
-    }
-
     positionChatPopup() {
         // Get the bounding rect of the control bar
         const barRect = this.controlBar.getBoundingClientRect();
@@ -388,32 +414,80 @@ class ControlBar {
             this.mostRecentAgentName = null;
         }
     }
+
+    updateHotkeyDisplay() {
+        const hotkeyDisplay = document.querySelector('.hotkey-display');
+        if (hotkeyDisplay) {
+            // Use Command on macOS, Ctrl on other platforms
+            const modifier = window.electronAPI?.platform === 'darwin' ? '⌘' : 'Ctrl';
+            hotkeyDisplay.textContent = `${modifier}↵`;
+        }
+    }
+    
+    handleKeyDown(event) {
+        console.log('[DEBUG] Key pressed:', event.key, 'metaKey:', event.metaKey, 'ctrlKey:', event.ctrlKey);
+        
+        // Command+Enter (macOS) or Ctrl+Enter (other platforms) to toggle chat
+        if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+            console.log('[DEBUG] Command+Enter detected, toggling chat');
+            event.preventDefault();
+            this.handleChatClick();
+        }
+        
+        // Escape to close chat popup if open
+        if (event.key === 'Escape' && this.isChatOpen) {
+            console.log('[DEBUG] Escape detected, closing chat');
+            event.preventDefault();
+            this.handleChatClick();
+        }
+    }
+
+    moveControlBar(direction) {
+        const moveAmount = 50; // pixels to move each time
+        const controlBarWidth = 500; // control bar width
+        
+        window.electronAPI.getWindowBounds().then(bounds => {
+            let newX = bounds.x;
+            
+            if (direction === 'left') {
+                newX = Math.max(0, bounds.x - moveAmount);
+            } else if (direction === 'right') {
+                const maxX = window.screen.width - controlBarWidth;
+                newX = Math.min(maxX, bounds.x + moveAmount);
+            }
+            
+            window.electronAPI.setWindowPosition(newX, bounds.y);
+            console.log(`[CONTROL-BAR] Moved control bar ${direction} to x=${newX}`);
+            
+            // Reposition chat popup if open
+            if (this.isChatOpen) {
+                this.positionChatPopup();
+            }
+        });
+    }
+
+    toggleControlBarVisibility() {
+        // Close chat popup if open when hiding the control bar
+        if (this.isChatOpen) {
+            this.handleChatClick();
+        }
+        
+        // Toggle window visibility using Electron API
+        window.electronAPI.isWindowVisible().then(isVisible => {
+            if (isVisible) {
+                // Window is visible, hide it
+                window.electronAPI.hideWindow();
+                console.log('[CONTROL-BAR] Control bar hidden');
+            } else {
+                // Window is hidden, show it
+                window.electronAPI.showWindow();
+                console.log('[CONTROL-BAR] Control bar shown');
+            }
+        });
+    }
 }
 
 // Initialize the control bar when the DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     new ControlBar();
-});
-
-// Handle keyboard shortcuts
-document.addEventListener('keydown', (event) => {
-    // Cmd/Ctrl + Shift + C to toggle chat
-    if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key === 'C') {
-        event.preventDefault();
-        const controlBar = document.querySelector('.control-bar')?.__controlBar;
-        if (controlBar) {
-            controlBar.toggleChat();
-        }
-    }
-    
-    // Escape to close chat
-    if (event.key === 'Escape') {
-        const chatArea = document.getElementById('chatArea');
-        if (chatArea && chatArea.style.display === 'block') {
-            const controlBar = document.querySelector('.control-bar')?.__controlBar;
-            if (controlBar) {
-                controlBar.toggleChat();
-            }
-        }
-    }
 }); 

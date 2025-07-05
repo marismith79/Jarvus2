@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   setWindowPosition: (x, y) => ipcRenderer.invoke('set-window-position', x, y),
   showWindow: () => ipcRenderer.invoke('show-window'),
   hideWindow: () => ipcRenderer.invoke('hide-window'),
+  isWindowVisible: () => ipcRenderer.invoke('is-window-visible'),
   
   // Dragging
   startDrag: (startX) => ipcRenderer.send('start-drag', startX),
@@ -24,6 +25,30 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onLoginModalClosed: (callback) => {
     ipcRenderer.removeAllListeners('login-modal-closed');
     ipcRenderer.on('login-modal-closed', callback);
+  },
+  
+  // Chat toggle support
+  onToggleChat: (callback) => {
+    ipcRenderer.removeAllListeners('toggle-chat');
+    ipcRenderer.on('toggle-chat', callback);
+  },
+  
+  // Control bar movement support
+  onMoveControlBar: (callback) => {
+    ipcRenderer.removeAllListeners('move-control-bar');
+    ipcRenderer.on('move-control-bar', callback);
+  },
+  
+  // Stop control bar movement support
+  onStopMoveControlBar: (callback) => {
+    ipcRenderer.removeAllListeners('stop-move-control-bar');
+    ipcRenderer.on('stop-move-control-bar', callback);
+  },
+  
+  // Control bar visibility toggle support
+  onToggleControlBarVisibility: (callback) => {
+    ipcRenderer.removeAllListeners('toggle-control-bar-visibility');
+    ipcRenderer.on('toggle-control-bar-visibility', callback);
   },
   
   // Token management
