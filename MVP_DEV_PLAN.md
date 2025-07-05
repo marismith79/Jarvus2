@@ -315,52 +315,40 @@ To minimize overlap and allow independent workstreams, Tetsu and Shomari will ea
 
 | Day         | Tetsu (Native Helper & Backend) | Shomari (UI, Extensions & Memory) |
 | ----------- | ------------------------------- | --------------------------------- |
-| **Day 1–2** | **Native Helper Prototype**     | **Chrome Extension**    |
-|             | • Scaffold `jarvus-helper` in Swift | • Chrome: listen to navigation events, grab URL/title, push via WebSocket |
-|             | • Emit active-window events | • Chrome content script: capture selections & form submits |
-|             | • Monitor clipboard | |
-|             | • JSON-RPC over WebSocket | |
-|             | • Electron spawn & IPC | |
-| **Day 3–4** | **IPC & UI Context Integration** | **Chat UI Wiring** |
-|             | • Forward helper events into renderer | • Show window/app info in chat header |
-|             | • Add header display of current app/title | • Display "Summarize?" snippets for clipboard events |
-|             | • Context event logging for debugging | • Display "Summarize page" for extension events |
-|             | | • UI debug console for incoming context |
-| **Day 5**   | **Local Memory Backend** | **Memory Editor UI** |
-|             | • Encrypted SQLite setup (Node) with Keychain key | • Settings → Memory tab: list/search/delete entries |
-|             | • Memory REST API endpoints (list, delete, forget-before) | • "Forget before [date]" control |
-|             | | • Hook Memory UI to backend API |
+| **Jul 5-6** | **Memory Backend**     | **Chrome Extension & Electron UI**    |
+|             | • Decide memory system | • Chrome: listen to navigation events, grab URL/title, push via WebSocket |
+|             | • Create db template | • Chrome content script: capture selections & form submits |
+|             | • Create retrieval logic for each convo | • Setup connection between electron and agent|
+|             | • Setup use cases and test | • Complete prototype of agent UX in desktop |
+| **Jul 7-8** | **Create observation/feedback to memory pipeline** | **Memory/Setting in webpage**  |
+|             | • Create record logic | • Settings → Memory tab: list/search/delete  |
+|             | • Create pasive observation logic | • Observation/Accesibility settings|
+|             | • Create feedback to memory logic (Store user responses in memory) | • UI to submit feedback to agent actions (Toast component with Yes/No buttons)|
 
 ## Week 2: Agent Workflows & Polish
 
 | Day         | Tetsu (Agent & Workflow Engine) | Shomari (Onboarding, Polish & Packaging) |
 | ----------- | ------------------------------- | ---------------------------------------- |
-| **Day 6–7** | **Proactive Suggestion Engine (Backend)** | **Suggestion UI & Feedback** |
-|             | • Implement rules engine for repeated context (window+clipboard) | • Toast component with Yes/No buttons |
-|             | • Expose suggestion triggers via IPC to renderer | • Relay user choice back to Tetsu's engine |
-|             | • Store user responses in memory | • Log feedback locally for tuning |
-| **Day 8**   | **Agent Workflow Execution** | **Workflow UI** |
-|             | • Implement browser automation: click, type, extract, search | • Confirmation modal for workflow parameters |
-|             | • Web-based workflow execution engine | • "Dry-run" toggle and cancel button |
-|             | • Execute workflows with success/failure tracking | • Success/failure toast with execution details |
-| **Day 9**   | **Permissions & Diagnostics** | **Privacy Settings & Testing** |
-|             | • Onboarding flow: staged prompts for Accessibility, Clipboard, Browser automation | • Permissions toggles in Settings → Privacy |
-|             | • Implement helper heartbeat & crash recovery | • Permission Log view (when each API was accessed) |
-|             | • Expose "export logs" endpoint for diagnostics | • Manual smoke tests on clean macOS account |
-| **Day 10**  | **Metrics & Handoff** | **UI Polish & Packaging** |
-|             | • Instrument core metrics: Context Coverage, Trigger Precision, Workflow Success Rate | • Refine chat bubble & toast animations |
-|             | • Expose metrics endpoint in backend for UI dashboard | • Use native dialogs/notifications where possible |
-|             | | • Package with Electron Builder & notarize .dmg |
-|             | | • Draft beta notes |
+| **July 9-11** | **Relationship Building & Agent Workflow Execution** | **Pipedream Setup & Agent Workflow Execution** |
+|             | • Implement rules engine for repeated context (observation to suggestion) | • Setup pipedream for app |
+|             | • Implement rules for morning/evening briefing | • Connect agent to use tools through pipedream |
+|             | • Implement rules for collaborative work | • Execute workflow through pipedream (start with prompting base) |
+|             | • Confirmation modal for workflow parameters |
+|             | • Execute workflows with success/failure tracking |
+|             | • "Dry-run" toggle and cancel button |
+|             | • Success/failure toast with execution details |
+| **July 12**   | **Testing Agent** |
+|             | • Test every workflow we can think of (prompting, collaborative, background (breifing)) |
+|             | • Implement logging |
+| **July 13**   | **Onboarding & App Testing** | **Packaging & App Testing** |
+|             | • Onboarding flow: staged prompts for Accessibility, Integration, Browser automation | • Manual smoke tests on clean macOS account |
+|             | • Instrument core metrics: Context Coverage, Trigger Precision, Workflow Success Rate | • Package with Electron Builder & notarize .dmg |
+|             | • Refine UI | • Draft beta notes |
+|             | • Setup dashboard on webpage |
+|             | • Complete pacaking and send to beta users |
+
 
 ---
-
-### Hand-Off Checkpoints
-
-* **End of Day 2:** Helper events successfully driving Chrome extension context.
-* **End of Day 5:** Memory API is live; UI can list and delete entries.
-* **End of Day 7:** Suggestions fire correctly and appear in the UI.
-* **End of Day 10:** Fully packaged beta ready for testers, with agent workflow execution capabilities enabled.
 
 ### Long-Term Vision Alignment
 
@@ -372,6 +360,8 @@ This MVP establishes the foundational infrastructure for our five key differenti
 5. **Full-Task Automation**: Browser-based workflow execution
 
 Post-MVP development will expand these capabilities with advanced context modeling, emotional rapport building, and comprehensive tool integration.
+
+---
 
 ### Ideas
 * Harnessing the power of the people that know how to do things: sharing what agents learn from others to other people's agents
