@@ -4,6 +4,8 @@ class ControlBar {
         this.controlBar = document.getElementById('controlBar');
         this.loginButton = document.getElementById('loginButton');
         this.chatButton = document.getElementById('chatButton');
+        this.feedbackButton = document.getElementById('feedbackButton');
+        this.browseButton = document.getElementById('browseButton');
         this.optionsButton = document.getElementById('optionsButton');
         this.chatPopup = document.getElementById('chatPopup');
         this.chatPopupMessages = document.getElementById('chatPopupMessages');
@@ -27,6 +29,8 @@ class ControlBar {
         // Button click handlers
         this.loginButton.addEventListener('click', this.handleLoginClick.bind(this));
         this.chatButton.addEventListener('click', this.handleChatClick.bind(this));
+        this.feedbackButton.addEventListener('click', this.handleFeedbackClick.bind(this));
+        this.browseButton.addEventListener('click', this.handleBrowseClick.bind(this));
         this.optionsButton.addEventListener('click', this.handleOptionsClick.bind(this));
         this.chatPopupSend.addEventListener('click', this.handleSendMessage.bind(this));
         this.chatPopupInput.addEventListener('keypress', this.handleInputKeypress.bind(this));
@@ -213,6 +217,16 @@ class ControlBar {
         }
     }
     
+    handleFeedbackClick() {
+        console.log('feedback button clicked');
+    }
+    
+    handleBrowseClick() {
+        console.log('browse button clicked');
+        // Toggle highlighted state
+        this.browseButton.classList.toggle('highlighted');
+    }
+    
     handleOptionsClick() {
         console.log('Options button clicked');
         window.electronAPI.optionsClick();
@@ -274,6 +288,8 @@ class ControlBar {
     handleInputKeypress(event) {
         if (event.key === 'Enter') {
             this.handleSendMessage();
+            // Also trigger the send button click for visual feedback
+            this.chatPopupSend.click();
         }
     }
     

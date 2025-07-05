@@ -13,6 +13,7 @@ let isDragging = false;
 let dragStartX = 0;
 let windowStartX = 0;
 let chromeProcess = null;
+let previouslyFocusedWindow = null;
 
 function createControlBarWindow() {
   const primaryDisplay = screen.getPrimaryDisplay();
@@ -87,14 +88,61 @@ function createControlBarWindow() {
   });
 
   ipcMain.handle('show-window', () => {
+    console.log('[MAIN] show-window IPC handler called');
+    
+    // On macOS, we don't need to track focus since we use app.hide() to restore focus
+    if (process.platform !== 'darwin') {
+      // Store the currently focused window BEFORE showing the control bar (for non-macOS platforms)
+      const focusedWindow = BrowserWindow.getFocusedWindow();
+      console.log('[MAIN] getFocusedWindow returned:', focusedWindow ? 'window object' : 'null');
+      console.log('[MAIN] controlBarWindow:', controlBarWindow ? 'window object' : 'null');
+      console.log('[MAIN] focusedWindow === controlBarWindow:', focusedWindow === controlBarWindow);
+      
+      if (focusedWindow && focusedWindow !== controlBarWindow) {
+        previouslyFocusedWindow = focusedWindow;
+        console.log('[MAIN] Stored previously focused window before showing control bar');
+      } else {
+        console.log('[MAIN] No previously focused window stored (focusedWindow was null or control bar)');
+      }
+    }
+    
     controlBarWindow.show();
   });
 
   ipcMain.handle('hide-window', () => {
+    console.log('[MAIN] hide-window IPC handler called');
     controlBarWindow.hide();
+    
+    // On macOS, hide the entire app to restore focus to the previously active application
+    if (process.platform === 'darwin') {
+      console.log('[MAIN] Hiding entire app to restore focus to previously active application');
+      app.hide();
+    } else {
+      // For other platforms, try to focus other Electron windows
+      console.log('[MAIN] previouslyFocusedWindow:', previouslyFocusedWindow ? 'window object' : 'null');
+      if (previouslyFocusedWindow && !previouslyFocusedWindow.isDestroyed()) {
+        previouslyFocusedWindow.focus();
+        console.log('[MAIN] Restored focus to previously focused window');
+      } else {
+        console.log('[MAIN] No previously focused window available, trying alternative');
+        // If no previously focused window, try to focus the most recently used window
+        const allWindows = BrowserWindow.getAllWindows();
+        const otherWindows = allWindows.filter(win => win !== controlBarWindow && !win.isDestroyed());
+        console.log('[MAIN] Found', otherWindows.length, 'other windows');
+        
+        if (otherWindows.length > 0) {
+          // Focus the first available window
+          otherWindows[0].focus();
+          console.log('[MAIN] Focused alternative window');
+        } else {
+          console.log('[MAIN] No alternative windows found to focus');
+        }
+      }
+    }
   });
 
   ipcMain.handle('is-window-visible', () => {
+    console.log('[MAIN] is-window-visible IPC handler called, returning:', controlBarWindow.isVisible());
     return controlBarWindow.isVisible();
   });
 
@@ -294,14 +342,14 @@ app.whenReady().then(() => {
 
   // Register control bar movement shortcuts
   globalShortcut.register('CommandOrControl+Left', () => {
-    if (controlBarWindow) {
+    if (controlBarWindow && controlBarWindow.isVisible()) {
       controlBarWindow.webContents.send('move-control-bar', 'left');
       console.log('[MAIN] Move control bar left shortcut triggered');
     }
   });
 
   globalShortcut.register('CommandOrControl+Right', () => {
-    if (controlBarWindow) {
+    if (controlBarWindow && controlBarWindow.isVisible()) {
       controlBarWindow.webContents.send('move-control-bar', 'right');
       console.log('[MAIN] Move control bar right shortcut triggered');
     }

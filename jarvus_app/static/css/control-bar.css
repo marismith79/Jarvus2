@@ -91,6 +91,27 @@ body {
     color: #fff;
 }
 
+/* Feedback button specific styles */
+.feedback-button {
+    color: #fff;
+}
+
+/* Browse button specific styles */
+.browse-button {
+    color: #fff;
+}
+
+.browse-button.highlighted {
+    background: rgba(0, 122, 255, 0.2);
+    border: 1px solid rgba(0, 122, 255, 0.3);
+    color: #007AFF;
+}
+
+.browse-button.highlighted:hover {
+    background: rgba(0, 122, 255, 0.3);
+    border-color: rgba(0, 122, 255, 0.5);
+}
+
 /* Options button specific styles */
 .options-button {
     padding: 4px;
