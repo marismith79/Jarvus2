@@ -48,22 +48,15 @@ class ShortTermMemory(db.Model):
         ).order_by(cls.step_number.asc()).all()
 
     def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary format for LangGraph compatibility"""
+        """Convert to dictionary format"""
         return {
-            'values': self.state_data,
-            'config': {
-                'configurable': {
-                    'thread_id': self.thread_id,
-                    'checkpoint_id': self.checkpoint_id,
-                    'step': self.step_number
-                }
-            },
-            'metadata': {
-                'source': 'loop',
-                'step': self.step_number,
-                'thread_id': self.thread_id,
-                'created_at': self.created_at.isoformat() if self.created_at else None
-            }
+            'thread_id': self.thread_id,
+            'state_data': self.state_data,
+            'checkpoint_id': self.checkpoint_id,
+            'step_number': self.step_number,
+            'parent_checkpoint_id': self.parent_checkpoint_id,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
 
 
@@ -137,30 +130,181 @@ class LongTermMemory(db.Model):
         }
 
 
-class MemoryEmbedding(db.Model):
-    """Store embeddings for semantic search in long-term memory"""
-    __tablename__ = 'memory_embeddings'
+class HierarchicalMemory(db.Model):
+    """Hierarchical memory for contextual state management and influence propagation"""
+    __tablename__ = 'hierarchical_memory'
 
     id = db.Column(db.Integer, primary_key=True)
-    memory_id = db.Column(db.Integer, db.ForeignKey('long_term_memory.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     
-    # Embedding data
-    embedding_vector = db.Column(db.Text, nullable=False)  # JSON string of embedding
-    embedding_model = db.Column(db.String(100), nullable=False, default='text-embedding-3-small')
-    embedding_dimensions = db.Column(db.Integer, nullable=False, default=1536)
+    # Hierarchical structure
+    memory_id = db.Column(db.String(255), nullable=False, index=True)  # UUID for the memory
+    parent_id = db.Column(db.String(255), nullable=True, index=True)  # Parent memory ID
+    level = db.Column(db.Integer, default=0)  # Hierarchy level (0 = root, 1 = child, etc.)
+    path = db.Column(db.String(1000), nullable=True)  # Full path from root (e.g., "vacation/email_preferences")
+    
+    # Memory content
+    name = db.Column(db.String(255), nullable=False)  # Human-readable name
+    description = db.Column(db.Text, nullable=True)  # Description of this memory
+    context_data = db.Column(db.JSON, nullable=False, default=dict)  # Contextual data
+    influence_rules = db.Column(db.JSON, nullable=True)  # Rules for how this affects children
+    
+    # Metadata
+    memory_type = db.Column(db.String(50), nullable=False, default='context')  # context, preference, rule, etc.
+    is_active = db.Column(db.Boolean, default=True)  # Whether this context is currently active
+    priority = db.Column(db.Integer, default=0)  # Priority for conflict resolution
     
     # Timestamps
     created_at = db.Column(db.DateTime, server_default=db.func.now())
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    last_accessed = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relationships
-    memory = db.relationship('LongTermMemory', backref='embeddings')
+    user = db.relationship('User', backref='hierarchical_memories')
 
     def __repr__(self):
-        return f"<MemoryEmbedding memory_id={self.memory_id} model={self.embedding_model}>"
+        return f"<HierarchicalMemory name={self.name} level={self.level} path={self.path}>"
 
-    def get_vector(self) -> list[float]:
-        """Get the embedding vector as a list of floats"""
-        try:
-            return json.loads(self.embedding_vector)
-        except (json.JSONDecodeError, TypeError):
-            return [] 
+    @classmethod
+    def get_root_contexts(cls, user_id: int) -> list['HierarchicalMemory']:
+        """Get all root-level contexts for a user"""
+        return cls.query.filter_by(
+            user_id=user_id,
+            level=0,
+            is_active=True
+        ).order_by(cls.priority.desc(), cls.last_accessed.desc()).all()
+
+    @classmethod
+    def get_children(cls, memory_id: str, user_id: int) -> list['HierarchicalMemory']:
+        """Get all children of a memory"""
+        return cls.query.filter_by(
+            parent_id=memory_id,
+            user_id=user_id,
+            is_active=True
+        ).order_by(cls.priority.desc(), cls.last_accessed.desc()).all()
+
+    @classmethod
+    def get_ancestors(cls, memory_id: str, user_id: int) -> list['HierarchicalMemory']:
+        """Get all ancestors of a memory (parent, grandparent, etc.)"""
+        ancestors = []
+        current = cls.query.filter_by(memory_id=memory_id, user_id=user_id).first()
+        
+        while current and current.parent_id:
+            parent = cls.query.filter_by(memory_id=current.parent_id, user_id=user_id).first()
+            if parent:
+                ancestors.append(parent)
+                current = parent
+            else:
+                break
+        
+        return ancestors
+
+    @classmethod
+    def get_descendants(cls, memory_id: str, user_id: int) -> list['HierarchicalMemory']:
+        """Get all descendants of a memory (children, grandchildren, etc.)"""
+        descendants = []
+        children = cls.get_children(memory_id, user_id)
+        
+        for child in children:
+            descendants.append(child)
+            descendants.extend(cls.get_descendants(child.memory_id, user_id))
+        
+        return descendants
+
+    @classmethod
+    def get_active_contexts(cls, user_id: int) -> list['HierarchicalMemory']:
+        """Get all active contexts for a user"""
+        return cls.query.filter_by(
+            user_id=user_id,
+            is_active=True
+        ).order_by(cls.level.asc(), cls.priority.desc()).all()
+
+    def get_influence_context(self) -> Dict[str, Any]:
+        """Get the combined influence context from this memory and its ancestors"""
+        context = self.context_data.copy()
+        ancestors = self.get_ancestors(self.memory_id, self.user_id)
+        
+        # Apply ancestor influences (higher level contexts override lower level ones)
+        for ancestor in reversed(ancestors):  # Start from root
+            if ancestor.influence_rules:
+                context = self.apply_influence_rules(context, ancestor.influence_rules)
+        
+        return context
+
+    def apply_influence_rules(self, context: Dict[str, Any], rules: Dict[str, Any]) -> Dict[str, Any]:
+        """Apply influence rules to modify context"""
+        modified_context = context.copy()
+        
+        for rule_type, rule_data in rules.items():
+            if rule_type == 'override':
+                # Direct override of values
+                for key, value in rule_data.items():
+                    modified_context[key] = value
+            elif rule_type == 'modify':
+                # Modify existing values
+                for key, modification in rule_data.items():
+                    if key in modified_context:
+                        if isinstance(modification, dict) and 'operation' in modification:
+                            op = modification['operation']
+                            value = modification.get('value')
+                            
+                            if op == 'multiply':
+                                modified_context[key] *= value
+                            elif op == 'add':
+                                modified_context[key] += value
+                            elif op == 'set':
+                                modified_context[key] = value
+                        else:
+                            modified_context[key] = modification
+            elif rule_type == 'add':
+                # Add new values if they don't exist
+                for key, value in rule_data.items():
+                    if key not in modified_context:
+                        modified_context[key] = value
+        
+        return modified_context
+
+    def update_access_time(self):
+        """Update the last accessed time"""
+        self.last_accessed = datetime.utcnow()
+        db.session.commit()
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary format"""
+        return {
+            'id': self.memory_id,
+            'name': self.name,
+            'description': self.description,
+            'level': self.level,
+            'path': self.path,
+            'context_data': self.context_data,
+            'influence_rules': self.influence_rules,
+            'type': self.memory_type,
+            'is_active': self.is_active,
+            'priority': self.priority,
+            'parent_id': self.parent_id,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'last_accessed': self.last_accessed.isoformat() if self.last_accessed else None
+        }
+
+
+class MemoryEmbedding(db.Model):
+    """Embeddings for semantic search"""
+    __tablename__ = 'memory_embeddings'
+
+    id = db.Column(db.Integer, primary_key=True)
+    memory_id = db.Column(db.String(255), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    
+    # Embedding data
+    embedding_vector = db.Column(db.Text, nullable=False)  # JSON-encoded list of floats
+    model_name = db.Column(db.String(100), nullable=False)  # e.g., "text-embedding-3-small"
+    
+    # Metadata
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
+    
+    # Relationships
+    user = db.relationship('User', backref='memory_embeddings')
+
+    def __repr__(self):
+        return f"<MemoryEmbedding memory_id={self.memory_id} model={self.model_name}>" 

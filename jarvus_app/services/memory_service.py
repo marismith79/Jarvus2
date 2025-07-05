@@ -11,7 +11,7 @@ from typing import Dict, Any, List, Optional, Tuple
 from datetime import datetime
 
 from ..db import db
-from ..models.memory import ShortTermMemory, LongTermMemory, MemoryEmbedding
+from ..models.memory import ShortTermMemory, LongTermMemory, MemoryEmbedding, HierarchicalMemory
 from ..llm.client import JarvusAIClient
 
 logger = logging.getLogger(__name__)
@@ -98,54 +98,112 @@ class MemoryService:
     # --- Long-Term Memory (Cross-Thread Persistence) ---
     
     def store_memory(
-        self,
-        user_id: int,
-        namespace: str,
-        memory_data: Dict[str, Any],
+        self, 
+        user_id: int, 
+        namespace: str, 
+        memory_data: Dict[str, Any], 
         memory_type: str = 'fact',
+        memory_id: Optional[str] = None,
         importance_score: float = 1.0,
-        search_text: Optional[str] = None,
-        memory_id: Optional[str] = None
+        search_text: Optional[str] = None
     ) -> LongTermMemory:
-        """Store a new memory in long-term storage"""
+        """Store a long-term memory"""
         try:
+            # Generate memory ID if not provided
             if not memory_id:
                 memory_id = str(uuid.uuid4())
             
-            # Check if memory already exists
-            existing = LongTermMemory.get_memory(user_id, namespace, memory_id)
-            if existing:
+            # Create or update memory
+            memory = LongTermMemory.get_memory(user_id, namespace, memory_id)
+            if memory:
                 # Update existing memory
-                existing.memory_data.update(memory_data)
-                existing.importance_score = importance_score
-                existing.last_accessed = datetime.utcnow()
-                if search_text:
-                    existing.search_text = search_text
-                db.session.commit()
-                logger.info(f"Updated existing memory {memory_id} in namespace {namespace}")
-                return existing
+                memory.memory_data = memory_data
+                memory.memory_type = memory_type
+                memory.importance_score = importance_score
+                memory.search_text = search_text
+                memory.updated_at = datetime.utcnow()
+            else:
+                # Create new memory
+                memory = LongTermMemory(
+                    user_id=user_id,
+                    namespace=namespace,
+                    memory_id=memory_id,
+                    memory_data=memory_data,
+                    memory_type=memory_type,
+                    importance_score=importance_score,
+                    search_text=search_text
+                )
+                db.session.add(memory)
             
-            # Create new memory
-            memory = LongTermMemory(
-                user_id=user_id,
-                namespace=namespace,
-                memory_id=memory_id,
-                memory_data=memory_data,
-                memory_type=memory_type,
-                importance_score=importance_score,
-                search_text=search_text
-            )
-            
-            db.session.add(memory)
             db.session.commit()
-            
-            logger.info(f"Stored new memory {memory_id} in namespace {namespace}")
+            logger.info(f"Stored memory {memory_id} in namespace {namespace}")
             return memory
             
         except Exception as e:
             db.session.rollback()
             logger.error(f"Failed to store memory: {str(e)}")
             raise
+    
+    def store_episodic_memory(
+        self, 
+        user_id: int, 
+        episode_type: str, 
+        episode_data: Dict[str, Any],
+        importance_score: float = 1.0
+    ) -> LongTermMemory:
+        """Store an episodic memory (user action, feedback, etc.)"""
+        return self.store_memory(
+            user_id=user_id,
+            namespace='episodes',
+            memory_data={
+                'type': episode_type,
+                'data': episode_data,
+                'timestamp': datetime.utcnow().isoformat()
+            },
+            memory_type='episode',
+            importance_score=importance_score,
+            search_text=json.dumps(episode_data)
+        )
+    
+    def store_semantic_memory(
+        self, 
+        user_id: int, 
+        fact_type: str, 
+        fact_data: Dict[str, Any],
+        importance_score: float = 1.0
+    ) -> LongTermMemory:
+        """Store a semantic memory (fact, preference, etc.)"""
+        return self.store_memory(
+            user_id=user_id,
+            namespace='semantic',
+            memory_data={
+                'type': fact_type,
+                'data': fact_data
+            },
+            memory_type='fact',
+            importance_score=importance_score,
+            search_text=json.dumps(fact_data)
+        )
+    
+    def store_procedural_memory(
+        self, 
+        user_id: int, 
+        procedure_name: str, 
+        procedure_data: Dict[str, Any],
+        importance_score: float = 1.0
+    ) -> LongTermMemory:
+        """Store a procedural memory (workflow, how-to, etc.)"""
+        return self.store_memory(
+            user_id=user_id,
+            namespace='procedures',
+            memory_data={
+                'name': procedure_name,
+                'data': procedure_data
+            },
+            memory_type='procedure',
+            importance_score=importance_score,
+            search_text=json.dumps(procedure_data)
+        )
     
     def search_memories(
         self, 
@@ -194,94 +252,279 @@ class MemoryService:
             logger.error(f"Failed to delete memory {memory_id}: {str(e)}")
             return False
     
-    # --- Memory Integration with LLM ---
+    # --- Hierarchical Memory (Contextual State Management) ---
     
-    def get_context_for_conversation(
+    def create_hierarchical_context(
+        self,
+        user_id: int,
+        name: str,
+        description: str,
+        context_data: Dict[str, Any],
+        parent_id: Optional[str] = None,
+        influence_rules: Optional[Dict[str, Any]] = None,
+        memory_type: str = 'context',
+        priority: int = 0
+    ) -> HierarchicalMemory:
+        """Create a hierarchical context that can influence other memories"""
+        try:
+            memory_id = str(uuid.uuid4())
+            
+            # Calculate level and path
+            level = 0
+            path = name
+            
+            if parent_id:
+                parent = HierarchicalMemory.query.filter_by(
+                    memory_id=parent_id, 
+                    user_id=user_id
+                ).first()
+                if parent:
+                    level = parent.level + 1
+                    path = f"{parent.path}/{name}" if parent.path else name
+            
+            context = HierarchicalMemory(
+                user_id=user_id,
+                memory_id=memory_id,
+                parent_id=parent_id,
+                level=level,
+                path=path,
+                name=name,
+                description=description,
+                context_data=context_data,
+                influence_rules=influence_rules or {},
+                memory_type=memory_type,
+                priority=priority
+            )
+            
+            db.session.add(context)
+            db.session.commit()
+            
+            logger.info(f"Created hierarchical context {name} at level {level}")
+            return context
+            
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Failed to create hierarchical context: {str(e)}")
+            raise
+    
+    def get_active_contexts(self, user_id: int) -> List[HierarchicalMemory]:
+        """Get all active contexts for a user"""
+        try:
+            contexts = HierarchicalMemory.get_active_contexts(user_id)
+            return contexts
+        except Exception as e:
+            logger.error(f"Failed to get active contexts: {str(e)}")
+            return []
+    
+    def get_context_influence(self, memory_id: str, user_id: int) -> Dict[str, Any]:
+        """Get the combined influence context from a memory and its ancestors"""
+        try:
+            memory = HierarchicalMemory.query.filter_by(
+                memory_id=memory_id, 
+                user_id=user_id
+            ).first()
+            
+            if memory:
+                return memory.get_influence_context()
+            return {}
+            
+        except Exception as e:
+            logger.error(f"Failed to get context influence: {str(e)}")
+            return {}
+    
+    def get_root_contexts(self, user_id: int) -> List[HierarchicalMemory]:
+        """Get all root-level contexts for a user"""
+        try:
+            return HierarchicalMemory.get_root_contexts(user_id)
+        except Exception as e:
+            logger.error(f"Failed to get root contexts: {str(e)}")
+            return []
+    
+    def get_context_children(self, memory_id: str, user_id: int) -> List[HierarchicalMemory]:
+        """Get all children of a context"""
+        try:
+            return HierarchicalMemory.get_children(memory_id, user_id)
+        except Exception as e:
+            logger.error(f"Failed to get context children: {str(e)}")
+            return []
+    
+    def update_context(
+        self,
+        user_id: int,
+        memory_id: str,
+        context_data: Optional[Dict[str, Any]] = None,
+        influence_rules: Optional[Dict[str, Any]] = None,
+        is_active: Optional[bool] = None,
+        priority: Optional[int] = None
+    ) -> Optional[HierarchicalMemory]:
+        """Update a hierarchical context"""
+        try:
+            context = HierarchicalMemory.query.filter_by(
+                memory_id=memory_id, 
+                user_id=user_id
+            ).first()
+            
+            if context:
+                if context_data is not None:
+                    context.context_data = context_data
+                if influence_rules is not None:
+                    context.influence_rules = influence_rules
+                if is_active is not None:
+                    context.is_active = is_active
+                if priority is not None:
+                    context.priority = priority
+                
+                context.updated_at = datetime.utcnow()
+                db.session.commit()
+                
+                logger.info(f"Updated hierarchical context {memory_id}")
+                return context
+            
+            return None
+            
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Failed to update context: {str(e)}")
+            return None
+    
+    def delete_context(self, user_id: int, memory_id: str) -> bool:
+        """Delete a hierarchical context and all its descendants"""
+        try:
+            context = HierarchicalMemory.query.filter_by(
+                memory_id=memory_id, 
+                user_id=user_id
+            ).first()
+            
+            if context:
+                # Get all descendants
+                descendants = HierarchicalMemory.get_descendants(memory_id, user_id)
+                
+                # Delete descendants first
+                for descendant in descendants:
+                    db.session.delete(descendant)
+                
+                # Delete the context itself
+                db.session.delete(context)
+                db.session.commit()
+                
+                logger.info(f"Deleted context {memory_id} and {len(descendants)} descendants")
+                return True
+            
+            return False
+            
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Failed to delete context: {str(e)}")
+            return False
+    
+    def get_contextualized_memories(
         self, 
         user_id: int, 
-        thread_id: str, 
-        current_message: str,
-        max_memories: int = 5
-    ) -> str:
-        """Get relevant context from both short-term and long-term memory"""
-        context_parts = []
-        
-        # Get short-term memory (conversation history)
-        latest_state = self.get_latest_state(thread_id, user_id)
-        if latest_state and 'messages' in latest_state:
-            # Get last few messages for context
-            messages = latest_state['messages'][-6:]  # Last 3 exchanges
-            if messages:
-                context_parts.append("## Recent Conversation")
-                for msg in messages:
-                    role = msg.get('role', 'unknown')
-                    content = msg.get('content', '')
-                    if content:
-                        context_parts.append(f"{role.title()}: {content}")
-        
-        # Get long-term memories relevant to current message
-        memories = self.search_memories(
+        namespace: str, 
+        query: Optional[str] = None,
+        context_memory_id: Optional[str] = None,
+        limit: int = 10
+    ) -> Tuple[List[LongTermMemory], Dict[str, Any]]:
+        """Get memories with contextual influence applied"""
+        try:
+            # Get base memories
+            memories = self.search_memories(user_id, namespace, query, limit)
+            
+            # Get contextual influence if specified
+            context_influence = {}
+            if context_memory_id:
+                context_influence = self.get_context_influence(context_memory_id, user_id)
+            
+            return memories, context_influence
+            
+        except Exception as e:
+            logger.error(f"Failed to get contextualized memories: {str(e)}")
+            return [], {}
+    
+    def create_vacation_context_example(self, user_id: int) -> HierarchicalMemory:
+        """Example: Create a vacation context that influences all other decisions"""
+        vacation_context = self.create_hierarchical_context(
             user_id=user_id,
-            namespace="memories",
-            query=current_message,
-            limit=max_memories
+            name="Vacation Mode",
+            description="User is on vacation - should prioritize relaxation and minimize work",
+            context_data={
+                "status": "on_vacation",
+                "start_date": "2024-06-01",
+                "end_date": "2024-06-15",
+                "location": "Hawaii",
+                "work_priority": "minimal"
+            },
+            influence_rules={
+                "override": {
+                    "work_urgency": "low",
+                    "response_style": "relaxed",
+                    "automation_level": "high"
+                },
+                "modify": {
+                    "email_check_frequency": {"operation": "multiply", "value": 0.25},
+                    "meeting_suggestions": {"operation": "multiply", "value": 0.1},
+                    "task_priority": {"operation": "multiply", "value": 0.3}
+                },
+                "add": {
+                    "vacation_aware": True,
+                    "relaxation_focus": True
+                }
+            },
+            memory_type="context",
+            priority=100  # High priority to override other contexts
         )
         
-        if memories:
-            context_parts.append("## Relevant Memories")
-            for memory in memories:
-                memory_text = memory.memory_data.get('text', '')
-                if memory_text:
-                    context_parts.append(f"- {memory_text}")
+        # Create child contexts that inherit vacation influence
+        email_prefs = self.create_hierarchical_context(
+            user_id=user_id,
+            name="Vacation Email Preferences",
+            description="Email handling preferences during vacation",
+            context_data={
+                "check_frequency": "once_per_day",
+                "auto_reply_enabled": True,
+                "urgent_only": True,
+                "batch_processing": True
+            },
+            parent_id=vacation_context.memory_id,
+            influence_rules={
+                "override": {
+                    "email_urgency_threshold": "critical_only",
+                    "response_time_expectation": "24_hours"
+                }
+            }
+        )
         
-        return "\n".join(context_parts) if context_parts else ""
+        return vacation_context
     
-    def extract_and_store_memories(
+    def get_combined_context_for_decision(
         self, 
         user_id: int, 
-        conversation_messages: List[Dict[str, str]],
-        agent_id: int
-    ) -> List[str]:
-        """Extract potential memories from conversation and store them"""
-        stored_memories = []
-        
-        # Simple memory extraction logic - can be enhanced with LLM
-        for message in conversation_messages:
-            content = message.get('content', '').lower()
-            role = message.get('role', '')
+        decision_type: str
+    ) -> Dict[str, Any]:
+        """Get all relevant contexts for a specific decision type"""
+        try:
+            # Get all active contexts
+            active_contexts = self.get_active_contexts(user_id)
             
-            # Look for memory triggers
-            if role == 'user' and any(trigger in content for trigger in ['remember', 'my name is', 'i am', 'i like', 'i prefer']):
-                # Extract potential memory
-                memory_text = message.get('content', '')
-                
-                # Determine memory type and importance
-                memory_type = 'fact'
-                importance = 1.0
-                
-                if 'name' in content:
-                    memory_type = 'identity'
-                    importance = 2.0
-                elif any(word in content for word in ['like', 'love', 'prefer']):
-                    memory_type = 'preference'
-                    importance = 1.5
-                
-                # Store the memory
-                try:
-                    memory = self.store_memory(
-                        user_id=user_id,
-                        namespace="memories",
-                        memory_data={'text': memory_text, 'source': 'conversation'},
-                        memory_type=memory_type,
-                        importance_score=importance,
-                        search_text=memory_text
+            # Start with base context
+            combined_context = {
+                "decision_type": decision_type,
+                "timestamp": datetime.utcnow().isoformat()
+            }
+            
+            # Apply contexts in order (root to leaf, priority order)
+            for context in active_contexts:
+                if context.influence_rules:
+                    combined_context = context.apply_influence_rules(
+                        combined_context, 
+                        context.influence_rules
                     )
-                    stored_memories.append(memory.memory_id)
-                    logger.info(f"Extracted and stored memory: {memory_text[:50]}...")
-                except Exception as e:
-                    logger.error(f"Failed to store extracted memory: {str(e)}")
-        
-        return stored_memories
+            
+            return combined_context
+            
+        except Exception as e:
+            logger.error(f"Failed to get combined context: {str(e)}")
+            return {"decision_type": decision_type}
 
 
 class MemoryConfig:
