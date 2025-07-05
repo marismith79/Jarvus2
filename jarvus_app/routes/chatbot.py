@@ -26,6 +26,7 @@ from ..config import Config
 from jarvus_app.models.history import History
 from ..db import db
 from ..services.agent_service import get_agent, get_agent_tools, get_agent_history, get_agent_interaction_history, append_message, create_agent, delete_agent, save_interaction
+from ..services.enhanced_agent_service import enhanced_agent_service
 from ..utils.token_utils import get_valid_jwt_token
 
 jarvus_ai = JarvusAIClient()
@@ -91,6 +92,16 @@ def get_agent_history_route(agent_id):
 @chatbot_bp.route('/send', methods=['POST'])
 @login_required
 def handle_chat_message():
+    """Handle chat message with legacy approach (for backward compatibility)"""
+    return handle_chat_message_legacy()
+
+@chatbot_bp.route('/send-with-memory', methods=['POST'])
+@login_required
+def handle_chat_message_with_memory():
+    """Handle chat message with enhanced memory management"""
+    return handle_chat_message_enhanced()
+
+def handle_chat_message_legacy():
     """Handle incoming chat messages, invoking LLM and tools as needed."""
     import sys
     logger.info("=== Starting chat message handling ===")
@@ -355,6 +366,35 @@ def handle_chat_message():
 
     except Exception as e:
         logger.error(f"Error processing message for agent {agent_id}: {str(e)}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
+def handle_chat_message_enhanced():
+    """Handle incoming chat messages with enhanced memory management."""
+    try:
+        data = request.get_json() or {}
+        user_text = data.get('message', '').strip()
+        agent_id = data.get('agent_id')
+        thread_id = data.get('thread_id')  # Optional thread ID for memory
+        
+        if not all([user_text, agent_id]):
+            return jsonify({'error': 'Message and agent_id are required.'}), 400
+        
+        # Process message with memory
+        assistant_message, memory_info = enhanced_agent_service.process_message_with_memory(
+            agent_id=agent_id,
+            user_id=current_user.id,
+            user_message=user_text,
+            thread_id=thread_id
+        )
+        
+        return jsonify({
+            'response': assistant_message,
+            'memory_info': memory_info,
+            'thread_id': memory_info.get('thread_id')
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Error processing message with memory: {str(e)}", exc_info=True)
         return jsonify({'error': str(e)}), 500
 
 @chatbot_bp.route('/agents/<int:agent_id>', methods=['DELETE'])

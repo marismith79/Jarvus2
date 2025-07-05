@@ -258,6 +258,7 @@ def init_db(app: Flask) -> None:
             from .models.user import User
             from .models.user_tool import UserTool
             from .models.history import History
+            from .models.memory import ShortTermMemory, LongTermMemory, MemoryEmbedding
             
             print("All models imported successfully")
             
