@@ -318,21 +318,16 @@ function setupPlaywrightBrowser() {
     safeLog('[MAIN] Launching Chrome browser directly from Electron...');
     
     try {
-      safeLog('[MAIN] Creating ChromeLauncher instance...');
       // Create new Chrome launcher instance
       chromeLauncher = new ChromeLauncher();
-      safeLog('[MAIN] ChromeLauncher instance created successfully');
       
-      safeLog('[MAIN] Calling launchChrome() method...');
       // Launch Chrome with Profile 6
       const result = await chromeLauncher.launchChrome();
-      safeLog('[MAIN] launchChrome() method completed');
       
       if (result.success) {
         safeLog('[MAIN] ✅ Browser launched successfully from Electron');
         safeLog(`[MAIN] WebSocket Endpoint: ${result.connectionInfo.wsEndpoint}`);
         safeLog(`[MAIN] Profile Path: ${result.connectionInfo.profilePath}`);
-        safeLog('[MAIN] Browser should now be visible on screen');
         
         // Start Browser API server
         safeLog('[MAIN] Starting Browser API server...');
@@ -345,19 +340,12 @@ function setupPlaywrightBrowser() {
         }
       } else {
         safeError('[MAIN] ❌ Failed to launch browser from Electron:', result.error);
-        safeError('[MAIN] ❌ Error message:', result.message);
       }
     } catch (error) {
       safeError('[MAIN] ❌ Error launching browser from Electron:', error);
-      safeError('[MAIN] ❌ Error stack:', error.stack);
-      safeError('[MAIN] ❌ Error details:', {
-        name: error.name,
-        message: error.message,
-        code: error.code
-      });
     }
     
-  }, 2000); // Wait 2 seconds for app to be ready
+  }, 1000); // Reduced wait time from 2 seconds to 1 second
   
   safeLog('[MAIN] Browser management is now handled directly by Electron with secure profile integration');
 }

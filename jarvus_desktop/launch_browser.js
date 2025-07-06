@@ -87,8 +87,7 @@ class ChromeLauncher {
                 '--disable-plugins'
             ];
             
-            console.log('🔧 Chrome launch arguments:');
-            chromeArgs.forEach(arg => console.log(`   ${arg}`));
+            console.log(`🔧 Chrome launch arguments: ${chromeArgs.length} args`);
             
             // Launch Chrome process
             this.chromeProcess = spawn(chromePath, chromeArgs, {
@@ -128,12 +127,8 @@ class ChromeLauncher {
             
             console.log('✅ Chrome browser launched successfully!');
             console.log(`🔗 WebSocket Endpoint: ${this.connectionInfo.wsEndpoint}`);
-            console.log(`📁 Temporary Profile Path: ${this.connectionInfo.profilePath}`);
-            console.log(`📁 Original Profile Path: ${this.connectionInfo.originalProfilePath}`);
-            console.log(`🔗 Process ID: ${this.connectionInfo.processId}`);
             
             // Step 9: Set up browser event handlers
-            console.log('🔧 Setting up browser event handlers...');
             this.setupBrowserEventHandlers();
             
             this.isConnected = true;
@@ -142,37 +137,6 @@ class ChromeLauncher {
             // Step 10: Save connection info to file for Python to read
             console.log('💾 Saving connection info...');
             this.saveConnectionInfo();
-            
-            // Step 11: Test page creation
-            console.log('🧪 Testing page creation...');
-            try {
-                const contexts = this.browser.contexts();
-                let context = contexts[0];
-                
-                if (!context) {
-                    console.log('📄 Creating new browser context...');
-                    context = await this.browser.newContext();
-                }
-                
-                const page = await context.newPage();
-                console.log('✅ New page created successfully');
-                
-                console.log('🧪 Navigating to test page...');
-                await page.goto('https://example.com');
-                console.log('✅ Test page loaded successfully');
-                
-                // Get page title to confirm it loaded
-                const title = await page.title();
-                console.log(`📄 Page title: "${title}"`);
-                
-                // Check if page is visible
-                const isVisible = await page.isVisible('body');
-                console.log(`👁️ Page visible: ${isVisible}`);
-                
-            } catch (pageError) {
-                console.error('❌ Error creating or navigating page:', pageError.message);
-                throw pageError;
-            }
             
             return {
                 success: true,
