@@ -13,15 +13,29 @@ from datetime import datetime
 from ..db import db
 from ..models.memory import ShortTermMemory, LongTermMemory, MemoryEmbedding, HierarchicalMemory
 from ..llm.client import JarvusAIClient
+from .vector_memory_service import VectorMemoryService
 
 logger = logging.getLogger(__name__)
 
 
 class MemoryService:
-    """Service for managing agent memory using database-backed storage"""
+    """Service for managing agent memory using database-backed storage with vector search"""
     
-    def __init__(self):
+    def __init__(self, enable_vector_search: bool = True):
         self.llm_client = JarvusAIClient()
+        self.enable_vector_search = enable_vector_search
+        
+        # Initialize vector service if enabled
+        if self.enable_vector_search:
+            try:
+                self.vector_service = VectorMemoryService()
+                logger.info("Vector memory service initialized successfully")
+            except Exception as e:
+                logger.warning(f"Failed to initialize vector service: {str(e)}. Falling back to relational-only search.")
+                self.enable_vector_search = False
+                self.vector_service = None
+        else:
+            self.vector_service = None
     
     # --- Short-Term Memory (Thread-Level Persistence) ---
     
@@ -107,13 +121,13 @@ class MemoryService:
         importance_score: float = 1.0,
         search_text: Optional[str] = None
     ) -> LongTermMemory:
-        """Store a long-term memory"""
+        """Store a long-term memory with content in vector DB and metadata in SQL"""
         try:
             # Generate memory ID if not provided
             if not memory_id:
                 memory_id = str(uuid.uuid4())
             
-            # Create or update memory
+            # Create or update memory in SQL (metadata only)
             memory = LongTermMemory.get_memory(user_id, namespace, memory_id)
             if memory:
                 # Update existing memory
@@ -136,6 +150,24 @@ class MemoryService:
                 db.session.add(memory)
             
             db.session.commit()
+            
+            # Store content in vector database if vector search is enabled
+            if self.enable_vector_search and self.vector_service:
+                try:
+                    # Prepare content text for vector storage
+                    content_text = search_text or json.dumps(memory_data)
+                    
+                    # Store content in vector DB
+                    vector_id = self.vector_service.store_memory_content(memory, content_text)
+                    
+                    # Store vector_id reference in SQL metadata (optional)
+                    if not memory.memory_data.get('vector_id'):
+                        memory.memory_data['vector_id'] = vector_id
+                        db.session.commit()
+                    
+                except Exception as e:
+                    logger.warning(f"Failed to store memory content in vector DB: {str(e)}")
+            
             logger.info(f"Stored memory {memory_id} in namespace {namespace}")
             return memory
             
@@ -210,21 +242,49 @@ class MemoryService:
         user_id: int, 
         namespace: str, 
         query: Optional[str] = None, 
-        limit: int = 10
+        limit: int = 10,
+        search_type: str = 'efficient_hybrid'  # 'efficient_hybrid', 'vector', 'sql_only'
     ) -> List[LongTermMemory]:
-        """Search memories by namespace and optional query"""
+        """Search memories using efficient hybrid approach: SQL metadata + Vector content"""
         try:
-            memories = LongTermMemory.search_memories(user_id, namespace, query, limit)
-            
-            # Update access times for retrieved memories
-            for memory in memories:
-                memory.update_access_time()
+            if not query:
+                # No query provided, use SQL search only
+                memories = LongTermMemory.search_memories(user_id, namespace, None, limit)
+            elif self.enable_vector_search and self.vector_service and search_type in ['efficient_hybrid', 'vector']:
+                # Use efficient hybrid search
+                if search_type == 'efficient_hybrid':
+                    # SQL filters metadata first, then vector searches content
+                    vector_results = self.vector_service.efficient_hybrid_search(
+                        query, user_id, namespace, limit
+                    )
+                else:
+                    # Pure vector search (fallback)
+                    vector_results = self.vector_service.efficient_hybrid_search(
+                        query, user_id, namespace, limit
+                    )
+                
+                # Convert vector results to memory objects
+                memories = []
+                for result in vector_results:
+                    memory_id = result['memory_id']
+                    memory = LongTermMemory.get_memory(user_id, namespace, memory_id)
+                    if memory:
+                        memories.append(memory)
+                
+                # Update access times
+                for memory in memories:
+                    memory.update_access_time()
+                    
+            else:
+                # Fallback to SQL search only
+                memories = LongTermMemory.search_memories(user_id, namespace, query, limit)
             
             return memories
             
         except Exception as e:
             logger.error(f"Failed to search memories: {str(e)}")
-            return []
+            # Fallback to SQL search
+            return LongTermMemory.search_memories(user_id, namespace, query, limit)
     
     def get_memory(self, user_id: int, namespace: str, memory_id: str) -> Optional[LongTermMemory]:
         """Get a specific memory by ID"""
@@ -265,7 +325,7 @@ class MemoryService:
         memory_type: str = 'context',
         priority: int = 0
     ) -> HierarchicalMemory:
-        """Create a hierarchical context that can influence other memories"""
+        """Create a hierarchical context with content in vector DB and metadata in SQL"""
         try:
             memory_id = str(uuid.uuid4())
             
@@ -298,6 +358,23 @@ class MemoryService:
             
             db.session.add(context)
             db.session.commit()
+            
+            # Store context content in vector database if vector search is enabled
+            if self.enable_vector_search and self.vector_service:
+                try:
+                    # Prepare content text for vector storage
+                    content_text = f"{name}: {description} {json.dumps(context_data)}"
+                    
+                    # Store content in vector DB
+                    vector_id = self.vector_service.store_context_content(context, content_text)
+                    
+                    # Store vector_id reference in context metadata (optional)
+                    if not context.context_data.get('vector_id'):
+                        context.context_data['vector_id'] = vector_id
+                        db.session.commit()
+                    
+                except Exception as e:
+                    logger.warning(f"Failed to store context content in vector DB: {str(e)}")
             
             logger.info(f"Created hierarchical context {name} at level {level}")
             return context
@@ -1155,6 +1232,138 @@ class MemoryService:
         except Exception as e:
             logger.error(f"Failed to extract related concepts: {str(e)}")
             return []
+
+    def search_hierarchical_contexts_vector(
+        self, 
+        query: str, 
+        user_id: int, 
+        n_results: int = 10,
+        similarity_threshold: float = 0.7
+    ) -> List[Dict[str, Any]]:
+        """Search hierarchical contexts using efficient SQL + Vector approach"""
+        if not self.enable_vector_search or not self.vector_service:
+            logger.warning("Vector search not enabled, returning empty results")
+            return []
+        
+        try:
+            return self.vector_service.search_contexts_efficient(
+                query, user_id, n_results, similarity_threshold
+            )
+        except Exception as e:
+            logger.error(f"Failed to search hierarchical contexts with vector: {str(e)}")
+            return []
+    
+    def efficient_semantic_search(
+        self, 
+        query: str, 
+        user_id: int, 
+        namespace: str, 
+        n_results: int = 10,
+        similarity_threshold: float = 0.7
+    ) -> List[Dict[str, Any]]:
+        """Efficient semantic search using SQL metadata filtering + Vector content search"""
+        if not self.enable_vector_search or not self.vector_service:
+            logger.warning("Vector search not enabled, returning empty results")
+            return []
+        
+        try:
+            return self.vector_service.efficient_hybrid_search(
+                query, user_id, namespace, n_results, similarity_threshold
+            )
+        except Exception as e:
+            logger.error(f"Failed to perform efficient semantic search: {str(e)}")
+            return []
+    
+    def get_memory_content_by_vector_id(self, vector_id: str) -> Optional[Dict[str, Any]]:
+        """Get memory content directly from vector database by vector ID"""
+        if not self.enable_vector_search or not self.vector_service:
+            return None
+        
+        try:
+            return self.vector_service.get_memory_by_vector_id(vector_id)
+        except Exception as e:
+            logger.error(f"Failed to get memory content by vector ID: {str(e)}")
+            return None
+    
+    def update_memory_content(
+        self, 
+        user_id: int, 
+        namespace: str, 
+        memory_id: str, 
+        new_content: str
+    ) -> bool:
+        """Update memory content in vector database"""
+        if not self.enable_vector_search or not self.vector_service:
+            return False
+        
+        try:
+            # Get memory from SQL
+            memory = LongTermMemory.get_memory(user_id, namespace, memory_id)
+            if not memory:
+                return False
+            
+            # Update content in vector DB
+            success = self.vector_service.update_memory_content(memory, new_content)
+            
+            if success:
+                # Update search_text in SQL if needed
+                if memory.search_text != new_content:
+                    memory.search_text = new_content
+                    memory.updated_at = datetime.utcnow()
+                    db.session.commit()
+            
+            return success
+            
+        except Exception as e:
+            logger.error(f"Failed to update memory content: {str(e)}")
+            return False
+    
+    def delete_memory_with_vector(
+        self, 
+        user_id: int, 
+        namespace: str, 
+        memory_id: str
+    ) -> bool:
+        """Delete memory from both SQL and vector databases"""
+        try:
+            # Delete from SQL database
+            success = self.delete_memory(user_id, namespace, memory_id)
+            
+            # Delete from vector database if enabled
+            if success and self.enable_vector_search and self.vector_service:
+                try:
+                    self.vector_service.delete_memory_content(user_id, memory_id)
+                except Exception as e:
+                    logger.warning(f"Failed to delete memory content from vector DB: {str(e)}")
+            
+            return success
+            
+        except Exception as e:
+            logger.error(f"Failed to delete memory with vector: {str(e)}")
+            return False
+    
+    def delete_hierarchical_context_with_vector(
+        self, 
+        user_id: int, 
+        memory_id: str
+    ) -> bool:
+        """Delete hierarchical context from both SQL and vector databases"""
+        try:
+            # Delete from SQL database
+            success = self.delete_context(user_id, memory_id)
+            
+            # Delete from vector database if enabled
+            if success and self.enable_vector_search and self.vector_service:
+                try:
+                    self.vector_service.delete_context_content(user_id, memory_id)
+                except Exception as e:
+                    logger.warning(f"Failed to delete context content from vector DB: {str(e)}")
+            
+            return success
+            
+        except Exception as e:
+            logger.error(f"Failed to delete hierarchical context with vector: {str(e)}")
+            return False
 
 
 class MemoryConfig:

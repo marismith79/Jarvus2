@@ -995,4 +995,229 @@ def get_context_children(memory_id):
         
     except Exception as e:
         logger.error(f"Failed to get context children: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
+# --- Vector Search Endpoints ---
+
+@memory_bp.route('/api/memory/vector/efficient-search', methods=['POST'])
+@login_required
+def efficient_semantic_search():
+    """Perform efficient semantic search using SQL metadata + Vector content"""
+    try:
+        data = request.get_json()
+        query = data.get('query')
+        namespace = data.get('namespace', 'episodes')
+        n_results = data.get('n_results', 10)
+        similarity_threshold = data.get('similarity_threshold', 0.7)
+        
+        if not query:
+            return jsonify({'error': 'Query is required'}), 400
+        
+        results = memory_service.efficient_semantic_search(
+            query=query,
+            user_id=current_user.id,
+            namespace=namespace,
+            n_results=n_results,
+            similarity_threshold=similarity_threshold
+        )
+        
+        return jsonify({
+            'success': True,
+            'results': results,
+            'query': query,
+            'total_results': len(results),
+            'search_type': 'efficient_hybrid'
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Failed to perform efficient semantic search: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
+@memory_bp.route('/api/memory/vector/hybrid-search', methods=['POST'])
+@login_required
+def hybrid_search_memories():
+    """Perform hybrid search using efficient SQL + Vector approach"""
+    try:
+        data = request.get_json()
+        query = data.get('query')
+        namespace = data.get('namespace', 'episodes')
+        n_results = data.get('n_results', 10)
+        
+        if not query:
+            return jsonify({'error': 'Query is required'}), 400
+        
+        results = memory_service.search_memories(
+            user_id=current_user.id,
+            namespace=namespace,
+            query=query,
+            limit=n_results,
+            search_type='efficient_hybrid'
+        )
+        
+        return jsonify({
+            'success': True,
+            'memories': [memory.to_dict() for memory in results],
+            'query': query,
+            'total_results': len(results),
+            'search_type': 'efficient_hybrid'
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Failed to perform hybrid search: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
+@memory_bp.route('/api/memory/vector/search-hierarchical', methods=['POST'])
+@login_required
+def search_hierarchical_contexts_vector():
+    """Search hierarchical contexts using efficient SQL + Vector approach"""
+    try:
+        data = request.get_json()
+        query = data.get('query')
+        n_results = data.get('n_results', 10)
+        similarity_threshold = data.get('similarity_threshold', 0.7)
+        
+        if not query:
+            return jsonify({'error': 'Query is required'}), 400
+        
+        results = memory_service.search_hierarchical_contexts_vector(
+            query=query,
+            user_id=current_user.id,
+            n_results=n_results,
+            similarity_threshold=similarity_threshold
+        )
+        
+        return jsonify({
+            'success': True,
+            'results': results,
+            'query': query,
+            'total_results': len(results)
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Failed to search hierarchical contexts: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
+@memory_bp.route('/api/memory/vector/content/<vector_id>', methods=['GET'])
+@login_required
+def get_memory_content_by_vector_id(vector_id):
+    """Get memory content directly from vector database"""
+    try:
+        content = memory_service.get_memory_content_by_vector_id(vector_id)
+        
+        if content:
+            return jsonify({
+                'success': True,
+                'content': content
+            }), 200
+        else:
+            return jsonify({'error': 'Content not found'}), 404
+        
+    except Exception as e:
+        logger.error(f"Failed to get memory content: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
+@memory_bp.route('/api/memory/vector/update-content', methods=['PUT'])
+@login_required
+def update_memory_content():
+    """Update memory content in vector database"""
+    try:
+        data = request.get_json()
+        namespace = data.get('namespace')
+        memory_id = data.get('memory_id')
+        new_content = data.get('content')
+        
+        if not all([namespace, memory_id, new_content]):
+            return jsonify({'error': 'namespace, memory_id, and content are required'}), 400
+        
+        success = memory_service.update_memory_content(
+            user_id=current_user.id,
+            namespace=namespace,
+            memory_id=memory_id,
+            new_content=new_content
+        )
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': f'Memory content updated successfully'
+            }), 200
+        else:
+            return jsonify({'error': 'Failed to update memory content'}), 500
+        
+    except Exception as e:
+        logger.error(f"Failed to update memory content: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
+@memory_bp.route('/api/memory/vector/delete/<namespace>/<memory_id>', methods=['DELETE'])
+@login_required
+def delete_memory_with_vector(namespace, memory_id):
+    """Delete memory from both SQL and vector databases"""
+    try:
+        success = memory_service.delete_memory_with_vector(
+            user_id=current_user.id,
+            namespace=namespace,
+            memory_id=memory_id
+        )
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': f'Memory {memory_id} deleted from both databases'
+            }), 200
+        else:
+            return jsonify({'error': 'Memory not found'}), 404
+        
+    except Exception as e:
+        logger.error(f"Failed to delete memory with vector: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
+@memory_bp.route('/api/memory/vector/delete-hierarchical/<memory_id>', methods=['DELETE'])
+@login_required
+def delete_hierarchical_context_with_vector(memory_id):
+    """Delete hierarchical context from both SQL and vector databases"""
+    try:
+        success = memory_service.delete_hierarchical_context_with_vector(
+            user_id=current_user.id,
+            memory_id=memory_id
+        )
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': f'Hierarchical context {memory_id} deleted from both databases'
+            }), 200
+        else:
+            return jsonify({'error': 'Context not found'}), 404
+        
+    except Exception as e:
+        logger.error(f"Failed to delete hierarchical context with vector: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
+@memory_bp.route('/api/memory/vector/status', methods=['GET'])
+@login_required
+def get_vector_search_status():
+    """Get the status of vector search functionality"""
+    try:
+        status = {
+            'enabled': memory_service.enable_vector_search,
+            'vector_service_available': memory_service.vector_service is not None,
+            'model_name': memory_service.vector_service.model_name if memory_service.vector_service else None,
+            'architecture': 'SQL_metadata_Vector_content'
+        }
+        
+        return jsonify({
+            'success': True,
+            'status': status
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Failed to get vector search status: {str(e)}")
         return jsonify({'error': str(e)}), 500 

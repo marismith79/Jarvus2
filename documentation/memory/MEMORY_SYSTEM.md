@@ -2,7 +2,24 @@
 
 ## Overview
 
-The Jarvus Agent Memory System provides comprehensive memory management capabilities for storing, retrieving, editing, and improving user interactions and knowledge. The system supports multiple memory types, hierarchical organization, and intelligent memory operations.
+The Jarvus Agent Memory System provides comprehensive memory management capabilities for storing, retrieving, editing, and improving user interactions and knowledge. The system implements a **hybrid SQL + Vector database architecture** for optimal performance, combining the strengths of relational databases for metadata management with vector databases for semantic search and content retrieval.
+
+## Architecture Overview
+
+### Hybrid Database Design
+The memory system uses a **two-stage retrieval pattern** that optimizes both performance and accuracy:
+
+1. **SQL Database (Primary)**: Handles metadata, relationships, access control, and transactional operations
+2. **Vector Database (Secondary)**: Specializes in semantic similarity, content retrieval, and fuzzy matching
+
+### Efficient Two-Stage Retrieval Pattern
+```
+1. SQL Query → Get relevant metadata/categories (fast filtering)
+2. Vector Search → Only on filtered content (semantic similarity)
+3. Hybrid Ranking → Combine both results (optimal relevance)
+```
+
+This approach avoids expensive vector searches on irrelevant data while maintaining semantic search capabilities.
 
 ## Memory Types
 
@@ -21,6 +38,10 @@ The Jarvus Agent Memory System provides comprehensive memory management capabili
 - **How:** Stores step-by-step instructions, scripts, or dynamic prompts that evolve with feedback.
 - **Use:** For tool use, workflow automation, and agent self-improvement.
 
+### 4. Hierarchical Memory
+- **What:** Stores contextual states, influence rules, and decision-making contexts.
+- **How:** Organizes memories in hierarchical structures with influence propagation.
+- **Use:** For contextual decision making, behavior adaptation, and state management.
 
 | Type        | Content                    | Use Cases                    | Storage Format |
 |-------------|----------------------------|------------------------------|----------------|
@@ -30,7 +51,7 @@ The Jarvus Agent Memory System provides comprehensive memory management capabili
 | Hierarchical| Contextual states, influence rules| Decision making, behavior adaptation | memory_type='context' |
 
 - **ShortTermMemory** is used for thread-level (conversation/session) context.
-- **MemoryEmbedding** supports semantic search for facts and episodes.
+- **LongTermMemory** with vector storage supports semantic search for all memory types.
 - **HierarchicalMemory** provides contextual influence and state management.
 
 ---
@@ -40,18 +61,22 @@ The Jarvus Agent Memory System provides comprehensive memory management capabili
 ### A. Storing Observations and Feedback
 - **Chrome Action:**
   - Store as an episode with details (action, target, url, result, timestamp).
+  - Content stored in both SQL (metadata) and Vector DB (semantic content).
 - **Feedback:**
   - Store as an episode (user response, notes, suggestion reference).
+  - Vector storage enables semantic similarity search for related feedback.
 - **Workflow Execution:**
   - Store as an episode (steps, result, details).
   - Optionally, store as a procedure if it's a new workflow.
 - **Semantic Fact/Preference:**
   - Store as a fact or preference (e.g., user likes dark mode).
+  - Vector embeddings enable finding related preferences and facts.
 
 ### B. Memory Editing & Improvement
 - **Memory Merging:**
   - Combine similar memories into comprehensive ones.
   - Preserve original memory IDs and merge history.
+  - Update both SQL metadata and vector content.
 - **Memory Enhancement:**
   - Add error handling and validation to procedures.
   - Enrich semantic memories with context and confidence.
@@ -75,6 +100,13 @@ The Jarvus Agent Memory System provides comprehensive memory management capabili
 
 ## Retrieval Flows
 
+### Hybrid Search Endpoints
+- **Efficient Hybrid Search:**
+  - `POST /api/memory/vector/efficient-search` — SQL metadata + Vector content search
+  - `POST /api/memory/vector/hybrid-search` — Combined SQL + Vector approach
+  - `POST /api/memory/vector/search-hierarchical` — Hierarchical context search
+
+### Traditional Endpoints
 - **Episodic:**
   - `GET /memory/episodes` — Retrieve recent or similar episodes for few-shot prompting.
 - **Semantic:**
@@ -89,6 +121,12 @@ The Jarvus Agent Memory System provides comprehensive memory management capabili
 - **Evolution Tracking:**
   - `GET /memory/evolution/{memory_id}` — Track memory changes over time.
 
+### Search Performance Comparison
+The hybrid system provides significant performance improvements:
+- **SQL-only search**: Fast metadata filtering, limited semantic capabilities
+- **Vector-only search**: Excellent semantic matching, expensive on large datasets
+- **Efficient hybrid search**: Optimal balance of speed and accuracy
+
 ---
 
 ## Memory Editing & Improvement System
@@ -101,6 +139,7 @@ The system can automatically find and merge similar memories to reduce redundanc
 - **Intelligent Merging**: Combines similar memories into richer, more comprehensive ones
 - **Type-Specific Merging**: Different strategies for episodic, procedural, and semantic memories
 - **Metadata Preservation**: Tracks original memory IDs and merge history
+- **Vector Content Updates**: Updates both SQL metadata and vector embeddings
 
 **Example:**
 ```python
@@ -127,6 +166,7 @@ Memories can be automatically enhanced to improve their quality, completeness, a
 - **Semantic Enhancement**: Enriches facts with context, confidence levels, and related concepts
 - **Episodic Enhancement**: Adds insights, causal analysis, and performance metrics
 - **Automatic Improvement**: AI-powered enhancement based on memory type
+- **Vector Content Updates**: Updates semantic embeddings when content improves
 
 **Example:**
 ```python
@@ -446,6 +486,29 @@ How should the agent respond or assist?
 | /memory/bulk-improve          | POST   | Bulk improve multiple memories          |
 | /memory/auto-consolidate      | POST   | Auto-consolidate similar memories       |
 
+### Vector Search Endpoints
+| Endpoint                      | Method | Purpose                                 |
+|-------------------------------|--------|-----------------------------------------|
+| /api/memory/vector/efficient-search | POST | SQL metadata + Vector content search |
+| /api/memory/vector/hybrid-search | POST | Combined SQL + Vector approach |
+| /api/memory/vector/search-hierarchical | POST | Hierarchical context search |
+| /api/memory/vector/update-content | POST | Update memory content in vector DB |
+| /api/memory/vector/delete-content | DELETE | Delete memory content from vector DB |
+| /api/memory/vector/content/{vector_id} | GET | Get memory content by vector ID |
+
+### Hierarchical Memory Endpoints
+| Endpoint                      | Method | Purpose                                 |
+|-------------------------------|--------|-----------------------------------------|
+| /api/memory/hierarchical/context | POST | Create hierarchical context |
+| /api/memory/hierarchical/contexts | GET | Get all active contexts |
+| /api/memory/hierarchical/context/<id> | GET | Get specific context influence |
+| /api/memory/hierarchical/context/<id> | PUT | Update context |
+| /api/memory/hierarchical/context/<id> | DELETE | Delete context |
+| /api/memory/hierarchical/root-contexts | GET | Get root-level contexts |
+| /api/memory/hierarchical/context/<id>/children | GET | Get child contexts |
+| /api/memory/hierarchical/decision-context | POST | Get combined decision context |
+| /api/memory/hierarchical/contextualized/<namespace> | GET | Get contextualized memories |
+
 ---
 
 ## Extensibility
@@ -456,22 +519,145 @@ How should the agent respond or assist?
 
 ---
 
-## Best Practices
-- **Always compress and summarize** observations before storing to avoid bloat.
-- **Use importance scores** to prioritize what gets retrieved or surfaced to the agent.
-- **Regularly review and merge** old episodes into semantic/procedural memories for efficiency.
-- **Leverage embeddings** for semantic search and similarity-based retrieval.
-- **Monitor memory quality** and improve low-quality memories.
-- **Resolve conflicts** to maintain data integrity.
-- **Track memory evolution** for debugging and analysis.
+## High Level Overview of Context Engineering
+- **Write Context:** Long-term Memories(across agent sessions), Scratchpad (within agent session), State (within agent session)
+- **Select Context:** Retrieval of working memory, state, long term memory
+- **Trim Context:** Summarize or remove irrelevant context (Only pass in the most relevant context)
+- **Isolate Context:** Partition context in state, Hold context in environment, Partition across multiple agents
 
 ---
 
-## Future Directions
-- **Automated memory compression:** Use LLMs to summarize and merge old episodes.
-- **User-editable memory:** Allow users to view and edit their own facts/preferences.
-- **Memory visualization:** Build UI to show the agent's "mind" and memory traces.
-- **Cross-agent memory:** Share anonymized procedures or facts between agents for collective learning.
-- **Advanced LLM-powered merging:** Use AI to create more intelligent merged memories.
-- **Memory synthesis:** Create new memories by combining existing ones.
-- **Predictive improvement:** Anticipate and prevent quality issues. 
+## Vector Database Integration
+
+### ChromaDB Implementation
+The system uses ChromaDB as the vector database with the following features:
+
+- **Persistent Storage**: ChromaDB persists embeddings to disk for reliability
+- **Sentence Transformers**: Uses 'all-MiniLM-L6-v2' for efficient embeddings
+- **Separate Collections**: Different collections for memory content and context content
+- **Metadata Filtering**: Efficient filtering by user_id, namespace, memory_type
+
+### Vector Storage Strategy
+```python
+# Memory content collection
+memory_collection = client.get_or_create_collection("memory_content")
+
+# Context content collection  
+context_collection = client.get_or_create_collection("context_content")
+
+# Efficient storage with metadata
+collection.add(
+    embeddings=[embedding],
+    documents=[content_text],
+    metadatas=[{
+        'memory_id': memory.memory_id,
+        'user_id': memory.user_id,
+        'namespace': memory.namespace,
+        'memory_type': memory.memory_type,
+        'content_hash': hash(content_text)
+    }],
+    ids=[vector_id]
+)
+```
+
+### Efficient Hybrid Search Implementation
+```python
+def efficient_hybrid_search(query, user_id, namespace, n_results=10):
+    # Step 1: SQL metadata filtering (fast)
+    sql_candidates = get_sql_candidates(user_id, namespace, query)
+    
+    # Step 2: Vector search only on filtered content (efficient)
+    vector_results = search_vector_content(query, memory_ids, n_results)
+    
+    # Step 3: Combine and rank results
+    combined_results = combine_sql_vector_results(sql_candidates, vector_results)
+    
+    return combined_results
+```
+
+### Performance Benefits
+- **Reduced Vector Search Cost**: Only searches relevant content subsets
+- **Faster Metadata Queries**: SQL handles filtering efficiently
+- **Better Scalability**: Scales independently for metadata and content
+- **Optimal Resource Usage**: Balances CPU and memory usage
+
+---
+
+## Security & Privacy
+
+### Data Protection
+- **User Isolation**: All memories are isolated by user_id
+- **Access Control**: Role-based access control for memory operations
+- **Encryption**: Sensitive data can be encrypted at rest and in transit
+- **Audit Logging**: Complete audit trail for memory access and modifications
+
+### Privacy Features
+- **Data Expiration**: Configurable expiration policies for sensitive data
+- **Anonymization**: Optional anonymization of personal information
+- **Consent Management**: User control over memory storage and retention
+- **Compliance**: GDPR and privacy regulation compliance features
+
+---
+
+## Monitoring & Observability
+
+### Performance Metrics
+- **Search Latency**: Track hybrid search performance
+- **Vector Search Cost**: Monitor vector database resource usage
+- **Memory Usage**: Track storage growth and optimization opportunities
+- **Quality Metrics**: Monitor memory quality over time
+
+### Health Monitoring
+- **Database Health**: Monitor SQL and vector database status
+- **Service Availability**: Track memory service uptime
+- **Error Rates**: Monitor failure rates and error patterns
+- **Resource Utilization**: Track CPU, memory, and storage usage
+
+---
+
+## Best Practices
+
+### 1. Memory Organization
+- Use appropriate namespaces for different memory types
+- Set meaningful importance scores for memory prioritization
+- Regularly clean up outdated or low-quality memories
+
+### 2. Search Optimization
+- Use efficient hybrid search for complex queries
+- Leverage SQL filtering for simple metadata queries
+- Set appropriate similarity thresholds for vector search
+
+### 3. Performance Tuning
+- Monitor vector database performance and scale as needed
+- Optimize embedding model selection for your use case
+- Use batch operations for large-scale memory management
+
+### 4. Quality Management
+- Regularly assess memory quality and improve low-quality memories
+- Merge similar memories to reduce redundancy
+- Resolve conflicts promptly to maintain data integrity
+
+---
+
+## Future Enhancements
+
+### Planned Features
+- **Knowledge Graph Integration**: Add graph relationships between memories
+- **Advanced Memory Synthesis**: AI-powered memory creation and synthesis
+- **Distributed Memory**: Support for distributed memory storage
+- **Memory Compression**: Advanced compression and summarization techniques
+
+### Research Directions
+- **Multi-Modal Memory**: Support for images, audio, and video memories
+- **Temporal Reasoning**: Advanced time-based memory organization
+- **Collaborative Memory**: Shared memory across multiple agents
+- **Memory Intelligence**: Self-improving memory systems
+
+---
+
+## High Level Overview of Context Engineering
+- **Write Context:** Long-term Memories(across agent sessions), Scratchpad (within agent session), State (within 
+agent session)
+- **Select Context:** Retreival of working memory, state, long term memory
+- **Trim Context:** Summarize or remove irrelevant context (Only pass in the most relevant context)
+- **Isolate Context:** Partition context in state, Hold context in environment, Partition across multiple agents
