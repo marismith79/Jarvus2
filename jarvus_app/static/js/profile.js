@@ -1,3 +1,28 @@
+// Safe console logging to prevent EIO errors
+function safeLog(...args) {
+  try {
+    console.log(...args);
+  } catch (e) {
+    // Ignore EIO errors from console output
+  }
+}
+
+function safeWarn(...args) {
+  try {
+    console.warn(...args);
+  } catch (e) {
+    // Ignore EIO errors from console output
+  }
+}
+
+function safeError(...args) {
+  try {
+    console.error(...args);
+  } catch (e) {
+    // Ignore EIO errors from console output
+  }
+}
+
 // Profile page functionality
 document.addEventListener('DOMContentLoaded', function() {
     // Handle basic info form submission
@@ -41,11 +66,11 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(res => res.json())
             .then(data => {
                 if (!data.success) {
-                    console.error(`Failed to connect ${tool} tool:`, data.error);
+                    safeError(`Failed to connect ${tool} tool:`, data.error);
                 }
             })
             .catch(err => {
-                console.error(`Error connecting ${tool} tool:`, err);
+                safeError(`Error connecting ${tool} tool:`, err);
             });
         }
     });
@@ -81,7 +106,7 @@ function handleProfileUpdate(e) {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
+        safeError('Error:', error);
         alert('An error occurred while updating your profile');
     });
 }
@@ -95,7 +120,7 @@ function showComingSoon() {
 }
 
 function disconnectService(service) {
-    console.log('Attempting to disconnect:', service);
+    safeLog('Attempting to disconnect:', service);
     fetch(`/disconnect/${service}`, {
         method: 'POST',
         headers: {
@@ -104,7 +129,7 @@ function disconnectService(service) {
     })
     .then(response => response.json())
     .then(data => {
-        console.log('Disconnect API response:', data);
+        safeLog('Disconnect API response:', data);
         if (data.success) {
             window.location.reload();
         } else {
@@ -112,7 +137,7 @@ function disconnectService(service) {
         }
     })
     .catch(error => {
-        console.error('Error during disconnect API call:', error);
+        safeError('Error during disconnect API call:', error);
         alert('An error occurred while trying to disconnect.');
     });
 } 

@@ -1,0 +1,9 @@
+{
+  "wsEndpoint": "ws://127.0.0.1:9222/devtools/browser/b0289738-be63-44e8-9c7d-a4200158a5ca",
+  "browserType": "chrome",
+  "profilePath": "/var/folders/bn/jyjcnc5510j1f_lhfj6_pb9h0000gn/T/jarvus_chrome_1751817679933",
+  "originalProfilePath": "/Users/mari/Library/Application Support/Google/Chrome/Profile 6",
+  "launchTime": "2025-07-06T16:01:24.631Z",
+  "processId": 71785,
+  "debugPort": 9222
+}

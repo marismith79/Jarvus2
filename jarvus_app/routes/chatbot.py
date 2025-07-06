@@ -124,10 +124,23 @@ def handle_chat_message():
     agent_id = data.get('agent_id')
     tool_choice = data.get('tool_choice', 'auto')
     web_search_enabled = data.get('web_search_enabled', True)
+    
+    # Force tool choice to 'required' if browser tools are available and user is asking for web actions
+    user_text_lower = user_text.lower()
+    browser_keywords = ['go to', 'open', 'navigate', 'visit', 'browser', 'website', 'click', 'type', 'fill']
+    if any(keyword in user_text_lower for keyword in browser_keywords):
+        tool_choice = 'required'
+        logger.info(f"🔧 Forcing tool_choice to 'required' due to browser-related request")
     jwt_token = get_valid_jwt_token()
     if not jwt_token:
-        # Token refresh failed, force re-login
-        return redirect(url_for("auth.signin"))
+        # Token refresh failed, check if this is a desktop app request
+        user_agent = request.headers.get('User-Agent', '')
+        if 'jarvus-desktop' in user_agent:
+            # Desktop app - return JSON error
+            return jsonify({'error': 'Authentication required', 'auth_required': True}), 401
+        else:
+            # Web app - redirect to signin
+            return redirect(url_for("auth.signin"))
     logger.info(f"Received message: {user_text}")
     logger.info(f"Agent ID: {agent_id}")
     logger.info(f"Tool choice: {tool_choice}")
@@ -138,6 +151,14 @@ def handle_chat_message():
 
     agent = get_agent(agent_id, current_user.id)
     messages = []
+    
+    # Add the main system prompt first
+    system_prompt = Config.CHATBOT_SYSTEM_PROMPT
+    logger.info(f"🔍 SYSTEM PROMPT LENGTH: {len(system_prompt)} characters")
+    logger.info(f"🔍 SYSTEM PROMPT CONTAINS 'browser': {'browser' in system_prompt.lower()}")
+    logger.info(f"🔍 SYSTEM PROMPT CONTAINS 'open_website': {'open_website' in system_prompt.lower()}")
+    messages.append(SystemMessage(content=system_prompt))
+    
     for m in (agent.messages or []):
         role = m.get('role')
         if role == 'user':
@@ -173,6 +194,7 @@ def handle_chat_message():
     allowed_tools = list(agent_tools & user_tools)
     if web_search_enabled:
         allowed_tools.append('web')
+        allowed_tools.append('browser')
     print('DEBUG agent_tools', agent_tools)
     print('DEBUG user_tools', user_tools)
     print('DEBUG allowed_tools', allowed_tools)
@@ -223,21 +245,47 @@ def handle_chat_message():
         t for t in allowed_tools
         if t in needed_tools_or_categories or (hasattr(t, 'category') and t.category.value in needed_tools_or_categories)
     ]
-    # Filter out web tools if web_search_enabled is False
-    if not web_search_enabled:
-        filtered_tools = [
-            t for t in filtered_tools
-            if not (hasattr(tool_registry.get_tool(t), 'category') and getattr(tool_registry.get_tool(t), 'category', None) and tool_registry.get_tool(t).category.value == 'web')
-        ]
     sdk_tools = tool_registry.get_sdk_tools_by_modules(filtered_tools, user_scopes)
     logger.info(f"Filtered tools for LLM: {filtered_tools}")
+    logger.info(f"Number of SDK tools being passed to LLM: {len(sdk_tools)}")
+    logger.info(f"Tool choice setting: {tool_choice}")
+    
+    # Log the first few tools to see what's being passed
+    if sdk_tools:
+        logger.info(f"First 3 SDK tools: {[tool.function.name for tool in sdk_tools[:3]]}")
+        logger.info(f"All SDK tool names: {[tool.function.name for tool in sdk_tools]}")
+        
+        # Add detailed logging for browser tools
+        browser_tools = [tool for tool in sdk_tools if tool.function.name in ['open_website', 'navigate_to_url', 'click_element', 'type_text']]
+        if browser_tools:
+            logger.info(f"🔍 BROWSER TOOLS FOUND: {len(browser_tools)} tools")
+            for tool in browser_tools:
+                logger.info(f"🔍 Browser tool: {tool.function.name} - Description: {tool.function.description[:100]}...")
+        else:
+            logger.warning("❌ NO BROWSER TOOLS FOUND in SDK tools!")
+            
+    else:
+        logger.warning("No SDK tools found - this is the problem!")
+    
     # --- END: Two-step tool selection orchestration ---
 
     try:
         new_messages = []
+    
         # Recursive tool calling loop
         while True:
             logger.info("Calling Azure AI for completion")
+            logger.info(f"Messages being sent to LLM: {len(messages)} messages")
+            logger.info(f"Tools being sent to LLM: {len(sdk_tools)} tools")
+            
+            # Log the first few messages to see what the LLM is getting
+            if messages:
+                first_msg = messages[0]
+                logger.info(f"🔍 FIRST MESSAGE TYPE: {type(first_msg).__name__}")
+                logger.info(f"🔍 FIRST MESSAGE ROLE: {getattr(first_msg, 'role', 'N/A')}")
+                logger.info(f"🔍 FIRST MESSAGE CONTENT LENGTH: {len(getattr(first_msg, 'content', ''))}")
+                logger.info(f"🔍 FIRST MESSAGE CONTAINS 'browser': {'browser' in getattr(first_msg, 'content', '').lower()}")
+            
             response: ChatCompletions = jarvus_ai.client.complete(
                 messages=messages,
                 model=jarvus_ai.deployment_name,
@@ -249,6 +297,11 @@ def handle_chat_message():
 
             choice = response.choices[0]
             msg = choice.message
+            logger.info(f"Response choice finish_reason: {choice.finish_reason}")
+            logger.info(f"Message content: {msg.content}")
+            logger.info(f"Message tool_calls: {msg.tool_calls}")
+            logger.info(f"Number of tool calls: {len(msg.tool_calls) if msg.tool_calls else 0}")
+            
             # Always ensure content is a string
             assistant_msg = AssistantMessage(content=msg.content if msg.content is not None else "", tool_calls=msg.tool_calls)
             messages.append(assistant_msg)
@@ -256,6 +309,7 @@ def handle_chat_message():
             logger.info(f"Assistant message: {assistant_msg}")
             if not msg.tool_calls:
                 logger.info("No tool calls in response - conversation complete")
+                logger.warning("LLM did not call any tools despite having tools available!")
                 break
 
             logger.info(f"Processing {len(msg.tool_calls)} tool calls")
@@ -327,6 +381,7 @@ def handle_chat_message():
 
         # Save updated messages to DB (as dicts)
         agent.messages = []
+        
         for m in messages:
             if isinstance(m, UserMessage):
                 agent.messages.append({'role': 'user', 'content': m.content})

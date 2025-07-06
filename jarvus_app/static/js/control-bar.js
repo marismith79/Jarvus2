@@ -1,3 +1,28 @@
+// Safe console logging to prevent EIO errors
+function safeLog(...args) {
+  try {
+    console.log(...args);
+  } catch (e) {
+    // Ignore EIO errors from console output
+  }
+}
+
+function safeWarn(...args) {
+  try {
+    console.warn(...args);
+  } catch (e) {
+    // Ignore EIO errors from console output
+  }
+}
+
+function safeError(...args) {
+  try {
+    console.error(...args);
+  } catch (e) {
+    // Ignore EIO errors from console output
+  }
+}
+
 // Control bar functionality
 class ControlBar {
     constructor() {
@@ -15,6 +40,7 @@ class ControlBar {
         this.dragStartX = null;
         this.windowStartX = null;
         this.isChatOpen = false;
+        this.wasChatOpenBeforeHide = false; // Track chat state when hiding
         
         // Authentication state
         this.isAuthenticated = false;
@@ -66,7 +92,7 @@ class ControlBar {
         // Handle login modal closed event
         if (window.electronAPI && window.electronAPI.onLoginModalClosed) {
             window.electronAPI.onLoginModalClosed(() => {
-                console.log('[CONTROL-BAR] Login modal closed, checking authentication status');
+                safeLog('[CONTROL-BAR] Login modal closed, checking authentication status');
                 this.handleLoginModalClosed();
             });
         }
@@ -74,7 +100,7 @@ class ControlBar {
         // Handle chat toggle shortcut from main process
         if (window.electronAPI && window.electronAPI.onToggleChat) {
             window.electronAPI.onToggleChat(() => {
-                console.log('[CONTROL-BAR] Chat toggle shortcut received from main process');
+                safeLog('[CONTROL-BAR] Chat toggle shortcut received from main process');
                 this.handleChatClick();
             });
         }
@@ -82,7 +108,7 @@ class ControlBar {
         // Handle control bar movement shortcuts from main process
         if (window.electronAPI && window.electronAPI.onMoveControlBar) {
             window.electronAPI.onMoveControlBar((event, direction) => {
-                console.log('[CONTROL-BAR] Move control bar shortcut received:', direction);
+                safeLog('[CONTROL-BAR] Move control bar shortcut received:', direction);
                 this.moveControlBar(direction);
             });
         }
@@ -90,14 +116,14 @@ class ControlBar {
         // Handle control bar visibility toggle shortcuts from main process
         if (window.electronAPI && window.electronAPI.onToggleControlBarVisibility) {
             window.electronAPI.onToggleControlBarVisibility(() => {
-                console.log('[CONTROL-BAR] Toggle control bar visibility shortcut received');
+                safeLog('[CONTROL-BAR] Toggle control bar visibility shortcut received');
                 this.toggleControlBarVisibility();
             });
         }
 
         // Handle keyboard shortcuts
         document.addEventListener('keydown', this.handleKeyDown.bind(this));
-        console.log('[DEBUG] Keyboard event listener attached');
+        safeLog('[DEBUG] Keyboard event listener attached');
         
         // Update hotkey display based on platform
         this.updateHotkeyDisplay();
@@ -105,7 +131,7 @@ class ControlBar {
     
     async checkAuthenticationStatus() {
         try {
-            console.log('[CONTROL-BAR] Checking authentication status...');
+            safeLog('[CONTROL-BAR] Checking authentication status...');
             const response = await fetch('/api/jwt', {
                 credentials: 'include',
                 headers: {
@@ -118,14 +144,14 @@ class ControlBar {
                 const data = await response.json();
                 this.jwtToken = data.jwt;
                 this.isAuthenticated = true;
-                console.log('[CONTROL-BAR] User is authenticated');
+                safeLog('[CONTROL-BAR] User is authenticated');
                 this.updateUIForAuthenticatedUser();
             } else {
-                console.log('[CONTROL-BAR] User is not authenticated');
+                safeLog('[CONTROL-BAR] User is not authenticated');
                 this.updateUIForUnauthenticatedUser();
             }
         } catch (error) {
-            console.error('[CONTROL-BAR] Error checking authentication status:', error);
+            safeError('[CONTROL-BAR] Error checking authentication status:', error);
             this.updateUIForUnauthenticatedUser();
         }
     }
@@ -156,11 +182,11 @@ class ControlBar {
 
     handleLoginClick() {
         if (this.isAuthenticated) {
-            console.log('[CONTROL-BAR] User is authenticated, logging out');
+            safeLog('[CONTROL-BAR] User is authenticated, logging out');
             // Logout by calling logout endpoint and updating UI
             this.handleLogout();
         } else {
-            console.log('[CONTROL-BAR] User is not authenticated, opening login modal');
+            safeLog('[CONTROL-BAR] User is not authenticated, opening login modal');
             // Open login modal with full URL
             if (window.electronAPI && window.electronAPI.openLoginModal) {
                 const baseUrl = window.location.origin;
@@ -182,9 +208,9 @@ class ControlBar {
             this.jwtToken = null;
             this.updateUIForUnauthenticatedUser();
             
-            console.log('[CONTROL-BAR] User logged out successfully');
+            safeLog('[CONTROL-BAR] User logged out successfully');
         } catch (error) {
-            console.error('[CONTROL-BAR] Error during logout:', error);
+            safeError('[CONTROL-BAR] Error during logout:', error);
             // Still update UI even if server call fails
             this.isAuthenticated = false;
             this.jwtToken = null;
@@ -201,34 +227,34 @@ class ControlBar {
     
     handleChatClick() {
         this.isChatOpen = !this.isChatOpen;
-        console.log('[DEBUG] Chat button clicked. isChatOpen:', this.isChatOpen);
+        safeLog('[DEBUG] Chat button clicked. isChatOpen:', this.isChatOpen);
         if (this.isChatOpen) {
             this.positionChatPopup();
             this.chatPopup.classList.add('open');
             // Focus the input with a small delay to ensure the popup is fully rendered
             setTimeout(() => {
                 this.chatPopupInput.focus();
-                console.log('[DEBUG] Input focused');
+                safeLog('[DEBUG] Input focused');
             }, 50);
-            console.log('[DEBUG] chatPopup after open:', this.chatPopup, this.chatPopup.getBoundingClientRect(), window.getComputedStyle(this.chatPopup));
+            safeLog('[DEBUG] chatPopup after open:', this.chatPopup, this.chatPopup.getBoundingClientRect(), window.getComputedStyle(this.chatPopup));
         } else {
             this.chatPopup.classList.remove('open');
-            console.log('[DEBUG] chatPopup after close:', this.chatPopup, this.chatPopup.getBoundingClientRect(), window.getComputedStyle(this.chatPopup));
+            safeLog('[DEBUG] chatPopup after close:', this.chatPopup, this.chatPopup.getBoundingClientRect(), window.getComputedStyle(this.chatPopup));
         }
     }
     
     handleFeedbackClick() {
-        console.log('feedback button clicked');
+        safeLog('feedback button clicked');
     }
     
     handleBrowseClick() {
-        console.log('browse button clicked');
+        safeLog('browse button clicked');
         // Toggle highlighted state
         this.browseButton.classList.toggle('highlighted');
     }
     
     handleOptionsClick() {
-        console.log('Options button clicked');
+        safeLog('Options button clicked');
         window.electronAPI.optionsClick();
     }
     
@@ -261,6 +287,18 @@ class ControlBar {
                         web_search_enabled: true
                     })
                 });
+                
+                // Handle 401 authentication error
+                if (res.status === 401) {
+                    if (thinkingDiv) thinkingDiv.remove();
+                    this.addMessage('Assistant', '🔐 Authentication required. Please log in to continue.', 'assistant');
+                    if (window.electronAPI && window.electronAPI.openLoginModal) {
+                        const baseUrl = window.location.origin;
+                        window.electronAPI.openLoginModal(`${baseUrl}/signin`);
+                    }
+                    return;
+                }
+                
                 const data = await res.json();
                 if (thinkingDiv) thinkingDiv.remove();
                 if (data.error) {
@@ -360,7 +398,7 @@ class ControlBar {
         }
         this.chatPopup.style.left = `${barRect.left}px`;
         this.chatPopup.style.top = `${top}px`;
-        console.log('[DEBUG] positionChatPopup:', {
+        safeLog('[DEBUG] positionChatPopup:', {
             left: this.chatPopup.style.left,
             top: this.chatPopup.style.top,
             width: this.chatPopup.style.width,
@@ -376,11 +414,11 @@ class ControlBar {
             
             const tokens = await window.electronAPI.getAuthTokens();
             if (tokens?.refresh_token) {
-                console.log('[CONTROL-BAR] ✅ Found stored tokens, attempting auto-login');
+                safeLog('[CONTROL-BAR] ✅ Found stored tokens, attempting auto-login');
                 await this.attemptAutoLogin(tokens);
             }
         } catch (error) {
-            console.error('[CONTROL-BAR] ❌ Error checking stored credentials:', error);
+            safeError('[CONTROL-BAR] ❌ Error checking stored credentials:', error);
         }
     }
     
@@ -400,16 +438,16 @@ class ControlBar {
                     this.isAuthenticated = true;
                     this.jwtToken = data.tokens.id_token;
                     this.updateUIForAuthenticatedUser();
-                    console.log('[CONTROL-BAR] ✅ Auto-login successful');
+                    safeLog('[CONTROL-BAR] ✅ Auto-login successful');
                     return;
                 }
             }
             
             // If we get here, auto-login failed
             await window.electronAPI?.clearAuthTokens();
-            console.log('[CONTROL-BAR] ❌ Auto-login failed');
+            safeLog('[CONTROL-BAR] ❌ Auto-login failed');
         } catch (error) {
-            console.error('[CONTROL-BAR] ❌ Auto-login error:', error);
+            safeError('[CONTROL-BAR] ❌ Auto-login error:', error);
             await window.electronAPI?.clearAuthTokens();
         }
     }
@@ -441,18 +479,18 @@ class ControlBar {
     }
     
     handleKeyDown(event) {
-        console.log('[DEBUG] Key pressed:', event.key, 'metaKey:', event.metaKey, 'ctrlKey:', event.ctrlKey);
+        safeLog('[DEBUG] Key pressed:', event.key, 'metaKey:', event.metaKey, 'ctrlKey:', event.ctrlKey);
         
         // Command+Enter (macOS) or Ctrl+Enter (other platforms) to toggle chat
         if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
-            console.log('[DEBUG] Command+Enter detected, toggling chat');
+            safeLog('[DEBUG] Command+Enter detected, toggling chat');
             event.preventDefault();
             this.handleChatClick();
         }
         
         // Escape to close chat popup if open
         if (event.key === 'Escape' && this.isChatOpen) {
-            console.log('[DEBUG] Escape detected, closing chat');
+            safeLog('[DEBUG] Escape detected, closing chat');
             event.preventDefault();
             this.handleChatClick();
         }
@@ -473,7 +511,7 @@ class ControlBar {
             }
             
             window.electronAPI.setWindowPosition(newX, bounds.y);
-            console.log(`[CONTROL-BAR] Moved control bar ${direction} to x=${newX}`);
+            safeLog(`[CONTROL-BAR] Moved control bar ${direction} to x=${newX}`);
             
             // Reposition chat popup if open
             if (this.isChatOpen) {
@@ -485,6 +523,7 @@ class ControlBar {
     toggleControlBarVisibility() {
         // Close chat popup if open when hiding the control bar
         if (this.isChatOpen) {
+            this.wasChatOpenBeforeHide = true;
             this.handleChatClick();
         }
         
@@ -493,11 +532,19 @@ class ControlBar {
             if (isVisible) {
                 // Window is visible, hide it
                 window.electronAPI.hideWindow();
-                console.log('[CONTROL-BAR] Control bar hidden');
+                safeLog('[CONTROL-BAR] Control bar hidden');
             } else {
                 // Window is hidden, show it
                 window.electronAPI.showWindow();
-                console.log('[CONTROL-BAR] Control bar shown');
+                safeLog('[CONTROL-BAR] Control bar shown');
+                
+                // Restore chat state if it was open before hiding
+                if (this.wasChatOpenBeforeHide) {
+                    setTimeout(() => {
+                        this.handleChatClick();
+                        this.wasChatOpenBeforeHide = false;
+                    }, 100); // Small delay to ensure window is fully shown
+                }
             }
         });
     }

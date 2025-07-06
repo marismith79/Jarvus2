@@ -56,9 +56,21 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getAuthTokens: () => ipcRenderer.invoke('get-auth-tokens'),
   clearAuthTokens: () => ipcRenderer.invoke('clear-auth-tokens'),
   
+  // Browser management
+  launchBrowser: () => ipcRenderer.invoke('launch-browser'),
+  closeBrowser: () => ipcRenderer.invoke('close-browser'),
+  
   // Platform info
   platform: process.platform,
 
   // Click-through toggle
-  setIgnoreMouseEvents: (ignore) => ipcRenderer.send('set-ignore-mouse-events', ignore)
+  setIgnoreMouseEvents: (ignore) => ipcRenderer.send('set-ignore-mouse-events', ignore),
+  
+  // Profile management
+  discoverChromeProfiles: () => ipcRenderer.invoke('discover-chrome-profiles'),
+  getDefaultChromeProfile: () => ipcRenderer.invoke('get-default-chrome-profile'),
+  launchBrowserWithProfile: (profileName) => ipcRenderer.invoke('launch-browser-with-profile', profileName),
+  getChromeProfileInfo: (profileName) => ipcRenderer.invoke('get-chrome-profile-info', profileName),
+  getDecryptedProfilePath: () => ipcRenderer.invoke('get-decrypted-profile-path'),
+  syncProfileData: () => ipcRenderer.invoke('sync-profile-data')
 }); 

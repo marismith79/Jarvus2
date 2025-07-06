@@ -14,6 +14,31 @@ const connectedTools = {
   zoom: window.zoomConnected || false
 };
   
+// Safe console logging to prevent EIO errors
+function safeLog(...args) {
+  try {
+    console.log(...args);
+  } catch (e) {
+    // Ignore EIO errors from console output
+  }
+}
+
+function safeWarn(...args) {
+  try {
+    console.warn(...args);
+  } catch (e) {
+    // Ignore EIO errors from console output
+  }
+}
+
+function safeError(...args) {
+  try {
+    console.error(...args);
+  } catch (e) {
+    // Ignore EIO errors from console output
+  }
+}
+
 // Helper to append a message bubble into #chat-history
 function appendMessage(who, text) {
     const history = document.getElementById('chat-history');
@@ -87,7 +112,7 @@ async function createAgent(name, tools = [], description = '') {
         await loadAgentHistory(newAgent.id, newAgent.name);
 
     } catch (err) {
-        console.error('Failed to create agent:', err);
+        safeError('Failed to create agent:', err);
         alert(`Error creating agent: ${err.message}`);
     }
 }
@@ -119,7 +144,7 @@ async function loadAgentHistory(agentId, agentName = null) {
             appendMessage(cssRole, msg.content);
         });
     } catch (err) {
-        console.error(`Failed to load history for agent ${agentId}:`, err);
+        safeError(`Failed to load history for agent ${agentId}:`, err);
     }
 }
 
@@ -184,9 +209,9 @@ async function sendCommand() {
   
     try {
         const res = await fetch('/chatbot/send', options);
-        console.log('Raw response:', res);
+        safeLog('Raw response:', res);
         const data = await res.json();
-        console.log('Parsed data:', data);
+        safeLog('Parsed data:', data);
         thinkingMsg.remove();
   
         if (data.error) {
@@ -208,7 +233,7 @@ async function sendCommand() {
             });
         }
     } catch (err) {
-        console.error('Fetch error:', err);
+        safeError('Fetch error:', err);
         thinkingMsg.remove();
         appendMessage('bot', '⚠️ Error: Failed to get response from the assistant.');
     }
@@ -245,7 +270,7 @@ async function deleteAgent(agentId) {
         alert('Agent deleted successfully');
         
     } catch (err) {
-        console.error('Failed to delete agent:', err);
+        safeError('Failed to delete agent:', err);
         alert(`Error deleting agent: ${err.message}`);
     }
 }

@@ -9,7 +9,12 @@
     "build": "electron-builder",
     "dist": "electron-builder --publish=never"
   },
-  "keywords": ["electron", "desktop", "floating", "control"],
+  "keywords": [
+    "electron",
+    "desktop",
+    "floating",
+    "control"
+  ],
   "author": "Jarvus Team",
   "license": "MIT",
   "devDependencies": {
@@ -18,7 +23,9 @@
   },
   "dependencies": {
     "electron-store": "^8.1.0",
-    "keytar": "^8.0.0"
+    "express": "^4.18.2",
+    "keytar": "^7.9.0",
+    "playwright": "^1.53.2"
   },
   "build": {
     "appId": "com.jarvus.desktop",
@@ -38,4 +45,4 @@
       "icon": "assets/icon.icns"
     }
   }
-} 
+}

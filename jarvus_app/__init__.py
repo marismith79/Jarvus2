@@ -88,11 +88,9 @@ def create_app():
     app.register_blueprint(web)
     app.register_blueprint(auth)
     app.register_blueprint(api)
-    # app.register_blueprint(mcp_bp, url_prefix='/mcp')
     app.register_blueprint(chatbot_bp, url_prefix="/chatbot")
     app.register_blueprint(oauth_bp)
     app.register_blueprint(profile_bp)
-    # app.register_blueprint(flow_builder_bp, url_prefix='/flow_builder')
 
     return app
 

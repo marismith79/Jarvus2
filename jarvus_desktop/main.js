@@ -2,17 +2,70 @@ const { app, BrowserWindow, ipcMain, screen, globalShortcut } = require('electro
 const path = require('path');
 const Store = require('electron-store');
 const keytar = require('keytar');
-const { spawn } = require('child_process');
 const os = require('os');
 const fs = require('fs');
+const { spawn } = require('child_process');
+const SecureProfileManager = require('./profile-manager');
+const ChromeLauncher = require('./launch_browser');
+const BrowserAPI = require('./browser_api');
 
 const store = new Store();
+
+// Initialize secure profile manager
+const profileManager = new SecureProfileManager();
+
+// Initialize Chrome launcher
+let chromeLauncher = null;
+
+// Initialize Browser API server
+let browserAPI = null;
+
+// Global error handlers to prevent EIO errors
+process.on('uncaughtException', (error) => {
+  try {
+    console.error('Uncaught Exception:', error);
+  } catch (e) {
+    // Ignore EIO errors from console output
+  }
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  try {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  } catch (e) {
+    // Ignore EIO errors from console output
+  }
+});
+
+// Safe console logging to prevent EIO errors
+function safeLog(...args) {
+  try {
+    console.log(...args);
+  } catch (e) {
+    // Ignore EIO errors from console output
+  }
+}
+
+function safeWarn(...args) {
+  try {
+    console.warn(...args);
+  } catch (e) {
+    // Ignore EIO errors from console output
+  }
+}
+
+function safeError(...args) {
+  try {
+    console.error(...args);
+  } catch (e) {
+    // Ignore EIO errors from console output
+  }
+}
 
 let controlBarWindow = null;
 let isDragging = false;
 let dragStartX = 0;
 let windowStartX = 0;
-let chromeProcess = null;
 let previouslyFocusedWindow = null;
 
 function createControlBarWindow() {
@@ -42,20 +95,20 @@ function createControlBarWindow() {
 
   // Try to load from Flask server first, fallback to local files
   const flaskUrl = 'http://localhost:5001/control-bar';
-  console.log('[MAIN] Attempting to load control bar from Flask server:', flaskUrl);
+  safeLog('[MAIN] Attempting to load control bar from Flask server:', flaskUrl);
   
   controlBarWindow.loadURL(flaskUrl)
     .then(() => {
-      console.log('[MAIN] Successfully loaded control bar from Flask server');
+      safeLog('[MAIN] Successfully loaded control bar from Flask server');
     })
     .catch((error) => {
-      console.log('[MAIN] Flask server not available, falling back to local files:', error.message);
+      safeLog('[MAIN] Flask server not available, falling back to local files:', error.message);
       controlBarWindow.loadFile(path.join(__dirname, 'renderer', 'control-bar.html'))
         .then(() => {
-          console.log('[MAIN] Successfully loaded control bar from local files');
+          safeLog('[MAIN] Successfully loaded control bar from local files');
         })
         .catch((fallbackError) => {
-          console.error('[MAIN] Failed to load control bar from both Flask and local files:', fallbackError);
+          safeError('[MAIN] Failed to load control bar from both Flask and local files:', fallbackError);
         });
     });
 
@@ -68,14 +121,14 @@ function createControlBarWindow() {
   // Show window when ready
   controlBarWindow.once('ready-to-show', () => {
     controlBarWindow.show();
-    console.log('[MAIN] Control bar window shown');
+    safeLog('[MAIN] Control bar window shown');
   });
 
   // Prevent window from being closed
   controlBarWindow.on('close', (event) => {
     event.preventDefault();
     controlBarWindow.hide();
-    console.log('[MAIN] Control bar window closed (hidden)');
+    safeLog('[MAIN] Control bar window closed (hidden)');
   });
 
   // Handle IPC messages from renderer
@@ -88,21 +141,21 @@ function createControlBarWindow() {
   });
 
   ipcMain.handle('show-window', () => {
-    console.log('[MAIN] show-window IPC handler called');
+    safeLog('[MAIN] show-window IPC handler called');
     
     // On macOS, we don't need to track focus since we use app.hide() to restore focus
     if (process.platform !== 'darwin') {
       // Store the currently focused window BEFORE showing the control bar (for non-macOS platforms)
       const focusedWindow = BrowserWindow.getFocusedWindow();
-      console.log('[MAIN] getFocusedWindow returned:', focusedWindow ? 'window object' : 'null');
-      console.log('[MAIN] controlBarWindow:', controlBarWindow ? 'window object' : 'null');
-      console.log('[MAIN] focusedWindow === controlBarWindow:', focusedWindow === controlBarWindow);
+      safeLog('[MAIN] getFocusedWindow returned:', focusedWindow ? 'window object' : 'null');
+      safeLog('[MAIN] controlBarWindow:', controlBarWindow ? 'window object' : 'null');
+      safeLog('[MAIN] focusedWindow === controlBarWindow:', focusedWindow === controlBarWindow);
       
       if (focusedWindow && focusedWindow !== controlBarWindow) {
         previouslyFocusedWindow = focusedWindow;
-        console.log('[MAIN] Stored previously focused window before showing control bar');
+        safeLog('[MAIN] Stored previously focused window before showing control bar');
       } else {
-        console.log('[MAIN] No previously focused window stored (focusedWindow was null or control bar)');
+        safeLog('[MAIN] No previously focused window stored (focusedWindow was null or control bar)');
       }
     }
     
@@ -110,39 +163,39 @@ function createControlBarWindow() {
   });
 
   ipcMain.handle('hide-window', () => {
-    console.log('[MAIN] hide-window IPC handler called');
+    safeLog('[MAIN] hide-window IPC handler called');
     controlBarWindow.hide();
     
     // On macOS, hide the entire app to restore focus to the previously active application
     if (process.platform === 'darwin') {
-      console.log('[MAIN] Hiding entire app to restore focus to previously active application');
+      safeLog('[MAIN] Hiding entire app to restore focus to previously active application');
       app.hide();
     } else {
       // For other platforms, try to focus other Electron windows
-      console.log('[MAIN] previouslyFocusedWindow:', previouslyFocusedWindow ? 'window object' : 'null');
+      safeLog('[MAIN] previouslyFocusedWindow:', previouslyFocusedWindow ? 'window object' : 'null');
       if (previouslyFocusedWindow && !previouslyFocusedWindow.isDestroyed()) {
         previouslyFocusedWindow.focus();
-        console.log('[MAIN] Restored focus to previously focused window');
+        safeLog('[MAIN] Restored focus to previously focused window');
       } else {
-        console.log('[MAIN] No previously focused window available, trying alternative');
+        safeLog('[MAIN] No previously focused window available, trying alternative');
         // If no previously focused window, try to focus the most recently used window
         const allWindows = BrowserWindow.getAllWindows();
         const otherWindows = allWindows.filter(win => win !== controlBarWindow && !win.isDestroyed());
-        console.log('[MAIN] Found', otherWindows.length, 'other windows');
+        safeLog('[MAIN] Found', otherWindows.length, 'other windows');
         
         if (otherWindows.length > 0) {
           // Focus the first available window
           otherWindows[0].focus();
-          console.log('[MAIN] Focused alternative window');
+          safeLog('[MAIN] Focused alternative window');
         } else {
-          console.log('[MAIN] No alternative windows found to focus');
+          safeLog('[MAIN] No alternative windows found to focus');
         }
       }
     }
   });
 
   ipcMain.handle('is-window-visible', () => {
-    console.log('[MAIN] is-window-visible IPC handler called, returning:', controlBarWindow.isVisible());
+    safeLog('[MAIN] is-window-visible IPC handler called, returning:', controlBarWindow.isVisible());
     return controlBarWindow.isVisible();
   });
 
@@ -151,7 +204,7 @@ function createControlBarWindow() {
     isDragging = true;
     dragStartX = startX;
     windowStartX = controlBarWindow.getPosition()[0];
-    console.log('[MAIN] Drag started');
+    safeLog('[MAIN] Drag started');
   });
 
   ipcMain.on('drag', (event, currentX) => {
@@ -159,31 +212,31 @@ function createControlBarWindow() {
       const deltaX = currentX - dragStartX;
       const newX = Math.max(0, Math.min(windowStartX + deltaX, screen.getPrimaryDisplay().workAreaSize.width - 300));
       controlBarWindow.setPosition(newX, controlBarWindow.getPosition()[1]);
-      console.log('[MAIN] Dragging, newX:', newX);
+      safeLog('[MAIN] Dragging, newX:', newX);
     }
   });
 
   ipcMain.on('end-drag', () => {
     isDragging = false;
-    console.log('[MAIN] Drag ended');
+    safeLog('[MAIN] Drag ended');
   });
 
   // Handle button clicks
   ipcMain.handle('login-click', () => {
-    console.log('[MAIN] Login button clicked');
+    safeLog('[MAIN] Login button clicked');
   });
 
   ipcMain.handle('chat-click', () => {
-    console.log('[MAIN] Chat button clicked');
+    safeLog('[MAIN] Chat button clicked');
   });
 
   ipcMain.handle('options-click', () => {
-    console.log('[MAIN] Options button clicked');
+    safeLog('[MAIN] Options button clicked');
   });
 
   // Handle login modal
   ipcMain.on('open-login-modal', (event, signinUrl) => {
-    console.log('[MAIN] Opening login modal with URL:', signinUrl);
+    safeLog('[MAIN] Opening login modal with URL:', signinUrl);
     
     const loginWin = new BrowserWindow({
       width: 500,
@@ -206,31 +259,31 @@ function createControlBarWindow() {
     const captureTokensAndClose = () => {
       if (hasLoggedIn) return;
       hasLoggedIn = true;
-      console.log('[MAIN] Login successful, capturing tokens...');
+      safeLog('[MAIN] Login successful, capturing tokens...');
       
       loginWin.webContents.executeJavaScript(`
         fetch('/api/auth-tokens')
           .then(response => response.json())
           .then(data => {
             if (data.success && data.tokens) {
-              console.log('[MAIN] Storing tokens in Keychain');
+              safeLog('[MAIN] Storing tokens in Keychain');
               window.electronAPI.storeAuthTokens(data.tokens);
             }
           })
           .catch(error => {
-            console.error('[MAIN] Error capturing tokens:', error);
+            safeError('[MAIN] Error capturing tokens:', error);
           });
       `);
       
       setTimeout(() => {
-        console.log('[MAIN] Closing login modal');
+        safeLog('[MAIN] Closing login modal');
         loginWin.close();
         controlBarWindow.webContents.send('login-modal-closed');
       }, 2000);
     };
     
     loginWin.webContents.on('did-navigate', (event, url) => {
-      console.log('[MAIN] Login modal navigated to:', url);
+      safeLog('[MAIN] Login modal navigated to:', url);
       if (url.includes('/profile?just_logged_in=1')) {
         captureTokensAndClose();
       }
@@ -238,14 +291,14 @@ function createControlBarWindow() {
 
     loginWin.webContents.on('did-finish-load', () => {
       const currentUrl = loginWin.webContents.getURL();
-      console.log('[MAIN] Login modal finished loading:', currentUrl);
+      safeLog('[MAIN] Login modal finished loading:', currentUrl);
       if (currentUrl.includes('/profile?just_logged_in=1')) {
         captureTokensAndClose();
       }
     });
 
     loginWin.on('closed', () => {
-      console.log('[MAIN] Login modal closed');
+      safeLog('[MAIN] Login modal closed');
     });
   });
 
@@ -257,78 +310,75 @@ function createControlBarWindow() {
   });
 }
 
-function getChromePath() {
-  const platform = os.platform();
+function setupPlaywrightBrowser() {
+  safeLog('[MAIN] Setting up Playwright browser control...');
   
-  if (platform === 'darwin') {
-    return '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-  } else if (platform === 'win32') {
-    return 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
-  } else if (platform === 'linux') {
-    return '/usr/bin/google-chrome';
-  } else {
-    throw new Error(`Unsupported platform: ${platform}`);
-  }
-}
-
-function setupWebDriver() {
-  console.log('[MAIN] Setting up WebDriver for browser control...');
+  // Launch browser directly from Electron using Node.js Playwright
+  setTimeout(async () => {
+    safeLog('[MAIN] Launching Chrome browser directly from Electron...');
+    
+    try {
+      safeLog('[MAIN] Creating ChromeLauncher instance...');
+      // Create new Chrome launcher instance
+      chromeLauncher = new ChromeLauncher();
+      safeLog('[MAIN] ChromeLauncher instance created successfully');
+      
+      safeLog('[MAIN] Calling launchChrome() method...');
+      // Launch Chrome with Profile 6
+      const result = await chromeLauncher.launchChrome();
+      safeLog('[MAIN] launchChrome() method completed');
+      
+      if (result.success) {
+        safeLog('[MAIN] ✅ Browser launched successfully from Electron');
+        safeLog(`[MAIN] WebSocket Endpoint: ${result.connectionInfo.wsEndpoint}`);
+        safeLog(`[MAIN] Profile Path: ${result.connectionInfo.profilePath}`);
+        safeLog('[MAIN] Browser should now be visible on screen');
+        
+        // Start Browser API server
+        safeLog('[MAIN] Starting Browser API server...');
+        try {
+          browserAPI = new BrowserAPI();
+          await browserAPI.start();
+          safeLog('[MAIN] ✅ Browser API server started successfully on port 3001');
+        } catch (apiError) {
+          safeError('[MAIN] ❌ Failed to start Browser API server:', apiError);
+        }
+      } else {
+        safeError('[MAIN] ❌ Failed to launch browser from Electron:', result.error);
+        safeError('[MAIN] ❌ Error message:', result.message);
+      }
+    } catch (error) {
+      safeError('[MAIN] ❌ Error launching browser from Electron:', error);
+      safeError('[MAIN] ❌ Error stack:', error.stack);
+      safeError('[MAIN] ❌ Error details:', {
+        name: error.name,
+        message: error.message,
+        code: error.code
+      });
+    }
+    
+  }, 2000); // Wait 2 seconds for app to be ready
   
-  // Launch Chrome with remote debugging (for WebDriver connection)
-  const chromeArgs = [
-    '--remote-debugging-port=9222',  // Only this flag needed
-    '--no-first-run',
-    '--no-default-browser-check',
-    // NO --disable-web-security
-    // NO profile copying needed
-    '--disable-background-timer-throttling',
-    '--disable-backgrounding-occluded-windows',
-    '--disable-renderer-backgrounding',
-    '--disable-features=TranslateUI',
-    '--disable-ipc-flooding-protection',
-    '--new-window',
-    '--force-new-window',
-    '--disable-session-crashed-bubble',
-    '--disable-infobars',
-    '--disable-features=VizDisplayCompositor',
-    '--no-default-browser-check',
-    '--disable-default-apps',
-    '--disable-sync',
-    '--disable-background-networking',
-    '--disable-component-extensions-with-background-pages',
-    '--disable-extensions-file-access-check',
-    '--disable-extensions-http-throttling',
-    '--disable-hang-monitor',
-    '--disable-prompt-on-repost',
-    '--disable-domain-reliability',
-    '--disable-client-side-phishing-detection',
-    '--disable-component-update',
-    '--disable-background-mode'
-  ];
-  
-  // Launch Chrome normally (no profile copying needed)
-  const chromePath = getChromePath();
-  chromeProcess = spawn(chromePath, chromeArgs, {
-    stdio: 'pipe',
-    detached: false
-  });
-  
-  console.log('[MAIN] Chrome launched with WebDriver support');
+  safeLog('[MAIN] Browser management is now handled directly by Electron with secure profile integration');
 }
 
 // App event handlers
 app.whenReady().then(() => {
   createControlBarWindow();
-  console.log('[MAIN] App ready, control bar window created');
+  safeLog('[MAIN] App ready, control bar window created');
   
-  // Setup WebDriver instead of direct Chrome control
-  setupWebDriver();
+  // Setup Playwright browser control
+  setupPlaywrightBrowser();
 
   // Register DevTools shortcut
   globalShortcut.register('CommandOrControl+Alt+I', () => {
     if (controlBarWindow) {
       controlBarWindow.webContents.openDevTools({ mode: 'detach' });
-      console.log('[MAIN] DevTools opened via shortcut');
+      try {
+        safeLog('[MAIN] DevTools opened via shortcut');
+      } catch (e) {
+        // Ignore EIO errors from console output
+      }
     }
   });
 
@@ -336,22 +386,34 @@ app.whenReady().then(() => {
   globalShortcut.register('CommandOrControl+Enter', () => {
     if (controlBarWindow) {
       controlBarWindow.webContents.send('toggle-chat');
-      console.log('[MAIN] Chat toggle shortcut triggered');
+      try {
+        safeLog('[MAIN] Chat toggle shortcut triggered');
+      } catch (e) {
+        // Ignore EIO errors from console output
+      }
     }
   });
 
   // Register control bar movement shortcuts
-  globalShortcut.register('CommandOrControl+Left', () => {
+  globalShortcut.register('CommandOrControl+Alt+Left', () => {
     if (controlBarWindow && controlBarWindow.isVisible()) {
       controlBarWindow.webContents.send('move-control-bar', 'left');
-      console.log('[MAIN] Move control bar left shortcut triggered');
+      try {
+        safeLog('[MAIN] Move control bar left shortcut triggered');
+      } catch (e) {
+        // Ignore EIO errors from console output
+      }
     }
   });
 
-  globalShortcut.register('CommandOrControl+Right', () => {
+  globalShortcut.register('CommandOrControl+Alt+Right', () => {
     if (controlBarWindow && controlBarWindow.isVisible()) {
       controlBarWindow.webContents.send('move-control-bar', 'right');
-      console.log('[MAIN] Move control bar right shortcut triggered');
+      try {
+        safeLog('[MAIN] Move control bar right shortcut triggered');
+      } catch (e) {
+        // Ignore EIO errors from console output
+      }
     }
   });
 
@@ -359,21 +421,41 @@ app.whenReady().then(() => {
   globalShortcut.register('CommandOrControl+Up', () => {
     if (controlBarWindow) {
       controlBarWindow.webContents.send('toggle-control-bar-visibility');
-      console.log('[MAIN] Toggle control bar visibility shortcut triggered (Up)');
+      try {
+        safeLog('[MAIN] Toggle control bar visibility shortcut triggered (Up)');
+      } catch (e) {
+        // Ignore EIO errors from console output
+      }
     }
   });
 
   globalShortcut.register('CommandOrControl+Down', () => {
     if (controlBarWindow) {
       controlBarWindow.webContents.send('toggle-control-bar-visibility');
-      console.log('[MAIN] Toggle control bar visibility shortcut triggered (Down)');
+      try {
+        safeLog('[MAIN] Toggle control bar visibility shortcut triggered (Down)');
+      } catch (e) {
+        // Ignore EIO errors from console output
+      }
+    }
+  });
+
+  // Register input bar focus shortcut
+  globalShortcut.register('CommandOrControl+Enter', () => {
+    if (controlBarWindow && controlBarWindow.isVisible()) {
+      controlBarWindow.webContents.send('focus-input-bar');
+      try {
+        safeLog('[MAIN] Focus input bar shortcut triggered (Command+Enter)');
+      } catch (e) {
+        // Ignore EIO errors from console output
+      }
     }
   });
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createControlBarWindow();
-      console.log('[MAIN] App activated, control bar window created');
+      safeLog('[MAIN] App activated, control bar window created');
     }
   });
 });
@@ -381,7 +463,7 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
-    console.log('[MAIN] All windows closed, app quit');
+    safeLog('[MAIN] All windows closed, app quit');
   }
 });
 
@@ -389,40 +471,52 @@ app.on('window-all-closed', () => {
 app.on('before-quit', (event) => {
   event.preventDefault();
   app.hide();
-  console.log('[MAIN] App before quit, hiding');
+  safeLog('[MAIN] App before quit, hiding');
 });
 
-// Clean up Chrome process when app quits
+// Clean up when app quits
 app.on('will-quit', () => {
-  if (chromeProcess) {
-    console.log('[MAIN] Terminating Chrome process...');
-    chromeProcess.kill();
+  safeLog('[MAIN] App quitting...');
+  
+  // Stop Browser API server
+  if (browserAPI) {
+    browserAPI.stop();
+    safeLog('[MAIN] Browser API server stopped');
   }
   
-  // No profile cleanup needed anymore
+  // Close browser
+  if (chromeLauncher) {
+    chromeLauncher.closeBrowser().then(() => {
+      safeLog('[MAIN] Browser closed during app quit');
+    }).catch((error) => {
+      safeError('[MAIN] Error closing browser during quit:', error);
+    });
+  }
+  
+  safeLog('[MAIN] Browser cleanup completed');
 });
 
 // Handle app hiding/showing
 app.on('hide', () => {
   if (controlBarWindow) {
     controlBarWindow.hide();
-    console.log('[MAIN] App hidden, control bar window hidden');
+    safeLog('[MAIN] App hidden, control bar window hidden');
   }
 });
 
 app.on('show', () => {
   if (controlBarWindow) {
     controlBarWindow.show();
-    console.log('[MAIN] App shown, control bar window shown');
+    safeLog('[MAIN] App shown, control bar window shown');
   }
 });
 
 async function storeAuthTokens(tokens) {
   try {
     await keytar.setPassword('JarvusApp', 'auth_tokens', JSON.stringify(tokens));
-    console.log('[MAIN] ✅ Tokens stored in Keychain');
+    safeLog('[MAIN] ✅ Tokens stored in Keychain');
   } catch (error) {
-    console.error('[MAIN] ❌ Error storing tokens:', error);
+    safeError('[MAIN] ❌ Error storing tokens:', error);
   }
 }
 
@@ -431,7 +525,7 @@ async function getAuthTokens() {
     const tokens = await keytar.getPassword('JarvusApp', 'auth_tokens');
     return tokens ? JSON.parse(tokens) : null;
   } catch (error) {
-    console.error('[MAIN] ❌ Error getting tokens:', error);
+    safeError('[MAIN] ❌ Error getting tokens:', error);
     return null;
   }
 }
@@ -439,23 +533,175 @@ async function getAuthTokens() {
 async function clearAuthTokens() {
   try {
     await keytar.deletePassword('JarvusApp', 'auth_tokens');
-    console.log('[MAIN] ✅ Tokens cleared from Keychain');
+    safeLog('[MAIN] ✅ Tokens cleared from Keychain');
   } catch (error) {
-    console.error('[MAIN] ❌ Error clearing tokens:', error);
+    safeError('[MAIN] ❌ Error clearing tokens:', error);
   }
 }
 
 ipcMain.handle('store-auth-tokens', async (event, tokens) => {
-  console.log('[MAIN] IPC: store-auth-tokens called');
+  safeLog('[MAIN] IPC: store-auth-tokens called');
   await storeAuthTokens(tokens);
 });
 
 ipcMain.handle('get-auth-tokens', async () => {
-  console.log('[MAIN] IPC: get-auth-tokens called');
+  safeLog('[MAIN] IPC: get-auth-tokens called');
   return await getAuthTokens();
 });
 
 ipcMain.handle('clear-auth-tokens', async () => {
-  console.log('[MAIN] IPC: clear-auth-tokens called');
+  safeLog('[MAIN] IPC: clear-auth-tokens called');
   await clearAuthTokens();
+});
+
+// Browser management IPC handlers
+ipcMain.handle('launch-browser', async () => {
+  safeLog('[MAIN] IPC: launch-browser called');
+  
+  try {
+    // Create new Chrome launcher instance
+    chromeLauncher = new ChromeLauncher();
+    
+    // Launch Chrome with Profile 6
+    const result = await chromeLauncher.launchChrome();
+    
+    if (result.success) {
+      safeLog('[MAIN] ✅ Chrome browser launched successfully');
+      safeLog(`[MAIN] WebSocket Endpoint: ${result.connectionInfo.wsEndpoint}`);
+      safeLog(`[MAIN] Profile Path: ${result.connectionInfo.profilePath}`);
+    } else {
+      safeError('[MAIN] ❌ Failed to launch Chrome browser:', result.error);
+    }
+    
+    return result;
+    
+  } catch (error) {
+    safeError('[MAIN] Failed to launch browser:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('close-browser', async () => {
+  safeLog('[MAIN] IPC: close-browser called');
+  
+  try {
+    if (chromeLauncher) {
+      const result = await chromeLauncher.closeBrowser();
+      chromeLauncher = null;
+      
+      if (result.success) {
+        safeLog('[MAIN] ✅ Chrome browser closed successfully');
+      } else {
+        safeError('[MAIN] ❌ Failed to close Chrome browser:', result.error);
+      }
+      
+      return result;
+    } else {
+      safeLog('[MAIN] No Chrome launcher instance to close');
+      return { success: false, message: 'No browser instance to close' };
+    }
+    
+  } catch (error) {
+    safeError('[MAIN] Failed to close browser:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Profile management IPC handlers
+ipcMain.handle('discover-chrome-profiles', async () => {
+  safeLog('[MAIN] IPC: discover-chrome-profiles called');
+  try {
+    const profiles = profileManager.discoverAvailableProfiles();
+    return { success: true, profiles };
+  } catch (error) {
+    safeError('[MAIN] Failed to discover Chrome profiles:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('get-default-chrome-profile', async () => {
+  safeLog('[MAIN] IPC: get-default-chrome-profile called');
+  try {
+    const defaultProfile = profileManager.getDefaultProfile();
+    if (defaultProfile) {
+      const profiles = profileManager.discoverAvailableProfiles();
+      const profileInfo = profiles[defaultProfile] || {};
+      return { 
+        success: true, 
+        default_profile: defaultProfile,
+        profile_info: profileInfo
+      };
+    } else {
+      return { success: false, error: 'No default profile found' };
+    }
+  } catch (error) {
+    safeError('[MAIN] Failed to get default Chrome profile:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('launch-browser-with-profile', async (event, profileName) => {
+  safeLog(`[MAIN] IPC: launch-browser-with-profile called with profile: ${profileName}`);
+  try {
+    // Create new Chrome launcher instance
+    chromeLauncher = new ChromeLauncher();
+    
+    // Launch Chrome with the specified profile (Profile 6 is hardcoded in launcher)
+    const result = await chromeLauncher.launchChrome();
+    
+    if (result.success) {
+      safeLog('[MAIN] ✅ Chrome browser launched successfully with profile');
+      safeLog(`[MAIN] WebSocket Endpoint: ${result.connectionInfo.wsEndpoint}`);
+      safeLog(`[MAIN] Profile Path: ${result.connectionInfo.profilePath}`);
+    } else {
+      safeError('[MAIN] ❌ Failed to launch Chrome browser with profile:', result.error);
+    }
+    
+    return result;
+    
+  } catch (error) {
+    safeError('[MAIN] Failed to launch browser with profile:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('get-chrome-profile-info', async (event, profileName) => {
+  safeLog(`[MAIN] IPC: get-chrome-profile-info called for profile: ${profileName}`);
+  try {
+    const profiles = profileManager.discoverAvailableProfiles();
+    if (profileName in profiles) {
+      return { success: true, profile_info: profiles[profileName] };
+    } else {
+      return { success: false, error: `Profile '${profileName}' not found` };
+    }
+  } catch (error) {
+    safeError('[MAIN] Failed to get Chrome profile info:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('get-decrypted-profile-path', async () => {
+  safeLog('[MAIN] IPC: get-decrypted-profile-path called');
+  try {
+    const profilePath = profileManager.getDecryptedProfilePath();
+    if (profilePath) {
+      return { success: true, profile_path: profilePath };
+    } else {
+      return { success: false, error: 'No decrypted profile path available' };
+    }
+  } catch (error) {
+    safeError('[MAIN] Failed to get decrypted profile path:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('sync-profile-data', async () => {
+  safeLog('[MAIN] IPC: sync-profile-data called');
+  try {
+    const success = profileManager.syncProfileData();
+    return { success, message: success ? 'Profile data synced successfully' : 'Failed to sync profile data' };
+  } catch (error) {
+    safeError('[MAIN] Failed to sync profile data:', error);
+    return { success: false, error: error.message };
+  }
 }); 
