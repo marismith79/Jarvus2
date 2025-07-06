@@ -8,6 +8,8 @@ import requests
 import json
 import time
 from typing import Dict, Any
+import pytest
+from test_result_logger import log_test_result
 
 # Configuration
 BASE_URL = "http://localhost:5000"
@@ -331,6 +333,140 @@ class HierarchicalMemoryDemo:
         print("• Influence rules can override, modify, or add context data")
         print("• Child contexts inherit and can further modify parent influences")
         print("• The system automatically combines all relevant contexts for decisions")
+
+
+@pytest.mark.usefixtures("test_client")
+def test_create_hierarchy(test_client):
+    try:
+        payload = {
+            "hierarchy_name": "vacation_planning",
+            "description": "Vacation planning context hierarchy",
+            "levels": ["context", "episodes", "procedures", "facts"]
+        }
+        response = test_client.post("/api/memory/hierarchy/create", json=payload)
+        assert response.status_code == 201
+        data = response.get_json()
+        assert data["success"]
+        log_test_result("create_hierarchy", "pass", response=data)
+    except Exception as e:
+        log_test_result("create_hierarchy", "fail", error=str(e))
+
+
+def test_add_to_hierarchy(test_client):
+    try:
+        payload = {
+            "memory_id": "mem_001",
+            "level": "episodes",
+            "parent_id": "hier_001",
+            "influence_rules": {
+                "propagate_to": ["procedures", "facts"],
+                "influence_strength": 0.8
+            }
+        }
+        response = test_client.post("/api/memory/hierarchy/add", json=payload)
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data["success"]
+        log_test_result("add_to_hierarchy", "pass", response=data)
+    except Exception as e:
+        log_test_result("add_to_hierarchy", "fail", error=str(e))
+
+
+def test_get_hierarchy(test_client):
+    try:
+        response = test_client.get("/api/memory/hierarchy/hier_001")
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data["success"]
+        log_test_result("get_hierarchy", "pass", response=data)
+    except Exception as e:
+        log_test_result("get_hierarchy", "fail", error=str(e))
+
+
+def test_get_influence(test_client):
+    try:
+        response = test_client.get("/api/memory/hierarchy/influence/mem_001")
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data["success"]
+        log_test_result("get_influence", "pass", response=data)
+    except Exception as e:
+        log_test_result("get_influence", "fail", error=str(e))
+
+
+def test_propagate_influence(test_client):
+    try:
+        payload = {
+            "source_memory_id": "mem_001",
+            "target_levels": ["procedures", "facts"],
+            "influence_strength": 0.8
+        }
+        response = test_client.post("/api/memory/hierarchy/propagate", json=payload)
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data["success"]
+        log_test_result("propagate_influence", "pass", response=data)
+    except Exception as e:
+        log_test_result("propagate_influence", "fail", error=str(e))
+
+
+def test_get_context(test_client):
+    try:
+        response = test_client.get("/api/memory/hierarchy/context/mem_001?depth=3")
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data["success"]
+        log_test_result("get_context", "pass", response=data)
+    except Exception as e:
+        log_test_result("get_context", "fail", error=str(e))
+
+
+def test_aggregate_context(test_client):
+    try:
+        payload = {
+            "memory_ids": ["mem_001", "mem_002", "mem_003"],
+            "aggregation_type": "decision_context"
+        }
+        response = test_client.post("/api/memory/hierarchy/aggregate", json=payload)
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data["success"]
+        log_test_result("aggregate_context", "pass", response=data)
+    except Exception as e:
+        log_test_result("aggregate_context", "fail", error=str(e))
+
+
+def test_hierarchy_stats(test_client):
+    try:
+        response = test_client.get("/api/memory/hierarchy/stats/hier_001")
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data["success"]
+        log_test_result("hierarchy_stats", "pass", response=data)
+    except Exception as e:
+        log_test_result("hierarchy_stats", "fail", error=str(e))
+
+
+def test_list_hierarchies(test_client):
+    try:
+        response = test_client.get("/api/memory/hierarchy/list")
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data["success"]
+        log_test_result("list_hierarchies", "pass", response=data)
+    except Exception as e:
+        log_test_result("list_hierarchies", "fail", error=str(e))
+
+
+def test_delete_hierarchy(test_client):
+    try:
+        response = test_client.delete("/api/memory/hierarchy/hier_001")
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data["success"]
+        log_test_result("delete_hierarchy", "pass", response=data)
+    except Exception as e:
+        log_test_result("delete_hierarchy", "fail", error=str(e))
 
 
 if __name__ == "__main__":

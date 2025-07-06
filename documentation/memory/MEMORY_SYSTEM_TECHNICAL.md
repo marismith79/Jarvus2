@@ -48,309 +48,95 @@ CREATE TABLE long_term_memory (
 ```sql
 CREATE TABLE short_term_memory (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    thread_id VARCHAR(36) NOT NULL,
     user_id INTEGER NOT NULL,
-    agent_id INTEGER NOT NULL,
-    checkpoint_id VARCHAR(36) UNIQUE NOT NULL,
-    parent_checkpoint_id VARCHAR(36),
+    thread_id VARCHAR(255) NOT NULL,
     state_data JSON NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id),
-    FOREIGN KEY (agent_id) REFERENCES agents(id)
-);
-```
-
-#### MemoryEmbedding (Vector Search)
-```sql
-CREATE TABLE memory_embedding (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    memory_id VARCHAR(36) NOT NULL,
-    user_id INTEGER NOT NULL,
-    embedding_vector BLOB NOT NULL,
-    embedding_model VARCHAR(50) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (memory_id) REFERENCES long_term_memory(memory_id),
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 ```
 
-#### HierarchicalMemory (Context Management)
+#### HierarchicalMemory
 ```sql
 CREATE TABLE hierarchical_memory (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
-    memory_id VARCHAR(36) UNIQUE NOT NULL,
-    parent_id VARCHAR(36),
+    memory_id VARCHAR(255) NOT NULL,
+    parent_id VARCHAR(255),
     level INTEGER DEFAULT 0,
-    path VARCHAR(255),
-    name VARCHAR(100) NOT NULL,
+    path VARCHAR(1000),
+    name VARCHAR(255) NOT NULL,
     description TEXT,
     context_data JSON NOT NULL,
-    influence_rules JSON NOT NULL,
-    memory_type VARCHAR(20) DEFAULT 'context',
-    priority INTEGER DEFAULT 0,
+    influence_rules JSON,
+    memory_type VARCHAR(50) DEFAULT 'context',
     is_active BOOLEAN DEFAULT TRUE,
+    priority INTEGER DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id),
-    FOREIGN KEY (parent_id) REFERENCES hierarchical_memory(memory_id)
+    last_accessed TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
 );
-```
-
-## Vector Database Integration
-
-### ChromaDB Implementation
-The system uses ChromaDB as the vector database with the following configuration:
-
-```python
-class VectorMemoryService:
-    def __init__(self, persist_directory="./chroma_db", model_name="all-MiniLM-L6-v2"):
-        self.client = chromadb.PersistentClient(path=persist_directory)
-        self.encoder = SentenceTransformer(model_name)
-        self.model_name = model_name
-        
-        # Separate collections for different content types
-        self.memory_collection = self.client.get_or_create_collection("memory_content")
-        self.context_collection = self.client.get_or_create_collection("context_content")
-```
-
-### Vector Storage Strategy
-```python
-def store_memory_content(self, memory: LongTermMemory, content_text: str) -> str:
-    """Store memory content in vector DB and return vector_id"""
-    # Generate embedding
-    embedding = self.encoder.encode(content_text).tolist()
-    
-    # Create unique vector ID
-    vector_id = f"mem_{memory.user_id}_{memory.memory_id}"
-    
-    # Store in vector database with metadata
-    self.memory_collection.add(
-        embeddings=[embedding],
-        documents=[content_text],
-        metadatas=[{
-            'memory_id': memory.memory_id,
-            'user_id': memory.user_id,
-            'namespace': memory.namespace,
-            'memory_type': memory.memory_type,
-            'content_hash': hash(content_text)  # For content change detection
-        }],
-        ids=[vector_id]
-    )
-    
-    return vector_id
-```
-
-### Efficient Hybrid Search Implementation
-```python
-def efficient_hybrid_search(
-    self, 
-    query: str, 
-    user_id: int, 
-    namespace: str, 
-    n_results: int = 10,
-    similarity_threshold: float = 0.7
-) -> List[Dict[str, Any]]:
-    """Efficient hybrid search: SQL metadata filtering + Vector content search"""
-    
-    # Step 1: Query SQL database for relevant metadata/categories
-    sql_candidates = self._get_sql_candidates(user_id, namespace, query)
-    
-    if not sql_candidates:
-        return []
-    
-    # Step 2: Extract memory IDs from SQL results
-    memory_ids = [candidate['memory_id'] for candidate in sql_candidates]
-    
-    # Step 3: Search vector database only for relevant content
-    vector_results = self._search_vector_content(
-        query, memory_ids, n_results, similarity_threshold
-    )
-    
-    # Step 4: Combine SQL metadata with vector results
-    combined_results = self._combine_sql_vector_results(
-        sql_candidates, vector_results
-    )
-    
-    return combined_results
-```
-
-### SQL Candidate Filtering
-```python
-def _get_sql_candidates(
-    self, 
-    user_id: int, 
-    namespace: str, 
-    query: str
-) -> List[Dict[str, Any]]:
-    """Get relevant memory candidates from SQL database using metadata"""
-    
-    # Use SQL to filter by metadata (namespace, type, importance, etc.)
-    memories = LongTermMemory.query.filter_by(
-        user_id=user_id,
-        namespace=namespace
-    ).order_by(
-        LongTermMemory.importance_score.desc(),
-        LongTermMemory.last_accessed.desc()
-    ).limit(100).all()  # Get top candidates
-    
-    # Simple keyword matching on search_text for initial filtering
-    candidates = []
-    query_lower = query.lower()
-    
-    for memory in memories:
-        if memory.search_text and query_lower in memory.search_text.lower():
-            candidates.append({
-                'memory_id': memory.memory_id,
-                'namespace': memory.namespace,
-                'memory_type': memory.memory_type,
-                'importance_score': memory.importance_score,
-                'last_accessed': memory.last_accessed,
-                'search_text': memory.search_text
-            })
-    
-    return candidates
-```
-
-### Vector Content Search
-```python
-def _search_vector_content(
-    self, 
-    query: str, 
-    memory_ids: List[str], 
-    n_results: int,
-    similarity_threshold: float
-) -> List[Dict[str, Any]]:
-    """Search vector database for specific memory content"""
-    
-    if not memory_ids:
-        return []
-    
-    # Generate query embedding
-    query_embedding = self.encoder.encode(query).tolist()
-    
-    # Search only in the memory collection with metadata filtering
-    results = self.memory_collection.query(
-        query_embeddings=[query_embedding],
-        n_results=n_results,
-        where={"memory_id": {"$in": memory_ids}}
-    )
-    
-    # Process results
-    processed_results = []
-    for i in range(len(results['ids'][0])):
-        memory_id = results['metadatas'][0][i]['memory_id']
-        distance = results['distances'][0][i]
-        similarity = 1.0 / (1.0 + distance)
-        
-        if similarity >= similarity_threshold:
-            processed_results.append({
-                'memory_id': memory_id,
-                'similarity': similarity,
-                'content': results['documents'][0][i],
-                'metadata': results['metadatas'][0][i]
-            })
-    
-    return processed_results
 ```
 
 ## API Endpoints
 
-### 1. Storage Endpoints
+### 1. Core Memory Operations
 
-#### POST `/memory/chrome-action`
-- **Purpose:** Store a Chrome action as episodic memory
+#### POST `/api/memory/chrome-action`
+- **Purpose:** Store Chrome actions as episodic memories
 - **Request JSON:**
   ```json
   {
-    "type": "chrome_action",
     "action": "click",
     "target": "button#submit",
     "url": "https://example.com",
     "result": "success",
-    "timestamp": "2024-06-01T12:00:00Z",
-    "details": {"note": "User submitted form"}
+    "details": {"note": "User submitted form"},
+    "importance": 1.0
   }
   ```
-- **Behavior:**
-  - Always stores as `memory_type='episode'`.
-  - `search_text` is JSON-serialized episode data.
-  - `importance_score` defaults to 2.0 for actions.
-  - Content stored in both SQL (metadata) and Vector DB (semantic content).
+- **Returns:** `{ "success": true, "memory_id": "mem_001" }`
 
-#### POST `/memory/feedback`
-- **Purpose:** Store user feedback as episodic memory
+#### POST `/api/memory/workflow-execution`
+- **Purpose:** Store workflow executions as episodic/procedural memories
 - **Request JSON:**
   ```json
   {
-    "user_response": "accepted",
-    "suggestion_reference": "sugg_001",
-    "notes": "This suggestion worked well!",
-    "timestamp": "2024-06-01T12:01:00Z"
-  }
-  ```
-- **Behavior:**
-  - Always stores as `memory_type='episode'`.
-  - `importance_score` defaults to 3.0 for feedback.
-  - Vector storage enables semantic similarity search for related feedback.
-
-#### POST `/memory/workflow-execution`
-- **Purpose:** Store workflow execution as episodic/procedural memory
-- **Request JSON:**
-  ```json
-  {
-    "workflow_id": "wf_001",
-    "steps": [
-      {"action": "open_url", "url": "https://zoom.us"},
-      {"action": "click", "target": "Start Meeting"}
-    ],
+    "name": "Email Automation",
+    "steps": ["open_gmail", "compose_email", "send"],
     "result": "success",
-    "timestamp": "2024-06-01T12:02:00Z",
-    "details": {"note": "Started a Zoom meeting"},
-    "store_as_procedure": true,
-    "description": "How to start a Zoom meeting"
+    "duration": 120,
+    "success": true,
+    "importance": 2.0
   }
   ```
-- **Behavior:**
-  - Always stores as `memory_type='episode'`.
-  - If `store_as_procedure` is true, also stores as `memory_type='procedure'`.
+- **Returns:** `{ "success": true, "memory_id": "wf_001" }`
 
-#### POST `/memory/store`
-- **Purpose:** Store semantic fact/preference
-- **Request JSON:**
-  ```json
-  {
-    "text": "User prefers dark mode",
-    "type": "preference",
-    "importance": 1.5
-  }
-  ```
-- **Behavior:**
-  - Stores as `memory_type` from `type` field (e.g., 'fact', 'preference').
-  - `search_text` is the text field.
-  - Vector embeddings enable finding related preferences and facts.
+#### GET `/api/memory/episodic`
+- **Purpose:** Retrieve episodic memories
+- **Query Parameters:** `query`, `limit`
+- **Returns:** `{ "memories": [...] }`
 
-### 2. Retrieval Endpoints
+#### GET `/api/memory/semantic`
+- **Purpose:** Retrieve semantic memories (facts, preferences)
+- **Query Parameters:** `query`, `limit`
+- **Returns:** `{ "memories": [...] }`
 
-#### GET `/memory/episodes?query=...&limit=5`
-- **Returns:** `{ "episodes": [ ... ] }` (only `memory_type='episode'`)
+#### GET `/api/memory/procedural`
+- **Purpose:** Retrieve procedural memories (workflows, how-to)
+- **Query Parameters:** `query`, `limit`
+- **Returns:** `{ "memories": [...] }`
 
-#### GET `/memory/facts?query=...&limit=5`
-- **Returns:** `{ "facts": [ ... ] }` (only `memory_type in ('fact', 'preference')`)
-
-#### GET `/memory/procedures?query=...&limit=5`
-- **Returns:** `{ "procedures": [ ... ] }` (only `memory_type in ('procedure', 'workflow')`)
-
-- **All retrieval endpoints** support substring search on `search_text` and limit results.
-
-### 3. Vector Search Endpoints
+### 2. Vector Search Endpoints
 
 #### POST `/api/memory/vector/efficient-search`
-- **Purpose:** Perform efficient semantic search using SQL metadata + Vector content
+- **Purpose:** Efficient hybrid search using SQL metadata + Vector content
 - **Request JSON:**
   ```json
   {
     "query": "email automation workflow",
+    "user_id": 1,
     "namespace": "episodes",
     "n_results": 10,
     "similarity_threshold": 0.7
@@ -363,8 +149,8 @@ def _search_vector_content(
     "results": [
       {
         "memory_id": "mem_001",
-        "similarity": 0.85,
-        "content": "User set up email automation workflow...",
+        "similarity": 0.9,
+        "content": "Email automation workflow...",
         "metadata": {
           "namespace": "episodes",
           "memory_type": "episode",
@@ -373,47 +159,17 @@ def _search_vector_content(
       }
     ],
     "query": "email automation workflow",
-    "total_results": 5,
-    "search_type": "efficient_hybrid"
-  }
-  ```
-
-#### POST `/api/memory/vector/hybrid-search`
-- **Purpose:** Perform hybrid search using efficient SQL + Vector approach
-- **Request JSON:**
-  ```json
-  {
-    "query": "gmail login preferences",
-    "namespace": "episodes",
-    "n_results": 10
-  }
-  ```
-- **Returns:**
-  ```json
-  {
-    "success": true,
-    "memories": [
-      {
-        "id": "mem_001",
-        "data": {...},
-        "type": "episode",
-        "importance": 2.0,
-        "created_at": "2024-06-01T12:00:00Z",
-        "last_accessed": "2024-06-01T12:00:00Z"
-      }
-    ],
-    "query": "gmail login preferences",
-    "total_results": 3,
-    "search_type": "efficient_hybrid"
+    "total_results": 5
   }
   ```
 
 #### POST `/api/memory/vector/search-hierarchical`
-- **Purpose:** Search hierarchical contexts using efficient SQL + Vector approach
+- **Purpose:** Search hierarchical contexts using vector similarity
 - **Request JSON:**
   ```json
   {
     "query": "vacation mode email preferences",
+    "user_id": 1,
     "n_results": 10,
     "similarity_threshold": 0.7
   }
@@ -440,7 +196,7 @@ def _search_vector_content(
   }
   ```
 
-### 4. Memory Editing & Improvement Endpoints
+### 3. Memory Editing & Improvement Endpoints
 
 #### GET `/memory/find-mergeable?namespace=episodes&similarity=0.85`
 - **Purpose:** Find memories that can be merged based on similarity
@@ -475,7 +231,7 @@ def _search_vector_content(
 - **Purpose:** Get comprehensive quality analysis for a namespace
 - **Returns:** `{ "quality_summary": {...}, "low_quality_memories": [...], "recommendations": [...] }`
 
-### 5. Vector Content Management Endpoints
+### 4. Vector Content Management Endpoints
 
 #### POST `/api/memory/vector/update-content`
 - **Purpose:** Update memory content in vector database
@@ -516,6 +272,47 @@ def _search_vector_content(
     "vector_id": "mem_1_mem_001"
   }
   ```
+
+### 5. Hierarchical Memory Endpoints
+
+#### POST `/api/memory/hierarchical/context`
+- **Purpose:** Create hierarchical context with influence rules
+- **Request JSON:**
+  ```json
+  {
+    "name": "Vacation Mode",
+    "description": "User is on vacation",
+    "context_data": {
+      "status": "on_vacation",
+      "work_priority": "minimal"
+    },
+    "influence_rules": {
+      "override": {"work_urgency": "low"},
+      "modify": {"email_check_frequency": {"operation": "multiply", "value": 0.25}}
+    },
+    "parent_id": null,
+    "priority": 100
+  }
+  ```
+- **Returns:** `{ "success": true, "context": {...} }`
+
+#### GET `/api/memory/hierarchical/contexts`
+- **Purpose:** Get all active hierarchical contexts
+- **Returns:** `{ "contexts": [...] }`
+
+#### GET `/api/memory/hierarchical/context/<memory_id>`
+- **Purpose:** Get specific context influence
+- **Returns:** `{ "influence": {...} }`
+
+#### POST `/api/memory/hierarchical/decision-context`
+- **Purpose:** Get combined decision context for all active contexts
+- **Request JSON:**
+  ```json
+  {
+    "decision_type": "email_handling"
+  }
+  ```
+- **Returns:** `{ "context": {...} }`
 
 ## Service Implementation
 
@@ -657,7 +454,7 @@ def detect_memory_conflicts(self, user_id: int, namespace: str) -> List[Dict[str
     return conflicts
 ```
 
-## Hierarchical Memory Implementation ✅ IMPLEMENTED
+## Hierarchical Memory Implementation
 
 ### 1. Hierarchical Context Creation
 ```python
@@ -1131,6 +928,74 @@ def track_memory_quality(self, user_id: int, namespace: str):
     
     return quality_metrics
 ```
+
+## Implementation Status
+
+### ✅ Currently Implemented
+
+#### Core Memory System
+- **Database Models**: LongTermMemory, ShortTermMemory, HierarchicalMemory
+- **Basic CRUD Operations**: Store, retrieve, update, delete memories
+- **Memory Types**: Episodic, semantic, procedural, hierarchical
+- **Namespace Organization**: Separate namespaces for different memory types
+
+#### Vector Database Integration
+- **ChromaDB Integration**: Basic vector storage with SentenceTransformers
+- **Hybrid Search**: SQL metadata filtering + Vector content search
+- **Efficient Retrieval**: Two-stage retrieval pattern for optimal performance
+- **Vector Content Management**: Store, update, delete content in vector DB
+
+#### Memory Editing System
+- **Memory Merging**: Basic similarity-based merging functionality
+- **Memory Improvement**: Simple enhancement of existing memories
+- **Quality Assessment**: Multi-dimensional quality scoring
+- **Conflict Detection**: Basic conflict identification between memories
+- **API Endpoints**: Complete REST API for memory editing operations
+
+#### Hierarchical Memory System
+- **Context Creation**: Create hierarchical contexts with influence rules
+- **Influence Propagation**: Basic parent-child influence inheritance
+- **Context Management**: CRUD operations for hierarchical contexts
+- **Decision Context**: Basic context aggregation for decisions
+
+#### API Infrastructure
+- **REST Endpoints**: Comprehensive API for all memory operations
+- **Authentication**: User-based access control
+- **Error Handling**: Basic error handling and logging
+- **Response Formatting**: Consistent JSON response format
+
+### 🔄 Partially Implemented
+
+#### Advanced Features
+- **Memory Versioning**: Basic version tracking, but no full versioning system
+- **Bulk Operations**: Basic bulk operations, but limited automation
+- **Conflict Resolution**: Conflict detection implemented, but resolution is basic
+- **Memory Evolution**: Basic evolution tracking, but no full audit trail
+
+#### Performance & Monitoring
+- **Basic Metrics**: Simple memory statistics and quality metrics
+- **Health Checks**: Basic vector service health monitoring
+- **Error Tracking**: Basic error logging, but no comprehensive monitoring
+
+### ❌ Not Yet Implemented
+
+#### Security & Privacy
+- **Encryption**: No end-to-end encryption for sensitive data
+- **Anonymization**: No data anonymization capabilities
+- **Advanced Access Control**: Basic user isolation only
+- **Audit Logging**: No comprehensive audit trail system
+
+#### Advanced Features
+- **Memory Compression**: No LLM-based memory compression
+- **Memory Synthesis**: No AI-powered memory creation
+- **Advanced Analytics**: No predictive analytics or insights
+- **Distributed Architecture**: No microservices or distributed storage
+
+#### Production Features
+- **Caching**: No comprehensive caching strategy
+- **Database Optimization**: No advanced indexing or partitioning
+- **Graceful Degradation**: Limited fallback mechanisms
+- **Comprehensive Monitoring**: No advanced observability features
 
 ## Conclusion
 

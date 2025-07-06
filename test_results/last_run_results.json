@@ -1,0 +1,1654 @@
+[
+  {
+    "test_name": "bulk_create_memories",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:42.909963",
+    "response": null,
+    "error": "assert 404 == 201\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "bulk_update_memories",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:42.910985",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "bulk_delete_memories",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:42.911861",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "bulk_export_memories",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:42.912589",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "bulk_import_memories",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:42.913239",
+    "response": null,
+    "error": "assert 404 == 201\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "bulk_search_memories",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:42.913999",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "bulk_tag_memories",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:42.914655",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "bulk_analyze_memories",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:42.915351",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "bulk_validate_memories",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:42.916115",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "bulk_cleanup_memories",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:42.916728",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "create_hierarchy",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:43.362307",
+    "response": null,
+    "error": "assert 404 == 201\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "add_to_hierarchy",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:43.363438",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "get_hierarchy",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:43.364363",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "get_influence",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:43.365143",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "propagate_influence",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:43.365914",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "get_context",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:43.366738",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "aggregate_context",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:43.367572",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "hierarchy_stats",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:43.368615",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "list_hierarchies",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:43.369540",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "delete_hierarchy",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:43.370335",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "memory_synthesis",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:43.782530",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "reasoning_chains",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:43.783757",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "personality_adaptation",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:43.785006",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "collaborative_memory",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:43.786037",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "workflow_execution",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:43.787024",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "memory_pattern_recognition",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:43.787849",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "contextual_learning",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:43.788628",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "memory_evolution_tracking",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:43.789554",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "intelligent_query_processing",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:43.790399",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "memory_resilience_check",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:43.791691",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "workflow_optimization",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:43.793218",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "memory_intelligence_assessment",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:43.794142",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "cross_domain_integration",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:43.794977",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "workflow_validation",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:43.795810",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "find_mergeable_memories",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:45.306714",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "merge_memories",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:45.307868",
+    "response": null,
+    "error": "assert 404 == 201\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "improve_memory",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:45.308758",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "assess_memory_quality",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:45.310081",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "quality_report",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:45.311360",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "detect_conflicts",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:45.312438",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "resolve_conflicts",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:45.313290",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "memory_evolution",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:45.314245",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "bulk_improve",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:45.315024",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "auto_consolidate",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:45.315815",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "performance_metrics",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:46.352391",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "usage_stats",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:46.353802",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "error_tracking",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:46.354758",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "health_checks",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:46.355631",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "analytics_dashboard",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:46.356556",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "alerting_configuration",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:46.357377",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "system_metrics",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:46.358192",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "user_activity_analytics",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:46.359655",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "memory_growth_analytics",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:46.360567",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "quality_trends_analytics",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:46.361428",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "search_effectiveness_analytics",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:46.362696",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "cost_analytics",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:46.363984",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "alert_history",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:46.364980",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "performance_baseline",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:46.366328",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "capacity_planning_analytics",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:46.367684",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "prompt_templates",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:46.778475",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "context_injection",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:46.779731",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "memory_selection",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:46.780699",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "prompt_optimization",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:46.781635",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "prompt_evaluation",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:46.782606",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "dynamic_prompt_generation",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:46.783497",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "prompt_chain_creation",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:46.784378",
+    "response": null,
+    "error": "assert 404 == 201\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "prompt_chain_execution",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:46.785360",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "prompt_performance_metrics",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:46.786669",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "prompt_ab_testing",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:46.787690",
+    "response": null,
+    "error": "assert 404 == 201\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "prompt_feedback_collection",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:46.788695",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "prompt_learning_loop",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:46.789613",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "quality_metrics",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:47.194378",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "conflict_types",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:47.195769",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "quality_thresholds",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:47.196843",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "conflict_resolution_strategies",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:47.197916",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "quality_improvement_suggestions",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:47.199037",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "conflict_prevention",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:47.200045",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "quality_batch_assessment",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:47.201305",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "conflict_impact_analysis",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:47.202496",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "quality_trends",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:47.203616",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "conflict_history",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:47.204568",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "quality_benchmarks",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:47.205624",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "conflict_patterns",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:47.206509",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "encryption_status",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:47.987106",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "anonymization_check",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:47.988760",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "access_control_check",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:47.989864",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "audit_logs",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:47.990928",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "data_retention_policy",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:47.992017",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "privacy_compliance_check",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:47.993317",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "data_export_request",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:47.994456",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "data_deletion_request",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:47.995508",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "security_scan",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:47.996460",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "privacy_impact_assessment",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:47.997758",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "consent_management",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:47.998725",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "breach_detection",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:47.999630",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "encryption_key_rotation",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:48.000575",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "data_classification",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:48.001558",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "security_policy_enforcement",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:48.002565",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "efficient_hybrid_search",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:48.982143",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "vector_content_update_and_delete",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:48.983449",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "vector_status_endpoint",
+    "status": "fail",
+    "timestamp": "2025-07-06T04:38:48.984612",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "bulk_create_memories",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:43:58.698119",
+    "response": null,
+    "error": "assert 404 == 201\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "bulk_update_memories",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:43:58.700277",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "bulk_delete_memories",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:43:58.701873",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "bulk_export_memories",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:43:58.703661",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "bulk_import_memories",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:43:58.705040",
+    "response": null,
+    "error": "assert 404 == 201\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "bulk_search_memories",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:43:58.706242",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "bulk_tag_memories",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:43:58.707459",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "bulk_analyze_memories",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:43:58.708821",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "bulk_validate_memories",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:43:58.710011",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "bulk_cleanup_memories",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:43:58.711179",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "create_hierarchy",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:43:59.116010",
+    "response": null,
+    "error": "assert 404 == 201\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "add_to_hierarchy",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:43:59.117496",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "get_hierarchy",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:43:59.118668",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "get_influence",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:43:59.119945",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "propagate_influence",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:43:59.122176",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "get_context",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:43:59.123355",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "aggregate_context",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:43:59.124530",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "hierarchy_stats",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:43:59.125899",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "list_hierarchies",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:43:59.127202",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "delete_hierarchy",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:43:59.128289",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "memory_synthesis",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:43:59.509497",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "reasoning_chains",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:43:59.510923",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "personality_adaptation",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:43:59.512105",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "collaborative_memory",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:43:59.513272",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "workflow_execution",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:43:59.514494",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "memory_pattern_recognition",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:43:59.515575",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "contextual_learning",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:43:59.516658",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "memory_evolution_tracking",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:43:59.517853",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "intelligent_query_processing",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:43:59.518935",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "memory_resilience_check",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:43:59.520461",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "workflow_optimization",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:43:59.521763",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "memory_intelligence_assessment",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:43:59.522917",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "cross_domain_integration",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:43:59.524061",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "workflow_validation",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:43:59.525280",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "bulk_create_memories",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:11.959888",
+    "response": null,
+    "error": "assert 404 == 201\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "bulk_update_memories",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:11.961916",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "bulk_delete_memories",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:11.963261",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "bulk_export_memories",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:11.964512",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "bulk_import_memories",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:11.965781",
+    "response": null,
+    "error": "assert 404 == 201\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "bulk_search_memories",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:11.967065",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "bulk_tag_memories",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:11.968172",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "bulk_analyze_memories",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:11.969344",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "bulk_validate_memories",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:11.970593",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "bulk_cleanup_memories",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:11.971702",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "create_hierarchy",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:19.665131",
+    "response": null,
+    "error": "assert 404 == 201\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "add_to_hierarchy",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:19.666600",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "get_hierarchy",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:19.667865",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "get_influence",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:19.669206",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "propagate_influence",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:19.670411",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "get_context",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:19.671655",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "aggregate_context",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:19.672854",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "hierarchy_stats",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:19.674105",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "list_hierarchies",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:19.675699",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "delete_hierarchy",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:19.676877",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "memory_synthesis",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:26.643241",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "reasoning_chains",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:26.645268",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "personality_adaptation",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:26.647027",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "collaborative_memory",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:26.648536",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "workflow_execution",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:26.650294",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "memory_pattern_recognition",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:26.651877",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "contextual_learning",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:26.653132",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "memory_evolution_tracking",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:26.655081",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "intelligent_query_processing",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:26.656329",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "memory_resilience_check",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:26.657520",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "workflow_optimization",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:26.658854",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "memory_intelligence_assessment",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:26.660098",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "cross_domain_integration",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:26.661304",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "workflow_validation",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:26.662522",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "find_mergeable_memories",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:45.502366",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "merge_memories",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:45.504165",
+    "response": null,
+    "error": "assert 404 == 201\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "improve_memory",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:45.505554",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "assess_memory_quality",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:45.507018",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "quality_report",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:45.508290",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "detect_conflicts",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:45.509605",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "resolve_conflicts",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:45.510873",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "memory_evolution",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:45.512214",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "bulk_improve",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:45.513919",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "auto_consolidate",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:45.515283",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "performance_metrics",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:57.833747",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "usage_stats",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:57.835367",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "error_tracking",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:57.836874",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "health_checks",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:57.838249",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "analytics_dashboard",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:57.839569",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "alerting_configuration",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:57.840967",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "system_metrics",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:57.842308",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "user_activity_analytics",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:57.844138",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "memory_growth_analytics",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:57.845459",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "quality_trends_analytics",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:57.846750",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "search_effectiveness_analytics",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:57.847990",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "cost_analytics",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:57.849345",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "alert_history",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:57.850626",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "performance_baseline",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:57.851896",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "capacity_planning_analytics",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:46:57.853272",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "prompt_templates",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:47:03.909424",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "context_injection",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:47:03.911114",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "memory_selection",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:47:03.912606",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "prompt_optimization",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:47:03.914133",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "prompt_evaluation",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:47:03.915505",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "dynamic_prompt_generation",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:47:03.916946",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "prompt_chain_creation",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:47:03.918295",
+    "response": null,
+    "error": "assert 404 == 201\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "prompt_chain_execution",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:47:03.919735",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "prompt_performance_metrics",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:47:03.921560",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "prompt_ab_testing",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:47:03.922904",
+    "response": null,
+    "error": "assert 404 == 201\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "prompt_feedback_collection",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:47:03.924270",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "prompt_learning_loop",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:47:03.925659",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "quality_metrics",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:47:10.049019",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "conflict_types",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:47:10.050684",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "quality_thresholds",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:47:10.052185",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "conflict_resolution_strategies",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:47:10.053707",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "quality_improvement_suggestions",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:47:10.055103",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "conflict_prevention",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:47:10.056595",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "quality_batch_assessment",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:47:10.057954",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "conflict_impact_analysis",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:47:10.059359",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "quality_trends",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:47:10.061239",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "conflict_history",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:47:10.062664",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "quality_benchmarks",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:47:10.064067",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "conflict_patterns",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:47:10.065474",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "encryption_status",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:47:22.405518",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "anonymization_check",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:47:22.407608",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "access_control_check",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:47:22.409338",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "audit_logs",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:47:22.410869",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "data_retention_policy",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:47:22.412427",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "privacy_compliance_check",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:47:22.413857",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "data_export_request",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:47:22.415770",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "data_deletion_request",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:47:22.417282",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "security_scan",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:47:22.418733",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "privacy_impact_assessment",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:47:22.420252",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "consent_management",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:47:22.421628",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "breach_detection",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:47:22.423023",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "encryption_key_rotation",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:47:22.424405",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "data_classification",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:47:22.425915",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "security_policy_enforcement",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:47:22.427336",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "efficient_hybrid_search",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:47:34.434838",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "vector_content_update_and_delete",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:47:34.436984",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  },
+  {
+    "test_name": "vector_status_endpoint",
+    "status": "fail",
+    "timestamp": "2025-07-06T14:47:34.438608",
+    "response": null,
+    "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code"
+  }
+]
