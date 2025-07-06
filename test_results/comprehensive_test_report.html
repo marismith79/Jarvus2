@@ -1,0 +1,226 @@
+<html><head><title>Memory System Test Results</title>
+<style>
+body{font-family:sans-serif; margin:20px;}
+.pass{color:green; font-weight:bold;}
+.fail{color:red; font-weight:bold;}
+table{border-collapse:collapse; width:100%; margin-top:20px;}
+td,th{border:1px solid #ccc; padding:8px; text-align:left;}
+th{background-color:#f2f2f2;}
+.summary{background-color:#f8f9fa; padding:15px; border-radius:5px; margin-bottom:20px;}
+.error{background-color:#fff3cd; border:1px solid #ffeaa7; padding:10px; border-radius:3px;}
+pre{background-color:#f8f9fa; padding:10px; border-radius:3px; overflow-x:auto;}
+</style></head><body>
+<h1>Memory System Test Results</h1>
+<div class="summary">
+<h2>Test Summary</h2>
+<p><strong>Total Test Files:</strong> 15</p>
+<p><strong>Passed:</strong> 10 ✅</p>
+<p><strong>Failed:</strong> 5 ❌</p>
+<p><strong>Success Rate:</strong> 66.7%</p>
+<p><strong>Total Time:</strong> 95.78 seconds</p>
+</div>
+<p><strong>Total tests:</strong> 101</p>
+<table><tr><th>Test Name</th><th>Status</th><th>Timestamp</th><th>Error</th><th>Response</th></tr>
+<tr><td>bulk_create_memories</td><td class='fail'>fail</td><td>2025-07-06T14:46:11.959888</td><td><div class="error">assert 404 == 201
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>bulk_update_memories</td><td class='fail'>fail</td><td>2025-07-06T14:46:11.961916</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>bulk_delete_memories</td><td class='fail'>fail</td><td>2025-07-06T14:46:11.963261</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>bulk_export_memories</td><td class='fail'>fail</td><td>2025-07-06T14:46:11.964512</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>bulk_import_memories</td><td class='fail'>fail</td><td>2025-07-06T14:46:11.965781</td><td><div class="error">assert 404 == 201
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>bulk_search_memories</td><td class='fail'>fail</td><td>2025-07-06T14:46:11.967065</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>bulk_tag_memories</td><td class='fail'>fail</td><td>2025-07-06T14:46:11.968172</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>bulk_analyze_memories</td><td class='fail'>fail</td><td>2025-07-06T14:46:11.969344</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>bulk_validate_memories</td><td class='fail'>fail</td><td>2025-07-06T14:46:11.970593</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>bulk_cleanup_memories</td><td class='fail'>fail</td><td>2025-07-06T14:46:11.971702</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>create_hierarchy</td><td class='fail'>fail</td><td>2025-07-06T14:46:19.665131</td><td><div class="error">assert 404 == 201
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>add_to_hierarchy</td><td class='fail'>fail</td><td>2025-07-06T14:46:19.666600</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>get_hierarchy</td><td class='fail'>fail</td><td>2025-07-06T14:46:19.667865</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>get_influence</td><td class='fail'>fail</td><td>2025-07-06T14:46:19.669206</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>propagate_influence</td><td class='fail'>fail</td><td>2025-07-06T14:46:19.670411</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>get_context</td><td class='fail'>fail</td><td>2025-07-06T14:46:19.671655</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>aggregate_context</td><td class='fail'>fail</td><td>2025-07-06T14:46:19.672854</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>hierarchy_stats</td><td class='fail'>fail</td><td>2025-07-06T14:46:19.674105</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>list_hierarchies</td><td class='fail'>fail</td><td>2025-07-06T14:46:19.675699</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>delete_hierarchy</td><td class='fail'>fail</td><td>2025-07-06T14:46:19.676877</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>memory_synthesis</td><td class='fail'>fail</td><td>2025-07-06T14:46:26.643241</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>reasoning_chains</td><td class='fail'>fail</td><td>2025-07-06T14:46:26.645268</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>personality_adaptation</td><td class='fail'>fail</td><td>2025-07-06T14:46:26.647027</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>collaborative_memory</td><td class='fail'>fail</td><td>2025-07-06T14:46:26.648536</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>workflow_execution</td><td class='fail'>fail</td><td>2025-07-06T14:46:26.650294</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>memory_pattern_recognition</td><td class='fail'>fail</td><td>2025-07-06T14:46:26.651877</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>contextual_learning</td><td class='fail'>fail</td><td>2025-07-06T14:46:26.653132</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>memory_evolution_tracking</td><td class='fail'>fail</td><td>2025-07-06T14:46:26.655081</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>intelligent_query_processing</td><td class='fail'>fail</td><td>2025-07-06T14:46:26.656329</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>memory_resilience_check</td><td class='fail'>fail</td><td>2025-07-06T14:46:26.657520</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>workflow_optimization</td><td class='fail'>fail</td><td>2025-07-06T14:46:26.658854</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>memory_intelligence_assessment</td><td class='fail'>fail</td><td>2025-07-06T14:46:26.660098</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>cross_domain_integration</td><td class='fail'>fail</td><td>2025-07-06T14:46:26.661304</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>workflow_validation</td><td class='fail'>fail</td><td>2025-07-06T14:46:26.662522</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>find_mergeable_memories</td><td class='fail'>fail</td><td>2025-07-06T14:46:45.502366</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>merge_memories</td><td class='fail'>fail</td><td>2025-07-06T14:46:45.504165</td><td><div class="error">assert 404 == 201
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>improve_memory</td><td class='fail'>fail</td><td>2025-07-06T14:46:45.505554</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>assess_memory_quality</td><td class='fail'>fail</td><td>2025-07-06T14:46:45.507018</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>quality_report</td><td class='fail'>fail</td><td>2025-07-06T14:46:45.508290</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>detect_conflicts</td><td class='fail'>fail</td><td>2025-07-06T14:46:45.509605</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>resolve_conflicts</td><td class='fail'>fail</td><td>2025-07-06T14:46:45.510873</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>memory_evolution</td><td class='fail'>fail</td><td>2025-07-06T14:46:45.512214</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>bulk_improve</td><td class='fail'>fail</td><td>2025-07-06T14:46:45.513919</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>auto_consolidate</td><td class='fail'>fail</td><td>2025-07-06T14:46:45.515283</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>performance_metrics</td><td class='fail'>fail</td><td>2025-07-06T14:46:57.833747</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>usage_stats</td><td class='fail'>fail</td><td>2025-07-06T14:46:57.835367</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>error_tracking</td><td class='fail'>fail</td><td>2025-07-06T14:46:57.836874</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>health_checks</td><td class='fail'>fail</td><td>2025-07-06T14:46:57.838249</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>analytics_dashboard</td><td class='fail'>fail</td><td>2025-07-06T14:46:57.839569</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>alerting_configuration</td><td class='fail'>fail</td><td>2025-07-06T14:46:57.840967</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>system_metrics</td><td class='fail'>fail</td><td>2025-07-06T14:46:57.842308</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>user_activity_analytics</td><td class='fail'>fail</td><td>2025-07-06T14:46:57.844138</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>memory_growth_analytics</td><td class='fail'>fail</td><td>2025-07-06T14:46:57.845459</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>quality_trends_analytics</td><td class='fail'>fail</td><td>2025-07-06T14:46:57.846750</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>search_effectiveness_analytics</td><td class='fail'>fail</td><td>2025-07-06T14:46:57.847990</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>cost_analytics</td><td class='fail'>fail</td><td>2025-07-06T14:46:57.849345</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>alert_history</td><td class='fail'>fail</td><td>2025-07-06T14:46:57.850626</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>performance_baseline</td><td class='fail'>fail</td><td>2025-07-06T14:46:57.851896</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>capacity_planning_analytics</td><td class='fail'>fail</td><td>2025-07-06T14:46:57.853272</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>prompt_templates</td><td class='fail'>fail</td><td>2025-07-06T14:47:03.909424</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>context_injection</td><td class='fail'>fail</td><td>2025-07-06T14:47:03.911114</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>memory_selection</td><td class='fail'>fail</td><td>2025-07-06T14:47:03.912606</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>prompt_optimization</td><td class='fail'>fail</td><td>2025-07-06T14:47:03.914133</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>prompt_evaluation</td><td class='fail'>fail</td><td>2025-07-06T14:47:03.915505</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>dynamic_prompt_generation</td><td class='fail'>fail</td><td>2025-07-06T14:47:03.916946</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>prompt_chain_creation</td><td class='fail'>fail</td><td>2025-07-06T14:47:03.918295</td><td><div class="error">assert 404 == 201
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>prompt_chain_execution</td><td class='fail'>fail</td><td>2025-07-06T14:47:03.919735</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>prompt_performance_metrics</td><td class='fail'>fail</td><td>2025-07-06T14:47:03.921560</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>prompt_ab_testing</td><td class='fail'>fail</td><td>2025-07-06T14:47:03.922904</td><td><div class="error">assert 404 == 201
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>prompt_feedback_collection</td><td class='fail'>fail</td><td>2025-07-06T14:47:03.924270</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>prompt_learning_loop</td><td class='fail'>fail</td><td>2025-07-06T14:47:03.925659</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>quality_metrics</td><td class='fail'>fail</td><td>2025-07-06T14:47:10.049019</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>conflict_types</td><td class='fail'>fail</td><td>2025-07-06T14:47:10.050684</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>quality_thresholds</td><td class='fail'>fail</td><td>2025-07-06T14:47:10.052185</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>conflict_resolution_strategies</td><td class='fail'>fail</td><td>2025-07-06T14:47:10.053707</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>quality_improvement_suggestions</td><td class='fail'>fail</td><td>2025-07-06T14:47:10.055103</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>conflict_prevention</td><td class='fail'>fail</td><td>2025-07-06T14:47:10.056595</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>quality_batch_assessment</td><td class='fail'>fail</td><td>2025-07-06T14:47:10.057954</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>conflict_impact_analysis</td><td class='fail'>fail</td><td>2025-07-06T14:47:10.059359</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>quality_trends</td><td class='fail'>fail</td><td>2025-07-06T14:47:10.061239</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>conflict_history</td><td class='fail'>fail</td><td>2025-07-06T14:47:10.062664</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>quality_benchmarks</td><td class='fail'>fail</td><td>2025-07-06T14:47:10.064067</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>conflict_patterns</td><td class='fail'>fail</td><td>2025-07-06T14:47:10.065474</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>encryption_status</td><td class='fail'>fail</td><td>2025-07-06T14:47:22.405518</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>anonymization_check</td><td class='fail'>fail</td><td>2025-07-06T14:47:22.407608</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>access_control_check</td><td class='fail'>fail</td><td>2025-07-06T14:47:22.409338</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>audit_logs</td><td class='fail'>fail</td><td>2025-07-06T14:47:22.410869</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>data_retention_policy</td><td class='fail'>fail</td><td>2025-07-06T14:47:22.412427</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>privacy_compliance_check</td><td class='fail'>fail</td><td>2025-07-06T14:47:22.413857</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>data_export_request</td><td class='fail'>fail</td><td>2025-07-06T14:47:22.415770</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>data_deletion_request</td><td class='fail'>fail</td><td>2025-07-06T14:47:22.417282</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>security_scan</td><td class='fail'>fail</td><td>2025-07-06T14:47:22.418733</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>privacy_impact_assessment</td><td class='fail'>fail</td><td>2025-07-06T14:47:22.420252</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>consent_management</td><td class='fail'>fail</td><td>2025-07-06T14:47:22.421628</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>breach_detection</td><td class='fail'>fail</td><td>2025-07-06T14:47:22.423023</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>encryption_key_rotation</td><td class='fail'>fail</td><td>2025-07-06T14:47:22.424405</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>data_classification</td><td class='fail'>fail</td><td>2025-07-06T14:47:22.425915</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>security_policy_enforcement</td><td class='fail'>fail</td><td>2025-07-06T14:47:22.427336</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>efficient_hybrid_search</td><td class='fail'>fail</td><td>2025-07-06T14:47:34.434838</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>vector_content_update_and_delete</td><td class='fail'>fail</td><td>2025-07-06T14:47:34.436984</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+<tr><td>vector_status_endpoint</td><td class='fail'>fail</td><td>2025-07-06T14:47:34.438608</td><td><div class="error">assert 404 == 200
+ +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code</div></td><td><pre></pre></td></tr>
+</table></body></html>

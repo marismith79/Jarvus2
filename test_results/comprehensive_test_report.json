@@ -1,0 +1,762 @@
+{
+  "timestamp": "2025-07-06T09:47:41.877944",
+  "summary": {
+    "total_test_files": 15,
+    "passed_test_files": 10,
+    "failed_test_files": 5,
+    "success_rate": 66.66666666666666,
+    "total_time_seconds": 95.77917814254761
+  },
+  "test_file_results": [
+    {
+      "file": "test_bulk_operations.py",
+      "return_code": 0,
+      "stdout": "============================= test session starts ==============================\nplatform darwin -- Python 3.11.13, pytest-8.4.0, pluggy-1.6.0 -- /Users/tetsu/miniconda3/envs/jarvus2/bin/python3\ncachedir: .pytest_cache\nrootdir: /Users/tetsu/Desktop/Jarvus/Jarvus2/tests\nconfigfile: pytest.ini\nplugins: anyio-4.9.0, asyncio-1.0.0\nasyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\ncollecting ... collected 10 items\n\ntests/test_bulk_operations.py::test_bulk_create_memories PASSED          [ 10%]\ntests/test_bulk_operations.py::test_bulk_update_memories PASSED          [ 20%]\ntests/test_bulk_operations.py::test_bulk_delete_memories PASSED          [ 30%]\ntests/test_bulk_operations.py::test_bulk_export_memories PASSED          [ 40%]\ntests/test_bulk_operations.py::test_bulk_import_memories PASSED          [ 50%]\ntests/test_bulk_operations.py::test_bulk_search_memories PASSED          [ 60%]\ntests/test_bulk_operations.py::test_bulk_tag_memories PASSED             [ 70%]\ntests/test_bulk_operations.py::test_bulk_analyze_memories PASSED         [ 80%]\ntests/test_bulk_operations.py::test_bulk_validate_memories PASSED        [ 90%]\ntests/test_bulk_operations.py::test_bulk_cleanup_memories PASSED         [100%]\n\n============================== 10 passed in 0.04s ==============================\n",
+      "stderr": "",
+      "success": true
+    },
+    {
+      "file": "test_hierarchical_memory.py",
+      "return_code": 0,
+      "stdout": "============================= test session starts ==============================\nplatform darwin -- Python 3.11.13, pytest-8.4.0, pluggy-1.6.0 -- /Users/tetsu/miniconda3/envs/jarvus2/bin/python3\ncachedir: .pytest_cache\nrootdir: /Users/tetsu/Desktop/Jarvus/Jarvus2/tests\nconfigfile: pytest.ini\nplugins: anyio-4.9.0, asyncio-1.0.0\nasyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\ncollecting ... collected 10 items\n\ntests/test_hierarchical_memory.py::test_create_hierarchy PASSED          [ 10%]\ntests/test_hierarchical_memory.py::test_add_to_hierarchy PASSED          [ 20%]\ntests/test_hierarchical_memory.py::test_get_hierarchy PASSED             [ 30%]\ntests/test_hierarchical_memory.py::test_get_influence PASSED             [ 40%]\ntests/test_hierarchical_memory.py::test_propagate_influence PASSED       [ 50%]\ntests/test_hierarchical_memory.py::test_get_context PASSED               [ 60%]\ntests/test_hierarchical_memory.py::test_aggregate_context PASSED         [ 70%]\ntests/test_hierarchical_memory.py::test_hierarchy_stats PASSED           [ 80%]\ntests/test_hierarchical_memory.py::test_list_hierarchies PASSED          [ 90%]\ntests/test_hierarchical_memory.py::test_delete_hierarchy PASSED          [100%]\n\n============================== 10 passed in 0.04s ==============================\n",
+      "stderr": "",
+      "success": true
+    },
+    {
+      "file": "test_integration_workflows.py",
+      "return_code": 0,
+      "stdout": "============================= test session starts ==============================\nplatform darwin -- Python 3.11.13, pytest-8.4.0, pluggy-1.6.0 -- /Users/tetsu/miniconda3/envs/jarvus2/bin/python3\ncachedir: .pytest_cache\nrootdir: /Users/tetsu/Desktop/Jarvus/Jarvus2/tests\nconfigfile: pytest.ini\nplugins: anyio-4.9.0, asyncio-1.0.0\nasyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\ncollecting ... collected 14 items\n\ntests/test_integration_workflows.py::test_memory_synthesis PASSED        [  7%]\ntests/test_integration_workflows.py::test_reasoning_chains PASSED        [ 14%]\ntests/test_integration_workflows.py::test_personality_adaptation PASSED  [ 21%]\ntests/test_integration_workflows.py::test_collaborative_memory PASSED    [ 28%]\ntests/test_integration_workflows.py::test_workflow_execution PASSED      [ 35%]\ntests/test_integration_workflows.py::test_memory_pattern_recognition PASSED [ 42%]\ntests/test_integration_workflows.py::test_contextual_learning PASSED     [ 50%]\ntests/test_integration_workflows.py::test_memory_evolution_tracking PASSED [ 57%]\ntests/test_integration_workflows.py::test_intelligent_query_processing PASSED [ 64%]\ntests/test_integration_workflows.py::test_memory_resilience_check PASSED [ 71%]\ntests/test_integration_workflows.py::test_workflow_optimization PASSED   [ 78%]\ntests/test_integration_workflows.py::test_memory_intelligence_assessment PASSED [ 85%]\ntests/test_integration_workflows.py::test_cross_domain_integration PASSED [ 92%]\ntests/test_integration_workflows.py::test_workflow_validation PASSED     [100%]\n\n============================== 14 passed in 0.06s ==============================\n",
+      "stderr": "",
+      "success": true
+    },
+    {
+      "file": "test_memory_api.py",
+      "return_code": 1,
+      "stdout": "============================= test session starts ==============================\nplatform darwin -- Python 3.11.13, pytest-8.4.0, pluggy-1.6.0 -- /Users/tetsu/miniconda3/envs/jarvus2/bin/python3\ncachedir: .pytest_cache\nrootdir: /Users/tetsu/Desktop/Jarvus/Jarvus2/tests\nconfigfile: pytest.ini\nplugins: anyio-4.9.0, asyncio-1.0.0\nasyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\ncollecting ... collected 6 items\n\ntests/test_memory_api.py::test_store_episodic_memory ERROR               [ 16%]\ntests/test_memory_api.py::test_get_episodic_memories ERROR               [ 33%]\ntests/test_memory_api.py::test_store_semantic_memory ERROR               [ 50%]\ntests/test_memory_api.py::test_get_semantic_memories ERROR               [ 66%]\ntests/test_memory_api.py::test_store_procedural_memory ERROR             [ 83%]\ntests/test_memory_api.py::test_get_procedural_memories ERROR             [100%]\n\n==================================== ERRORS ====================================\n_________________ ERROR at setup of test_store_episodic_memory _________________\ntests/test_memory_api.py:18: in test_client\n    user = User(email=\"testuser@example.com\", password=\"testpassword\")\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n<string>:4: in __init__\n    ???\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/sqlalchemy/orm/state.py:571: in _initialize_instance\n    with util.safe_reraise():\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:146: in __exit__\n    raise exc_value.with_traceback(exc_tb)\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/sqlalchemy/orm/state.py:569: in _initialize_instance\n    manager.original_init(*mixed[1:], **kwargs)\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/sqlalchemy/orm/decl_base.py:2167: in _declarative_constructor\n    raise TypeError(\nE   TypeError: 'password' is an invalid keyword argument for User\n---------------------------- Captured stdout setup -----------------------------\nDatabase URI: sqlite:///jarvus_app.db\n------------------------------ Captured log setup ------------------------------\nINFO     jarvus:__init__.py:114 Jarvus application starting up\nINFO     jarvus:__init__.py:70 Jarvus application starting up\n_________________ ERROR at setup of test_get_episodic_memories _________________\ntests/test_memory_api.py:18: in test_client\n    user = User(email=\"testuser@example.com\", password=\"testpassword\")\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n<string>:4: in __init__\n    ???\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/sqlalchemy/orm/state.py:571: in _initialize_instance\n    with util.safe_reraise():\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:146: in __exit__\n    raise exc_value.with_traceback(exc_tb)\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/sqlalchemy/orm/state.py:569: in _initialize_instance\n    manager.original_init(*mixed[1:], **kwargs)\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/sqlalchemy/orm/decl_base.py:2167: in _declarative_constructor\n    raise TypeError(\nE   TypeError: 'password' is an invalid keyword argument for User\n_________________ ERROR at setup of test_store_semantic_memory _________________\ntests/test_memory_api.py:18: in test_client\n    user = User(email=\"testuser@example.com\", password=\"testpassword\")\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n<string>:4: in __init__\n    ???\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/sqlalchemy/orm/state.py:571: in _initialize_instance\n    with util.safe_reraise():\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:146: in __exit__\n    raise exc_value.with_traceback(exc_tb)\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/sqlalchemy/orm/state.py:569: in _initialize_instance\n    manager.original_init(*mixed[1:], **kwargs)\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/sqlalchemy/orm/decl_base.py:2167: in _declarative_constructor\n    raise TypeError(\nE   TypeError: 'password' is an invalid keyword argument for User\n_________________ ERROR at setup of test_get_semantic_memories _________________\ntests/test_memory_api.py:18: in test_client\n    user = User(email=\"testuser@example.com\", password=\"testpassword\")\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n<string>:4: in __init__\n    ???\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/sqlalchemy/orm/state.py:571: in _initialize_instance\n    with util.safe_reraise():\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:146: in __exit__\n    raise exc_value.with_traceback(exc_tb)\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/sqlalchemy/orm/state.py:569: in _initialize_instance\n    manager.original_init(*mixed[1:], **kwargs)\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/sqlalchemy/orm/decl_base.py:2167: in _declarative_constructor\n    raise TypeError(\nE   TypeError: 'password' is an invalid keyword argument for User\n________________ ERROR at setup of test_store_procedural_memory ________________\ntests/test_memory_api.py:18: in test_client\n    user = User(email=\"testuser@example.com\", password=\"testpassword\")\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n<string>:4: in __init__\n    ???\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/sqlalchemy/orm/state.py:571: in _initialize_instance\n    with util.safe_reraise():\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:146: in __exit__\n    raise exc_value.with_traceback(exc_tb)\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/sqlalchemy/orm/state.py:569: in _initialize_instance\n    manager.original_init(*mixed[1:], **kwargs)\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/sqlalchemy/orm/decl_base.py:2167: in _declarative_constructor\n    raise TypeError(\nE   TypeError: 'password' is an invalid keyword argument for User\n________________ ERROR at setup of test_get_procedural_memories ________________\ntests/test_memory_api.py:18: in test_client\n    user = User(email=\"testuser@example.com\", password=\"testpassword\")\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n<string>:4: in __init__\n    ???\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/sqlalchemy/orm/state.py:571: in _initialize_instance\n    with util.safe_reraise():\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:146: in __exit__\n    raise exc_value.with_traceback(exc_tb)\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/sqlalchemy/orm/state.py:569: in _initialize_instance\n    manager.original_init(*mixed[1:], **kwargs)\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/sqlalchemy/orm/decl_base.py:2167: in _declarative_constructor\n    raise TypeError(\nE   TypeError: 'password' is an invalid keyword argument for User\n=========================== short test summary info ============================\nERROR tests/test_memory_api.py::test_store_episodic_memory - TypeError: 'pass...\nERROR tests/test_memory_api.py::test_get_episodic_memories - TypeError: 'pass...\nERROR tests/test_memory_api.py::test_store_semantic_memory - TypeError: 'pass...\nERROR tests/test_memory_api.py::test_get_semantic_memories - TypeError: 'pass...\nERROR tests/test_memory_api.py::test_store_procedural_memory - TypeError: 'pa...\nERROR tests/test_memory_api.py::test_get_procedural_memories - TypeError: 'pa...\n============================== 6 errors in 0.42s ===============================\n",
+      "stderr": "",
+      "success": false
+    },
+    {
+      "file": "test_memory_editing.py",
+      "return_code": 1,
+      "stdout": "============================= test session starts ==============================\nplatform darwin -- Python 3.11.13, pytest-8.4.0, pluggy-1.6.0 -- /Users/tetsu/miniconda3/envs/jarvus2/bin/python3\ncachedir: .pytest_cache\nrootdir: /Users/tetsu/Desktop/Jarvus/Jarvus2/tests\nconfigfile: pytest.ini\nplugins: anyio-4.9.0, asyncio-1.0.0\nasyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\ncollecting ... collected 7 items\n\ntests/test_memory_editing.py::test_memory_merging ERROR                  [ 14%]\ntests/test_memory_editing.py::test_memory_improvement ERROR              [ 28%]\ntests/test_memory_editing.py::test_quality_assessment ERROR              [ 42%]\ntests/test_memory_editing.py::test_conflict_detection ERROR              [ 57%]\ntests/test_memory_editing.py::test_memory_evolution ERROR                [ 71%]\ntests/test_memory_editing.py::test_bulk_operations ERROR                 [ 85%]\ntests/test_memory_editing.py::test_advanced_features ERROR               [100%]\n\n==================================== ERRORS ====================================\n____________________ ERROR at setup of test_memory_merging _____________________\ntests/conftest.py:35: in session\n    connection = db.engine.connect()\n                 ^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/flask_sqlalchemy/extension.py:709: in engine\n    return self.engines[None]\n           ^^^^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/flask_sqlalchemy/extension.py:687: in engines\n    app = current_app._get_current_object()  # type: ignore[attr-defined]\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/werkzeug/local.py:519: in _get_current_object\n    raise RuntimeError(unbound_message) from None\nE   RuntimeError: Working outside of application context.\nE   \nE   This typically means that you attempted to use functionality that needed\nE   the current application. To solve this, set up an application context\nE   with app.app_context(). See the documentation for more information.\n---------------------------- Captured stdout setup -----------------------------\nDatabase URI: sqlite:///jarvus_app.db\n------------------------------ Captured log setup ------------------------------\nINFO     jarvus:__init__.py:114 Jarvus application starting up\nINFO     jarvus:__init__.py:70 Jarvus application starting up\n__________________ ERROR at setup of test_memory_improvement ___________________\ntests/conftest.py:35: in session\n    connection = db.engine.connect()\n                 ^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/flask_sqlalchemy/extension.py:709: in engine\n    return self.engines[None]\n           ^^^^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/flask_sqlalchemy/extension.py:687: in engines\n    app = current_app._get_current_object()  # type: ignore[attr-defined]\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/werkzeug/local.py:519: in _get_current_object\n    raise RuntimeError(unbound_message) from None\nE   RuntimeError: Working outside of application context.\nE   \nE   This typically means that you attempted to use functionality that needed\nE   the current application. To solve this, set up an application context\nE   with app.app_context(). See the documentation for more information.\n__________________ ERROR at setup of test_quality_assessment ___________________\ntests/conftest.py:35: in session\n    connection = db.engine.connect()\n                 ^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/flask_sqlalchemy/extension.py:709: in engine\n    return self.engines[None]\n           ^^^^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/flask_sqlalchemy/extension.py:687: in engines\n    app = current_app._get_current_object()  # type: ignore[attr-defined]\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/werkzeug/local.py:519: in _get_current_object\n    raise RuntimeError(unbound_message) from None\nE   RuntimeError: Working outside of application context.\nE   \nE   This typically means that you attempted to use functionality that needed\nE   the current application. To solve this, set up an application context\nE   with app.app_context(). See the documentation for more information.\n__________________ ERROR at setup of test_conflict_detection ___________________\ntests/conftest.py:35: in session\n    connection = db.engine.connect()\n                 ^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/flask_sqlalchemy/extension.py:709: in engine\n    return self.engines[None]\n           ^^^^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/flask_sqlalchemy/extension.py:687: in engines\n    app = current_app._get_current_object()  # type: ignore[attr-defined]\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/werkzeug/local.py:519: in _get_current_object\n    raise RuntimeError(unbound_message) from None\nE   RuntimeError: Working outside of application context.\nE   \nE   This typically means that you attempted to use functionality that needed\nE   the current application. To solve this, set up an application context\nE   with app.app_context(). See the documentation for more information.\n___________________ ERROR at setup of test_memory_evolution ____________________\ntests/conftest.py:35: in session\n    connection = db.engine.connect()\n                 ^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/flask_sqlalchemy/extension.py:709: in engine\n    return self.engines[None]\n           ^^^^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/flask_sqlalchemy/extension.py:687: in engines\n    app = current_app._get_current_object()  # type: ignore[attr-defined]\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/werkzeug/local.py:519: in _get_current_object\n    raise RuntimeError(unbound_message) from None\nE   RuntimeError: Working outside of application context.\nE   \nE   This typically means that you attempted to use functionality that needed\nE   the current application. To solve this, set up an application context\nE   with app.app_context(). See the documentation for more information.\n____________________ ERROR at setup of test_bulk_operations ____________________\ntests/conftest.py:35: in session\n    connection = db.engine.connect()\n                 ^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/flask_sqlalchemy/extension.py:709: in engine\n    return self.engines[None]\n           ^^^^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/flask_sqlalchemy/extension.py:687: in engines\n    app = current_app._get_current_object()  # type: ignore[attr-defined]\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/werkzeug/local.py:519: in _get_current_object\n    raise RuntimeError(unbound_message) from None\nE   RuntimeError: Working outside of application context.\nE   \nE   This typically means that you attempted to use functionality that needed\nE   the current application. To solve this, set up an application context\nE   with app.app_context(). See the documentation for more information.\n___________________ ERROR at setup of test_advanced_features ___________________\ntests/conftest.py:35: in session\n    connection = db.engine.connect()\n                 ^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/flask_sqlalchemy/extension.py:709: in engine\n    return self.engines[None]\n           ^^^^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/flask_sqlalchemy/extension.py:687: in engines\n    app = current_app._get_current_object()  # type: ignore[attr-defined]\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/werkzeug/local.py:519: in _get_current_object\n    raise RuntimeError(unbound_message) from None\nE   RuntimeError: Working outside of application context.\nE   \nE   This typically means that you attempted to use functionality that needed\nE   the current application. To solve this, set up an application context\nE   with app.app_context(). See the documentation for more information.\n=========================== short test summary info ============================\nERROR tests/test_memory_editing.py::test_memory_merging - RuntimeError: Worki...\nERROR tests/test_memory_editing.py::test_memory_improvement - RuntimeError: W...\nERROR tests/test_memory_editing.py::test_quality_assessment - RuntimeError: W...\nERROR tests/test_memory_editing.py::test_conflict_detection - RuntimeError: W...\nERROR tests/test_memory_editing.py::test_memory_evolution - RuntimeError: Wor...\nERROR tests/test_memory_editing.py::test_bulk_operations - RuntimeError: Work...\nERROR tests/test_memory_editing.py::test_advanced_features - RuntimeError: Wo...\n============================== 7 errors in 0.18s ===============================\n",
+      "stderr": "",
+      "success": false
+    },
+    {
+      "file": "test_memory_editing_comprehensive.py",
+      "return_code": 0,
+      "stdout": "============================= test session starts ==============================\nplatform darwin -- Python 3.11.13, pytest-8.4.0, pluggy-1.6.0 -- /Users/tetsu/miniconda3/envs/jarvus2/bin/python3\ncachedir: .pytest_cache\nrootdir: /Users/tetsu/Desktop/Jarvus/Jarvus2/tests\nconfigfile: pytest.ini\nplugins: anyio-4.9.0, asyncio-1.0.0\nasyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\ncollecting ... collected 10 items\n\ntests/test_memory_editing_comprehensive.py::test_find_mergeable_memories PASSED [ 10%]\ntests/test_memory_editing_comprehensive.py::test_merge_memories PASSED   [ 20%]\ntests/test_memory_editing_comprehensive.py::test_improve_memory PASSED   [ 30%]\ntests/test_memory_editing_comprehensive.py::test_assess_memory_quality PASSED [ 40%]\ntests/test_memory_editing_comprehensive.py::test_quality_report PASSED   [ 50%]\ntests/test_memory_editing_comprehensive.py::test_detect_conflicts PASSED [ 60%]\ntests/test_memory_editing_comprehensive.py::test_resolve_conflicts PASSED [ 70%]\ntests/test_memory_editing_comprehensive.py::test_memory_evolution PASSED [ 80%]\ntests/test_memory_editing_comprehensive.py::test_bulk_improve PASSED     [ 90%]\ntests/test_memory_editing_comprehensive.py::test_auto_consolidate PASSED [100%]\n\n============================== 10 passed in 0.04s ==============================\n",
+      "stderr": "",
+      "success": true
+    },
+    {
+      "file": "test_memory_system.py",
+      "return_code": 2,
+      "stdout": "============================= test session starts ==============================\nplatform darwin -- Python 3.11.13, pytest-8.4.0, pluggy-1.6.0 -- /Users/tetsu/miniconda3/envs/jarvus2/bin/python3\ncachedir: .pytest_cache\nrootdir: /Users/tetsu/Desktop/Jarvus/Jarvus2/tests\nconfigfile: pytest.ini\nplugins: anyio-4.9.0, asyncio-1.0.0\nasyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\ncollecting ... collected 0 items / 1 error\n\n==================================== ERRORS ====================================\n____________________ ERROR collecting test_memory_system.py ____________________\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/urllib3/connection.py:198: in _new_conn\n    sock = connection.create_connection(\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/urllib3/util/connection.py:85: in create_connection\n    raise err\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/urllib3/util/connection.py:73: in create_connection\n    sock.connect(sa)\nE   ConnectionRefusedError: [Errno 61] Connection refused\n\nThe above exception was the direct cause of the following exception:\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/urllib3/connectionpool.py:787: in urlopen\n    response = self._make_request(\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/urllib3/connectionpool.py:493: in _make_request\n    conn.request(\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/urllib3/connection.py:445: in request\n    self.endheaders()\n../../../miniconda3/envs/jarvus2/lib/python3.11/http/client.py:1298: in endheaders\n    self._send_output(message_body, encode_chunked=encode_chunked)\n../../../miniconda3/envs/jarvus2/lib/python3.11/http/client.py:1058: in _send_output\n    self.send(msg)\n../../../miniconda3/envs/jarvus2/lib/python3.11/http/client.py:996: in send\n    self.connect()\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/urllib3/connection.py:276: in connect\n    self.sock = self._new_conn()\n                ^^^^^^^^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/urllib3/connection.py:213: in _new_conn\n    raise NewConnectionError(\nE   urllib3.exceptions.NewConnectionError: <urllib3.connection.HTTPConnection object at 0x1627bf690>: Failed to establish a new connection: [Errno 61] Connection refused\n\nThe above exception was the direct cause of the following exception:\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/requests/adapters.py:667: in send\n    resp = conn.urlopen(\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/urllib3/connectionpool.py:841: in urlopen\n    retries = retries.increment(\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/urllib3/util/retry.py:519: in increment\n    raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nE   urllib3.exceptions.MaxRetryError: HTTPConnectionPool(host='localhost', port=5000): Max retries exceeded with url: /memory/chrome_action (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1627bf690>: Failed to establish a new connection: [Errno 61] Connection refused'))\n\nDuring handling of the above exception, another exception occurred:\ntests/test_memory_system.py:21: in <module>\n    resp = SESSION.post(f\"{BASE_URL}/chrome_action\", json=chrome_action)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/requests/sessions.py:637: in post\n    return self.request(\"POST\", url, data=data, json=json, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/requests/sessions.py:589: in request\n    resp = self.send(prep, **send_kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/requests/sessions.py:703: in send\n    r = adapter.send(request, **kwargs)\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/requests/adapters.py:700: in send\n    raise ConnectionError(e, request=request)\nE   requests.exceptions.ConnectionError: HTTPConnectionPool(host='localhost', port=5000): Max retries exceeded with url: /memory/chrome_action (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1627bf690>: Failed to establish a new connection: [Errno 61] Connection refused'))\n------------------------------- Captured stdout --------------------------------\nLoaded environment from /Users/tetsu/Desktop/Jarvus/Jarvus2/.env\nRunning in development mode\nUsing development database from TEST_DATABASE_URL\nSQLALCHEMY_DATABASE_URI: sqlite:///jarvus_app.db\nDEBUG: Auth module initialized with config:\nDEBUG: CLIENT_ID: 54d6af59-29a1-46ab-b548-438253a2f401\nDEBUG: SIGNIN_AUTHORITY: https://jarvusb2c.b2clogin.com/jarvusb2c.onmicrosoft.com/B2C_1_signup_signin\nDEBUG: REDIRECT_URI: http://localhost:5001/getAToken\nDEBUG: SCOPE: ['openid profile offline_access https://jarvusb2c.onmicrosoft.com/api/user_impersonation']\n\nMCP Client initialized with URL: http://localhost:8000\nTool Registry initialized\n\u2705 Chrome control tools registered successfully!\n\nDEBUG: Environment Variables:\nGOOGLE_REDIRECT_URI from env: http://localhost:5001/oauth2callback\nGOOGLE_CLIENT_ID from env: 767183866902-hdl8hmbdm75sn1ichbf0lkuv510nb5l1.apps.googleusercontent.com\n\nDEBUG: OAuth Configuration:\nDEBUG: GOOGLE_CLIENT_ID: 767183866902-hdl8hmbdm75sn1ichbf0lkuv510nb5l1.apps.googleusercontent.com\nDEBUG: GOOGLE_REDIRECT_URI: http://localhost:5001/oauth2callback\nDEBUG: Full GOOGLE_CLIENT_CONFIG: {\n  \"web\": {\n    \"client_id\": \"767183866902-hdl8hmbdm75sn1ichbf0lkuv510nb5l1.apps.googleusercontent.com\",\n    \"client_secret\": \"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\",\n    \"auth_uri\": \"https://accounts.google.com/o/oauth2/auth\",\n    \"token_uri\": \"https://oauth2.googleapis.com/token\",\n    \"redirect_uris\": [\n      \"http://localhost:5001/oauth2callback\"\n    ],\n    \"scopes\": [\n      \"https://www.googleapis.com/auth/gmail.readonly\",\n      \"https://www.googleapis.com/auth/gmail.compose\",\n      \"https://www.googleapis.com/auth/gmail.send\",\n      \"https://mail.google.com/\",\n      \"https://www.googleapis.com/auth/calendar.readonly\",\n      \"https://www.googleapis.com/auth/calendar.events\",\n      \"https://www.googleapis.com/auth/calendar\",\n      \"https://www.googleapis.com/auth/meetings.space.created\",\n      \"https://www.googleapis.com/auth/drive.meet.readonly\",\n      \"https://www.googleapis.com/auth/drive.readonly\",\n      \"https://www.googleapis.com/auth/drive.file\",\n      \"https://www.googleapis.com/auth/drive\",\n      \"https://www.googleapis.com/auth/documents.readonly\",\n      \"https://www.googleapis.com/auth/documents\",\n      \"https://www.googleapis.com/auth/spreadsheets.readonly\",\n      \"https://www.googleapis.com/auth/spreadsheets\",\n      \"https://www.googleapis.com/auth/presentations.readonly\",\n      \"https://www.googleapis.com/auth/presentations\"\n    ]\n  }\n}\nRunning in development mode\nDevelopment mode detected: attempting to load .env file from: /Users/tetsu/Desktop/Jarvus/Jarvus2/.env\nEnvironment variables loaded from .env\n=========================== short test summary info ============================\nERROR tests/test_memory_system.py - requests.exceptions.ConnectionError: HTTP...\n!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!\n=============================== 1 error in 0.22s ===============================\n",
+      "stderr": "",
+      "success": false
+    },
+    {
+      "file": "test_monitoring_analytics.py",
+      "return_code": 0,
+      "stdout": "============================= test session starts ==============================\nplatform darwin -- Python 3.11.13, pytest-8.4.0, pluggy-1.6.0 -- /Users/tetsu/miniconda3/envs/jarvus2/bin/python3\ncachedir: .pytest_cache\nrootdir: /Users/tetsu/Desktop/Jarvus/Jarvus2/tests\nconfigfile: pytest.ini\nplugins: anyio-4.9.0, asyncio-1.0.0\nasyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\ncollecting ... collected 15 items\n\ntests/test_monitoring_analytics.py::test_performance_metrics PASSED      [  6%]\ntests/test_monitoring_analytics.py::test_usage_stats PASSED              [ 13%]\ntests/test_monitoring_analytics.py::test_error_tracking PASSED           [ 20%]\ntests/test_monitoring_analytics.py::test_health_checks PASSED            [ 26%]\ntests/test_monitoring_analytics.py::test_analytics_dashboard PASSED      [ 33%]\ntests/test_monitoring_analytics.py::test_alerting_configuration PASSED   [ 40%]\ntests/test_monitoring_analytics.py::test_system_metrics PASSED           [ 46%]\ntests/test_monitoring_analytics.py::test_user_activity_analytics PASSED  [ 53%]\ntests/test_monitoring_analytics.py::test_memory_growth_analytics PASSED  [ 60%]\ntests/test_monitoring_analytics.py::test_quality_trends_analytics PASSED [ 66%]\ntests/test_monitoring_analytics.py::test_search_effectiveness_analytics PASSED [ 73%]\ntests/test_monitoring_analytics.py::test_cost_analytics PASSED           [ 80%]\ntests/test_monitoring_analytics.py::test_alert_history PASSED            [ 86%]\ntests/test_monitoring_analytics.py::test_performance_baseline PASSED     [ 93%]\ntests/test_monitoring_analytics.py::test_capacity_planning_analytics PASSED [100%]\n\n============================== 15 passed in 0.05s ==============================\n",
+      "stderr": "",
+      "success": true
+    },
+    {
+      "file": "test_prompt_engineering.py",
+      "return_code": 0,
+      "stdout": "============================= test session starts ==============================\nplatform darwin -- Python 3.11.13, pytest-8.4.0, pluggy-1.6.0 -- /Users/tetsu/miniconda3/envs/jarvus2/bin/python3\ncachedir: .pytest_cache\nrootdir: /Users/tetsu/Desktop/Jarvus/Jarvus2/tests\nconfigfile: pytest.ini\nplugins: anyio-4.9.0, asyncio-1.0.0\nasyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\ncollecting ... collected 12 items\n\ntests/test_prompt_engineering.py::test_prompt_templates PASSED           [  8%]\ntests/test_prompt_engineering.py::test_context_injection PASSED          [ 16%]\ntests/test_prompt_engineering.py::test_memory_selection PASSED           [ 25%]\ntests/test_prompt_engineering.py::test_prompt_optimization PASSED        [ 33%]\ntests/test_prompt_engineering.py::test_prompt_evaluation PASSED          [ 41%]\ntests/test_prompt_engineering.py::test_dynamic_prompt_generation PASSED  [ 50%]\ntests/test_prompt_engineering.py::test_prompt_chain_creation PASSED      [ 58%]\ntests/test_prompt_engineering.py::test_prompt_chain_execution PASSED     [ 66%]\ntests/test_prompt_engineering.py::test_prompt_performance_metrics PASSED [ 75%]\ntests/test_prompt_engineering.py::test_prompt_ab_testing PASSED          [ 83%]\ntests/test_prompt_engineering.py::test_prompt_feedback_collection PASSED [ 91%]\ntests/test_prompt_engineering.py::test_prompt_learning_loop PASSED       [100%]\n\n============================== 12 passed in 0.05s ==============================\n",
+      "stderr": "",
+      "success": true
+    },
+    {
+      "file": "test_quality_conflicts.py",
+      "return_code": 0,
+      "stdout": "============================= test session starts ==============================\nplatform darwin -- Python 3.11.13, pytest-8.4.0, pluggy-1.6.0 -- /Users/tetsu/miniconda3/envs/jarvus2/bin/python3\ncachedir: .pytest_cache\nrootdir: /Users/tetsu/Desktop/Jarvus/Jarvus2/tests\nconfigfile: pytest.ini\nplugins: anyio-4.9.0, asyncio-1.0.0\nasyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\ncollecting ... collected 12 items\n\ntests/test_quality_conflicts.py::test_quality_metrics PASSED             [  8%]\ntests/test_quality_conflicts.py::test_conflict_types PASSED              [ 16%]\ntests/test_quality_conflicts.py::test_quality_thresholds PASSED          [ 25%]\ntests/test_quality_conflicts.py::test_conflict_resolution_strategies PASSED [ 33%]\ntests/test_quality_conflicts.py::test_quality_improvement_suggestions PASSED [ 41%]\ntests/test_quality_conflicts.py::test_conflict_prevention PASSED         [ 50%]\ntests/test_quality_conflicts.py::test_quality_batch_assessment PASSED    [ 58%]\ntests/test_quality_conflicts.py::test_conflict_impact_analysis PASSED    [ 66%]\ntests/test_quality_conflicts.py::test_quality_trends PASSED              [ 75%]\ntests/test_quality_conflicts.py::test_conflict_history PASSED            [ 83%]\ntests/test_quality_conflicts.py::test_quality_benchmarks PASSED          [ 91%]\ntests/test_quality_conflicts.py::test_conflict_patterns PASSED           [100%]\n\n============================== 12 passed in 0.05s ==============================\n",
+      "stderr": "",
+      "success": true
+    },
+    {
+      "file": "test_result_logger.py",
+      "return_code": 5,
+      "stdout": "============================= test session starts ==============================\nplatform darwin -- Python 3.11.13, pytest-8.4.0, pluggy-1.6.0 -- /Users/tetsu/miniconda3/envs/jarvus2/bin/python3\ncachedir: .pytest_cache\nrootdir: /Users/tetsu/Desktop/Jarvus/Jarvus2/tests\nconfigfile: pytest.ini\nplugins: anyio-4.9.0, asyncio-1.0.0\nasyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\ncollecting ... collected 0 items\n\n============================ no tests ran in 0.00s =============================\n",
+      "stderr": "",
+      "success": false
+    },
+    {
+      "file": "test_security_privacy.py",
+      "return_code": 0,
+      "stdout": "============================= test session starts ==============================\nplatform darwin -- Python 3.11.13, pytest-8.4.0, pluggy-1.6.0 -- /Users/tetsu/miniconda3/envs/jarvus2/bin/python3\ncachedir: .pytest_cache\nrootdir: /Users/tetsu/Desktop/Jarvus/Jarvus2/tests\nconfigfile: pytest.ini\nplugins: anyio-4.9.0, asyncio-1.0.0\nasyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\ncollecting ... collected 15 items\n\ntests/test_security_privacy.py::test_encryption_status PASSED            [  6%]\ntests/test_security_privacy.py::test_anonymization_check PASSED          [ 13%]\ntests/test_security_privacy.py::test_access_control_check PASSED         [ 20%]\ntests/test_security_privacy.py::test_audit_logs PASSED                   [ 26%]\ntests/test_security_privacy.py::test_data_retention_policy PASSED        [ 33%]\ntests/test_security_privacy.py::test_privacy_compliance_check PASSED     [ 40%]\ntests/test_security_privacy.py::test_data_export_request PASSED          [ 46%]\ntests/test_security_privacy.py::test_data_deletion_request PASSED        [ 53%]\ntests/test_security_privacy.py::test_security_scan PASSED                [ 60%]\ntests/test_security_privacy.py::test_privacy_impact_assessment PASSED    [ 66%]\ntests/test_security_privacy.py::test_consent_management PASSED           [ 73%]\ntests/test_security_privacy.py::test_breach_detection PASSED             [ 80%]\ntests/test_security_privacy.py::test_encryption_key_rotation PASSED      [ 86%]\ntests/test_security_privacy.py::test_data_classification PASSED          [ 93%]\ntests/test_security_privacy.py::test_security_policy_enforcement PASSED  [100%]\n\n============================== 15 passed in 0.06s ==============================\n",
+      "stderr": "",
+      "success": true
+    },
+    {
+      "file": "test_token_utils.py",
+      "return_code": 0,
+      "stdout": "============================= test session starts ==============================\nplatform darwin -- Python 3.11.13, pytest-8.4.0, pluggy-1.6.0 -- /Users/tetsu/miniconda3/envs/jarvus2/bin/python3\ncachedir: .pytest_cache\nrootdir: /Users/tetsu/Desktop/Jarvus/Jarvus2/tests\nconfigfile: pytest.ini\nplugins: anyio-4.9.0, asyncio-1.0.0\nasyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\ncollecting ... collected 3 items\n\ntests/test_token_utils.py::test_valid_jwt_token PASSED                   [ 33%]\ntests/test_token_utils.py::test_expired_jwt_refresh_success PASSED       [ 66%]\ntests/test_token_utils.py::test_expired_jwt_refresh_fail PASSED          [100%]\n\n============================== 3 passed in 0.01s ===============================\n",
+      "stderr": "",
+      "success": true
+    },
+    {
+      "file": "test_vector_memory.py",
+      "return_code": 0,
+      "stdout": "============================= test session starts ==============================\nplatform darwin -- Python 3.11.13, pytest-8.4.0, pluggy-1.6.0 -- /Users/tetsu/miniconda3/envs/jarvus2/bin/python3\ncachedir: .pytest_cache\nrootdir: /Users/tetsu/Desktop/Jarvus/Jarvus2/tests\nconfigfile: pytest.ini\nplugins: anyio-4.9.0, asyncio-1.0.0\nasyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\ncollecting ... collected 3 items\n\ntests/test_vector_memory.py::test_efficient_hybrid_search PASSED         [ 33%]\ntests/test_vector_memory.py::test_vector_content_update_and_delete PASSED [ 66%]\ntests/test_vector_memory.py::test_vector_status_endpoint PASSED          [100%]\n\n============================== 3 passed in 0.03s ===============================\n",
+      "stderr": "",
+      "success": true
+    },
+    {
+      "file": "test_vector_memory_system.py",
+      "return_code": 5,
+      "stdout": "============================= test session starts ==============================\nplatform darwin -- Python 3.11.13, pytest-8.4.0, pluggy-1.6.0 -- /Users/tetsu/miniconda3/envs/jarvus2/bin/python3\ncachedir: .pytest_cache\nrootdir: /Users/tetsu/Desktop/Jarvus/Jarvus2/tests\nconfigfile: pytest.ini\nplugins: anyio-4.9.0, asyncio-1.0.0\nasyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\ncollecting ... collected 0 items\n\n============================ no tests ran in 0.00s =============================\n",
+      "stderr": "",
+      "success": false
+    }
+  ],
+  "detailed_test_results": {
+    "bulk_create_memories": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:11.959888",
+      "error": "assert 404 == 201\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "bulk_update_memories": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:11.961916",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "bulk_delete_memories": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:11.963261",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "bulk_export_memories": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:11.964512",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "bulk_import_memories": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:11.965781",
+      "error": "assert 404 == 201\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "bulk_search_memories": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:11.967065",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "bulk_tag_memories": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:11.968172",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "bulk_analyze_memories": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:11.969344",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "bulk_validate_memories": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:11.970593",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "bulk_cleanup_memories": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:11.971702",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "create_hierarchy": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:19.665131",
+      "error": "assert 404 == 201\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "add_to_hierarchy": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:19.666600",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "get_hierarchy": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:19.667865",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "get_influence": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:19.669206",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "propagate_influence": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:19.670411",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "get_context": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:19.671655",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "aggregate_context": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:19.672854",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "hierarchy_stats": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:19.674105",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "list_hierarchies": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:19.675699",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "delete_hierarchy": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:19.676877",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "memory_synthesis": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:26.643241",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "reasoning_chains": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:26.645268",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "personality_adaptation": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:26.647027",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "collaborative_memory": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:26.648536",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "workflow_execution": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:26.650294",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "memory_pattern_recognition": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:26.651877",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "contextual_learning": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:26.653132",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "memory_evolution_tracking": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:26.655081",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "intelligent_query_processing": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:26.656329",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "memory_resilience_check": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:26.657520",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "workflow_optimization": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:26.658854",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "memory_intelligence_assessment": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:26.660098",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "cross_domain_integration": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:26.661304",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "workflow_validation": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:26.662522",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "find_mergeable_memories": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:45.502366",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "merge_memories": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:45.504165",
+      "error": "assert 404 == 201\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "improve_memory": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:45.505554",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "assess_memory_quality": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:45.507018",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "quality_report": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:45.508290",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "detect_conflicts": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:45.509605",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "resolve_conflicts": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:45.510873",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "memory_evolution": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:45.512214",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "bulk_improve": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:45.513919",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "auto_consolidate": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:45.515283",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "performance_metrics": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:57.833747",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "usage_stats": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:57.835367",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "error_tracking": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:57.836874",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "health_checks": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:57.838249",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "analytics_dashboard": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:57.839569",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "alerting_configuration": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:57.840967",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "system_metrics": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:57.842308",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "user_activity_analytics": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:57.844138",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "memory_growth_analytics": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:57.845459",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "quality_trends_analytics": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:57.846750",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "search_effectiveness_analytics": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:57.847990",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "cost_analytics": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:57.849345",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "alert_history": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:57.850626",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "performance_baseline": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:57.851896",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "capacity_planning_analytics": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:46:57.853272",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "prompt_templates": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:47:03.909424",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "context_injection": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:47:03.911114",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "memory_selection": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:47:03.912606",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "prompt_optimization": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:47:03.914133",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "prompt_evaluation": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:47:03.915505",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "dynamic_prompt_generation": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:47:03.916946",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "prompt_chain_creation": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:47:03.918295",
+      "error": "assert 404 == 201\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "prompt_chain_execution": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:47:03.919735",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "prompt_performance_metrics": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:47:03.921560",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "prompt_ab_testing": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:47:03.922904",
+      "error": "assert 404 == 201\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "prompt_feedback_collection": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:47:03.924270",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "prompt_learning_loop": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:47:03.925659",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "quality_metrics": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:47:10.049019",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "conflict_types": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:47:10.050684",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "quality_thresholds": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:47:10.052185",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "conflict_resolution_strategies": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:47:10.053707",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "quality_improvement_suggestions": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:47:10.055103",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "conflict_prevention": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:47:10.056595",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "quality_batch_assessment": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:47:10.057954",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "conflict_impact_analysis": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:47:10.059359",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "quality_trends": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:47:10.061239",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "conflict_history": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:47:10.062664",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "quality_benchmarks": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:47:10.064067",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "conflict_patterns": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:47:10.065474",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "encryption_status": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:47:22.405518",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "anonymization_check": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:47:22.407608",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "access_control_check": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:47:22.409338",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "audit_logs": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:47:22.410869",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "data_retention_policy": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:47:22.412427",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "privacy_compliance_check": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:47:22.413857",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "data_export_request": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:47:22.415770",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "data_deletion_request": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:47:22.417282",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "security_scan": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:47:22.418733",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "privacy_impact_assessment": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:47:22.420252",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "consent_management": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:47:22.421628",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "breach_detection": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:47:22.423023",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "encryption_key_rotation": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:47:22.424405",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "data_classification": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:47:22.425915",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "security_policy_enforcement": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:47:22.427336",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "efficient_hybrid_search": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:47:34.434838",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "vector_content_update_and_delete": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:47:34.436984",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    },
+    "vector_status_endpoint": {
+      "status": "fail",
+      "timestamp": "2025-07-06T14:47:34.438608",
+      "error": "assert 404 == 200\n +  where 404 = <WrapperTestResponse streamed [404 NOT FOUND]>.status_code",
+      "response": null
+    }
+  },
+  "failed_tests": [
+    {
+      "file": "test_memory_api.py",
+      "return_code": 1,
+      "stdout": "============================= test session starts ==============================\nplatform darwin -- Python 3.11.13, pytest-8.4.0, pluggy-1.6.0 -- /Users/tetsu/miniconda3/envs/jarvus2/bin/python3\ncachedir: .pytest_cache\nrootdir: /Users/tetsu/Desktop/Jarvus/Jarvus2/tests\nconfigfile: pytest.ini\nplugins: anyio-4.9.0, asyncio-1.0.0\nasyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\ncollecting ... collected 6 items\n\ntests/test_memory_api.py::test_store_episodic_memory ERROR               [ 16%]\ntests/test_memory_api.py::test_get_episodic_memories ERROR               [ 33%]\ntests/test_memory_api.py::test_store_semantic_memory ERROR               [ 50%]\ntests/test_memory_api.py::test_get_semantic_memories ERROR               [ 66%]\ntests/test_memory_api.py::test_store_procedural_memory ERROR             [ 83%]\ntests/test_memory_api.py::test_get_procedural_memories ERROR             [100%]\n\n==================================== ERRORS ====================================\n_________________ ERROR at setup of test_store_episodic_memory _________________\ntests/test_memory_api.py:18: in test_client\n    user = User(email=\"testuser@example.com\", password=\"testpassword\")\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n<string>:4: in __init__\n    ???\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/sqlalchemy/orm/state.py:571: in _initialize_instance\n    with util.safe_reraise():\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:146: in __exit__\n    raise exc_value.with_traceback(exc_tb)\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/sqlalchemy/orm/state.py:569: in _initialize_instance\n    manager.original_init(*mixed[1:], **kwargs)\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/sqlalchemy/orm/decl_base.py:2167: in _declarative_constructor\n    raise TypeError(\nE   TypeError: 'password' is an invalid keyword argument for User\n---------------------------- Captured stdout setup -----------------------------\nDatabase URI: sqlite:///jarvus_app.db\n------------------------------ Captured log setup ------------------------------\nINFO     jarvus:__init__.py:114 Jarvus application starting up\nINFO     jarvus:__init__.py:70 Jarvus application starting up\n_________________ ERROR at setup of test_get_episodic_memories _________________\ntests/test_memory_api.py:18: in test_client\n    user = User(email=\"testuser@example.com\", password=\"testpassword\")\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n<string>:4: in __init__\n    ???\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/sqlalchemy/orm/state.py:571: in _initialize_instance\n    with util.safe_reraise():\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:146: in __exit__\n    raise exc_value.with_traceback(exc_tb)\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/sqlalchemy/orm/state.py:569: in _initialize_instance\n    manager.original_init(*mixed[1:], **kwargs)\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/sqlalchemy/orm/decl_base.py:2167: in _declarative_constructor\n    raise TypeError(\nE   TypeError: 'password' is an invalid keyword argument for User\n_________________ ERROR at setup of test_store_semantic_memory _________________\ntests/test_memory_api.py:18: in test_client\n    user = User(email=\"testuser@example.com\", password=\"testpassword\")\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n<string>:4: in __init__\n    ???\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/sqlalchemy/orm/state.py:571: in _initialize_instance\n    with util.safe_reraise():\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:146: in __exit__\n    raise exc_value.with_traceback(exc_tb)\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/sqlalchemy/orm/state.py:569: in _initialize_instance\n    manager.original_init(*mixed[1:], **kwargs)\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/sqlalchemy/orm/decl_base.py:2167: in _declarative_constructor\n    raise TypeError(\nE   TypeError: 'password' is an invalid keyword argument for User\n_________________ ERROR at setup of test_get_semantic_memories _________________\ntests/test_memory_api.py:18: in test_client\n    user = User(email=\"testuser@example.com\", password=\"testpassword\")\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n<string>:4: in __init__\n    ???\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/sqlalchemy/orm/state.py:571: in _initialize_instance\n    with util.safe_reraise():\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:146: in __exit__\n    raise exc_value.with_traceback(exc_tb)\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/sqlalchemy/orm/state.py:569: in _initialize_instance\n    manager.original_init(*mixed[1:], **kwargs)\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/sqlalchemy/orm/decl_base.py:2167: in _declarative_constructor\n    raise TypeError(\nE   TypeError: 'password' is an invalid keyword argument for User\n________________ ERROR at setup of test_store_procedural_memory ________________\ntests/test_memory_api.py:18: in test_client\n    user = User(email=\"testuser@example.com\", password=\"testpassword\")\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n<string>:4: in __init__\n    ???\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/sqlalchemy/orm/state.py:571: in _initialize_instance\n    with util.safe_reraise():\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:146: in __exit__\n    raise exc_value.with_traceback(exc_tb)\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/sqlalchemy/orm/state.py:569: in _initialize_instance\n    manager.original_init(*mixed[1:], **kwargs)\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/sqlalchemy/orm/decl_base.py:2167: in _declarative_constructor\n    raise TypeError(\nE   TypeError: 'password' is an invalid keyword argument for User\n________________ ERROR at setup of test_get_procedural_memories ________________\ntests/test_memory_api.py:18: in test_client\n    user = User(email=\"testuser@example.com\", password=\"testpassword\")\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n<string>:4: in __init__\n    ???\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/sqlalchemy/orm/state.py:571: in _initialize_instance\n    with util.safe_reraise():\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py:146: in __exit__\n    raise exc_value.with_traceback(exc_tb)\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/sqlalchemy/orm/state.py:569: in _initialize_instance\n    manager.original_init(*mixed[1:], **kwargs)\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/sqlalchemy/orm/decl_base.py:2167: in _declarative_constructor\n    raise TypeError(\nE   TypeError: 'password' is an invalid keyword argument for User\n=========================== short test summary info ============================\nERROR tests/test_memory_api.py::test_store_episodic_memory - TypeError: 'pass...\nERROR tests/test_memory_api.py::test_get_episodic_memories - TypeError: 'pass...\nERROR tests/test_memory_api.py::test_store_semantic_memory - TypeError: 'pass...\nERROR tests/test_memory_api.py::test_get_semantic_memories - TypeError: 'pass...\nERROR tests/test_memory_api.py::test_store_procedural_memory - TypeError: 'pa...\nERROR tests/test_memory_api.py::test_get_procedural_memories - TypeError: 'pa...\n============================== 6 errors in 0.42s ===============================\n",
+      "stderr": "",
+      "success": false
+    },
+    {
+      "file": "test_memory_editing.py",
+      "return_code": 1,
+      "stdout": "============================= test session starts ==============================\nplatform darwin -- Python 3.11.13, pytest-8.4.0, pluggy-1.6.0 -- /Users/tetsu/miniconda3/envs/jarvus2/bin/python3\ncachedir: .pytest_cache\nrootdir: /Users/tetsu/Desktop/Jarvus/Jarvus2/tests\nconfigfile: pytest.ini\nplugins: anyio-4.9.0, asyncio-1.0.0\nasyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\ncollecting ... collected 7 items\n\ntests/test_memory_editing.py::test_memory_merging ERROR                  [ 14%]\ntests/test_memory_editing.py::test_memory_improvement ERROR              [ 28%]\ntests/test_memory_editing.py::test_quality_assessment ERROR              [ 42%]\ntests/test_memory_editing.py::test_conflict_detection ERROR              [ 57%]\ntests/test_memory_editing.py::test_memory_evolution ERROR                [ 71%]\ntests/test_memory_editing.py::test_bulk_operations ERROR                 [ 85%]\ntests/test_memory_editing.py::test_advanced_features ERROR               [100%]\n\n==================================== ERRORS ====================================\n____________________ ERROR at setup of test_memory_merging _____________________\ntests/conftest.py:35: in session\n    connection = db.engine.connect()\n                 ^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/flask_sqlalchemy/extension.py:709: in engine\n    return self.engines[None]\n           ^^^^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/flask_sqlalchemy/extension.py:687: in engines\n    app = current_app._get_current_object()  # type: ignore[attr-defined]\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/werkzeug/local.py:519: in _get_current_object\n    raise RuntimeError(unbound_message) from None\nE   RuntimeError: Working outside of application context.\nE   \nE   This typically means that you attempted to use functionality that needed\nE   the current application. To solve this, set up an application context\nE   with app.app_context(). See the documentation for more information.\n---------------------------- Captured stdout setup -----------------------------\nDatabase URI: sqlite:///jarvus_app.db\n------------------------------ Captured log setup ------------------------------\nINFO     jarvus:__init__.py:114 Jarvus application starting up\nINFO     jarvus:__init__.py:70 Jarvus application starting up\n__________________ ERROR at setup of test_memory_improvement ___________________\ntests/conftest.py:35: in session\n    connection = db.engine.connect()\n                 ^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/flask_sqlalchemy/extension.py:709: in engine\n    return self.engines[None]\n           ^^^^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/flask_sqlalchemy/extension.py:687: in engines\n    app = current_app._get_current_object()  # type: ignore[attr-defined]\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/werkzeug/local.py:519: in _get_current_object\n    raise RuntimeError(unbound_message) from None\nE   RuntimeError: Working outside of application context.\nE   \nE   This typically means that you attempted to use functionality that needed\nE   the current application. To solve this, set up an application context\nE   with app.app_context(). See the documentation for more information.\n__________________ ERROR at setup of test_quality_assessment ___________________\ntests/conftest.py:35: in session\n    connection = db.engine.connect()\n                 ^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/flask_sqlalchemy/extension.py:709: in engine\n    return self.engines[None]\n           ^^^^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/flask_sqlalchemy/extension.py:687: in engines\n    app = current_app._get_current_object()  # type: ignore[attr-defined]\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/werkzeug/local.py:519: in _get_current_object\n    raise RuntimeError(unbound_message) from None\nE   RuntimeError: Working outside of application context.\nE   \nE   This typically means that you attempted to use functionality that needed\nE   the current application. To solve this, set up an application context\nE   with app.app_context(). See the documentation for more information.\n__________________ ERROR at setup of test_conflict_detection ___________________\ntests/conftest.py:35: in session\n    connection = db.engine.connect()\n                 ^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/flask_sqlalchemy/extension.py:709: in engine\n    return self.engines[None]\n           ^^^^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/flask_sqlalchemy/extension.py:687: in engines\n    app = current_app._get_current_object()  # type: ignore[attr-defined]\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/werkzeug/local.py:519: in _get_current_object\n    raise RuntimeError(unbound_message) from None\nE   RuntimeError: Working outside of application context.\nE   \nE   This typically means that you attempted to use functionality that needed\nE   the current application. To solve this, set up an application context\nE   with app.app_context(). See the documentation for more information.\n___________________ ERROR at setup of test_memory_evolution ____________________\ntests/conftest.py:35: in session\n    connection = db.engine.connect()\n                 ^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/flask_sqlalchemy/extension.py:709: in engine\n    return self.engines[None]\n           ^^^^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/flask_sqlalchemy/extension.py:687: in engines\n    app = current_app._get_current_object()  # type: ignore[attr-defined]\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/werkzeug/local.py:519: in _get_current_object\n    raise RuntimeError(unbound_message) from None\nE   RuntimeError: Working outside of application context.\nE   \nE   This typically means that you attempted to use functionality that needed\nE   the current application. To solve this, set up an application context\nE   with app.app_context(). See the documentation for more information.\n____________________ ERROR at setup of test_bulk_operations ____________________\ntests/conftest.py:35: in session\n    connection = db.engine.connect()\n                 ^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/flask_sqlalchemy/extension.py:709: in engine\n    return self.engines[None]\n           ^^^^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/flask_sqlalchemy/extension.py:687: in engines\n    app = current_app._get_current_object()  # type: ignore[attr-defined]\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/werkzeug/local.py:519: in _get_current_object\n    raise RuntimeError(unbound_message) from None\nE   RuntimeError: Working outside of application context.\nE   \nE   This typically means that you attempted to use functionality that needed\nE   the current application. To solve this, set up an application context\nE   with app.app_context(). See the documentation for more information.\n___________________ ERROR at setup of test_advanced_features ___________________\ntests/conftest.py:35: in session\n    connection = db.engine.connect()\n                 ^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/flask_sqlalchemy/extension.py:709: in engine\n    return self.engines[None]\n           ^^^^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/flask_sqlalchemy/extension.py:687: in engines\n    app = current_app._get_current_object()  # type: ignore[attr-defined]\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/werkzeug/local.py:519: in _get_current_object\n    raise RuntimeError(unbound_message) from None\nE   RuntimeError: Working outside of application context.\nE   \nE   This typically means that you attempted to use functionality that needed\nE   the current application. To solve this, set up an application context\nE   with app.app_context(). See the documentation for more information.\n=========================== short test summary info ============================\nERROR tests/test_memory_editing.py::test_memory_merging - RuntimeError: Worki...\nERROR tests/test_memory_editing.py::test_memory_improvement - RuntimeError: W...\nERROR tests/test_memory_editing.py::test_quality_assessment - RuntimeError: W...\nERROR tests/test_memory_editing.py::test_conflict_detection - RuntimeError: W...\nERROR tests/test_memory_editing.py::test_memory_evolution - RuntimeError: Wor...\nERROR tests/test_memory_editing.py::test_bulk_operations - RuntimeError: Work...\nERROR tests/test_memory_editing.py::test_advanced_features - RuntimeError: Wo...\n============================== 7 errors in 0.18s ===============================\n",
+      "stderr": "",
+      "success": false
+    },
+    {
+      "file": "test_memory_system.py",
+      "return_code": 2,
+      "stdout": "============================= test session starts ==============================\nplatform darwin -- Python 3.11.13, pytest-8.4.0, pluggy-1.6.0 -- /Users/tetsu/miniconda3/envs/jarvus2/bin/python3\ncachedir: .pytest_cache\nrootdir: /Users/tetsu/Desktop/Jarvus/Jarvus2/tests\nconfigfile: pytest.ini\nplugins: anyio-4.9.0, asyncio-1.0.0\nasyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\ncollecting ... collected 0 items / 1 error\n\n==================================== ERRORS ====================================\n____________________ ERROR collecting test_memory_system.py ____________________\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/urllib3/connection.py:198: in _new_conn\n    sock = connection.create_connection(\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/urllib3/util/connection.py:85: in create_connection\n    raise err\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/urllib3/util/connection.py:73: in create_connection\n    sock.connect(sa)\nE   ConnectionRefusedError: [Errno 61] Connection refused\n\nThe above exception was the direct cause of the following exception:\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/urllib3/connectionpool.py:787: in urlopen\n    response = self._make_request(\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/urllib3/connectionpool.py:493: in _make_request\n    conn.request(\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/urllib3/connection.py:445: in request\n    self.endheaders()\n../../../miniconda3/envs/jarvus2/lib/python3.11/http/client.py:1298: in endheaders\n    self._send_output(message_body, encode_chunked=encode_chunked)\n../../../miniconda3/envs/jarvus2/lib/python3.11/http/client.py:1058: in _send_output\n    self.send(msg)\n../../../miniconda3/envs/jarvus2/lib/python3.11/http/client.py:996: in send\n    self.connect()\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/urllib3/connection.py:276: in connect\n    self.sock = self._new_conn()\n                ^^^^^^^^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/urllib3/connection.py:213: in _new_conn\n    raise NewConnectionError(\nE   urllib3.exceptions.NewConnectionError: <urllib3.connection.HTTPConnection object at 0x1627bf690>: Failed to establish a new connection: [Errno 61] Connection refused\n\nThe above exception was the direct cause of the following exception:\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/requests/adapters.py:667: in send\n    resp = conn.urlopen(\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/urllib3/connectionpool.py:841: in urlopen\n    retries = retries.increment(\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/urllib3/util/retry.py:519: in increment\n    raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nE   urllib3.exceptions.MaxRetryError: HTTPConnectionPool(host='localhost', port=5000): Max retries exceeded with url: /memory/chrome_action (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1627bf690>: Failed to establish a new connection: [Errno 61] Connection refused'))\n\nDuring handling of the above exception, another exception occurred:\ntests/test_memory_system.py:21: in <module>\n    resp = SESSION.post(f\"{BASE_URL}/chrome_action\", json=chrome_action)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/requests/sessions.py:637: in post\n    return self.request(\"POST\", url, data=data, json=json, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/requests/sessions.py:589: in request\n    resp = self.send(prep, **send_kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/requests/sessions.py:703: in send\n    r = adapter.send(request, **kwargs)\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n../../../miniconda3/envs/jarvus2/lib/python3.11/site-packages/requests/adapters.py:700: in send\n    raise ConnectionError(e, request=request)\nE   requests.exceptions.ConnectionError: HTTPConnectionPool(host='localhost', port=5000): Max retries exceeded with url: /memory/chrome_action (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1627bf690>: Failed to establish a new connection: [Errno 61] Connection refused'))\n------------------------------- Captured stdout --------------------------------\nLoaded environment from /Users/tetsu/Desktop/Jarvus/Jarvus2/.env\nRunning in development mode\nUsing development database from TEST_DATABASE_URL\nSQLALCHEMY_DATABASE_URI: sqlite:///jarvus_app.db\nDEBUG: Auth module initialized with config:\nDEBUG: CLIENT_ID: 54d6af59-29a1-46ab-b548-438253a2f401\nDEBUG: SIGNIN_AUTHORITY: https://jarvusb2c.b2clogin.com/jarvusb2c.onmicrosoft.com/B2C_1_signup_signin\nDEBUG: REDIRECT_URI: http://localhost:5001/getAToken\nDEBUG: SCOPE: ['openid profile offline_access https://jarvusb2c.onmicrosoft.com/api/user_impersonation']\n\nMCP Client initialized with URL: http://localhost:8000\nTool Registry initialized\n\u2705 Chrome control tools registered successfully!\n\nDEBUG: Environment Variables:\nGOOGLE_REDIRECT_URI from env: http://localhost:5001/oauth2callback\nGOOGLE_CLIENT_ID from env: 767183866902-hdl8hmbdm75sn1ichbf0lkuv510nb5l1.apps.googleusercontent.com\n\nDEBUG: OAuth Configuration:\nDEBUG: GOOGLE_CLIENT_ID: 767183866902-hdl8hmbdm75sn1ichbf0lkuv510nb5l1.apps.googleusercontent.com\nDEBUG: GOOGLE_REDIRECT_URI: http://localhost:5001/oauth2callback\nDEBUG: Full GOOGLE_CLIENT_CONFIG: {\n  \"web\": {\n    \"client_id\": \"767183866902-hdl8hmbdm75sn1ichbf0lkuv510nb5l1.apps.googleusercontent.com\",\n    \"client_secret\": \"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\",\n    \"auth_uri\": \"https://accounts.google.com/o/oauth2/auth\",\n    \"token_uri\": \"https://oauth2.googleapis.com/token\",\n    \"redirect_uris\": [\n      \"http://localhost:5001/oauth2callback\"\n    ],\n    \"scopes\": [\n      \"https://www.googleapis.com/auth/gmail.readonly\",\n      \"https://www.googleapis.com/auth/gmail.compose\",\n      \"https://www.googleapis.com/auth/gmail.send\",\n      \"https://mail.google.com/\",\n      \"https://www.googleapis.com/auth/calendar.readonly\",\n      \"https://www.googleapis.com/auth/calendar.events\",\n      \"https://www.googleapis.com/auth/calendar\",\n      \"https://www.googleapis.com/auth/meetings.space.created\",\n      \"https://www.googleapis.com/auth/drive.meet.readonly\",\n      \"https://www.googleapis.com/auth/drive.readonly\",\n      \"https://www.googleapis.com/auth/drive.file\",\n      \"https://www.googleapis.com/auth/drive\",\n      \"https://www.googleapis.com/auth/documents.readonly\",\n      \"https://www.googleapis.com/auth/documents\",\n      \"https://www.googleapis.com/auth/spreadsheets.readonly\",\n      \"https://www.googleapis.com/auth/spreadsheets\",\n      \"https://www.googleapis.com/auth/presentations.readonly\",\n      \"https://www.googleapis.com/auth/presentations\"\n    ]\n  }\n}\nRunning in development mode\nDevelopment mode detected: attempting to load .env file from: /Users/tetsu/Desktop/Jarvus/Jarvus2/.env\nEnvironment variables loaded from .env\n=========================== short test summary info ============================\nERROR tests/test_memory_system.py - requests.exceptions.ConnectionError: HTTP...\n!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!\n=============================== 1 error in 0.22s ===============================\n",
+      "stderr": "",
+      "success": false
+    },
+    {
+      "file": "test_result_logger.py",
+      "return_code": 5,
+      "stdout": "============================= test session starts ==============================\nplatform darwin -- Python 3.11.13, pytest-8.4.0, pluggy-1.6.0 -- /Users/tetsu/miniconda3/envs/jarvus2/bin/python3\ncachedir: .pytest_cache\nrootdir: /Users/tetsu/Desktop/Jarvus/Jarvus2/tests\nconfigfile: pytest.ini\nplugins: anyio-4.9.0, asyncio-1.0.0\nasyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\ncollecting ... collected 0 items\n\n============================ no tests ran in 0.00s =============================\n",
+      "stderr": "",
+      "success": false
+    },
+    {
+      "file": "test_vector_memory_system.py",
+      "return_code": 5,
+      "stdout": "============================= test session starts ==============================\nplatform darwin -- Python 3.11.13, pytest-8.4.0, pluggy-1.6.0 -- /Users/tetsu/miniconda3/envs/jarvus2/bin/python3\ncachedir: .pytest_cache\nrootdir: /Users/tetsu/Desktop/Jarvus/Jarvus2/tests\nconfigfile: pytest.ini\nplugins: anyio-4.9.0, asyncio-1.0.0\nasyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function\ncollecting ... collected 0 items\n\n============================ no tests ran in 0.00s =============================\n",
+      "stderr": "",
+      "success": false
+    }
+  ]
+}
