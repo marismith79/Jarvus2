@@ -21,7 +21,19 @@ document.addEventListener('DOMContentLoaded', function() {
     // Connection handling
     window.connectService = function(service) {
         if (service === 'docs') {
-            window.location.href = '/connect/docs';
+            // Fix: Open Pipedream Connect Link in a popup window instead of direct redirect
+            // This prevents the immediate redirect back to profile page
+            const popup = window.open('/connect/docs', 'pipedream_connect', 
+                'width=600,height=700,scrollbars=yes,resizable=yes,status=yes,location=yes,toolbar=no,menubar=no');
+            
+            // Check if popup was blocked
+            if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+                alert('Please allow popups for this site to connect your Google Docs account.');
+                return;
+            }
+            
+            // Optional: Add a message to the user
+            console.log('Opening Pipedream Connect in popup window...');
         } else {
             showComingSoon();
         }

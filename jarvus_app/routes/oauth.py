@@ -221,48 +221,122 @@ def connect_zoom():
 
 
 def connect_pipedream_service(service):
-    """Initiate OAuth flow for any Pipedream service using Connect Link API"""
+    """Initiate OAuth flow for any Pipedream service using Connect Link API with proper two-step authentication"""
     print(f"\nDEBUG: Starting {service} OAuth flow via Pipedream Connect Link API")
     
-    # Get Pipedream API credentials from environment
-    pipedream_client_id = os.getenv("PIPEDREAM_CLIENT_ID")
-    pipedream_client_secret = os.getenv("PIPEDREAM_CLIENT_SECRET")
+    pipedream_api_client_id = os.getenv("PIPEDREAM_API_CLIENT_ID")
+    pipedream_api_client_secret = os.getenv("PIPEDREAM_API_CLIENT_SECRET")
     pipedream_project_id = os.getenv("PIPEDREAM_PROJECT_ID")
     
-    if not all([pipedream_client_id, pipedream_client_secret, pipedream_project_id]):
+    if not all([pipedream_api_client_id, pipedream_api_client_secret, pipedream_project_id]):
         print("ERROR: Pipedream API credentials not configured")
         return redirect(url_for("profile.profile"))
     
-    # Get the redirect URI from environment
     redirect_uri = os.getenv("PIPEDREAM_REDIRECT_URI")
     if not redirect_uri:
         print(f"ERROR: PIPEDREAM_REDIRECT_URI not configured")
         return redirect(url_for("profile.profile"))
     
-    # Generate a state parameter for security
+    oauth_app_id_env_var = f"PIPEDREAM_{service.upper()}_OAUTH_APP_ID"
+    oauth_app_id = os.getenv(oauth_app_id_env_var)
+    if not oauth_app_id:
+        print(f"ERROR: {oauth_app_id_env_var} not configured for {service}")
+        return redirect(url_for("profile.profile"))
+    
     import secrets
     state = secrets.token_urlsafe(32)
     session["oauth_state"] = state
     
+    print("DEBUG: PIPEDREAM_PROJECT_ID =", os.getenv("PIPEDREAM_PROJECT_ID"))
+    print("DEBUG: OAUTH_APP_ID =", os.getenv(f"PIPEDREAM_{service.upper()}_OAUTH_APP_ID"))
+    
     try:
-        # Create connect token using Pipedream API
-        connect_token_data = {
-            "external_user_id": str(current_user.id),
-            "allowed_origins": ["http://localhost:5001"],  # Add your production domain here
-            "success_redirect_uri": f"{redirect_uri}/{service}?state={state}",
-            "error_redirect_uri": f"{redirect_uri}/{service}?state={state}",
-            "source": service  # Specify which service to connect
+        import base64
+        
+        # Step 1: Get Bearer token using client credentials
+        print("=== STEP 1: GETTING BEARER TOKEN ===")
+        
+        token_data = {
+            "grant_type": "client_credentials",
+            "client_id": pipedream_api_client_id,
+            "client_secret": pipedream_api_client_secret,
+            "project_id": pipedream_project_id,
+            "environment": "development"
         }
         
-        # Make API call to Pipedream to create connect token
-        response = requests.post(
-            "https://api.pipedream.com/v1/connect/tokens",
+        print("Token Request URL:", "https://api.pipedream.com/v1/oauth/token")
+        print("Token Request Headers:", json.dumps({
+            "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"
+        }, indent=2))
+        print("Token Request Payload:", json.dumps(token_data, indent=2))
+        
+        token_response = requests.post(
+            "https://api.pipedream.com/v1/oauth/token",
             headers={
-                "Authorization": f"Bearer {pipedream_client_secret}",
-                "Content-Type": "application/json"
+                "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"
             },
-            json=connect_token_data
+            data=token_data,
+            timeout=30
         )
+        
+        print("=== TOKEN RESPONSE ===")
+        print("Status:", token_response.status_code)
+        print("Headers:", dict(token_response.headers))
+        print("Body:", token_response.text)
+        print("===============================")
+        
+        if token_response.status_code != 200:
+            print(f"ERROR: Failed to get Bearer token: {token_response.status_code} - {token_response.text}")
+            return redirect(url_for("profile.profile"))
+        
+        token_info = token_response.json()
+        bearer_token = token_info.get("access_token")
+        
+        if not bearer_token:
+            print("ERROR: No access_token in token response!")
+            return redirect(url_for("profile.profile"))
+        
+        print("✅ Successfully obtained Bearer token!")
+        
+        # Step 2: Use Bearer token to create connect token
+        print("\n=== STEP 2: CREATING CONNECT TOKEN ===")
+        bearer_auth = f"Bearer {bearer_token}"
+        
+        connect_token_data = {
+            "app": service,
+            "external_user_id": str(current_user.id),
+            "project_id": pipedream_project_id,
+            "oauth_app_id": oauth_app_id,
+            "success_redirect_uri": f"{redirect_uri}/{service}?state={state}",
+            "error_redirect_uri": f"{redirect_uri}/{service}?state={state}",
+            "allowed_origins": ["http://localhost:5001"],
+            "environment": "development"
+        }
+
+        print("Connect Token Request URL:", f"https://api.pipedream.com/v1/connect/{pipedream_project_id}/tokens")
+        print("Connect Token Request Headers:", json.dumps({
+            "Authorization": bearer_auth,
+            "Content-Type": "application/json",
+            "X-PD-Environment": "development"
+        }, indent=2))
+        print("Connect Token Request Payload:", json.dumps(connect_token_data, indent=2))
+
+        response = requests.post(
+            f"https://api.pipedream.com/v1/connect/{pipedream_project_id}/tokens",
+            headers={
+                "Authorization": bearer_auth,
+                "Content-Type": "application/json",
+                "X-PD-Environment": "development"
+            },
+            json=connect_token_data,
+            timeout=30
+        )
+        
+        print("=== CONNECT TOKEN RESPONSE ===")
+        print("Status:", response.status_code)
+        print("Headers:", dict(response.headers))
+        print("Body:", response.text)
+        print("===============================")
         
         if response.status_code != 200:
             print(f"ERROR: Failed to create Pipedream connect token: {response.status_code} - {response.text}")

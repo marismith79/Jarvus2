@@ -93,11 +93,16 @@ AZURE_AI_FOUNDRY_DEPLOYMENT_NAME=<your-model-name>
 # ZOOM_CLIENT_SECRET=<secret>
 # ZOOM_REDIRECT_URI=http://localhost:5001/zoom/callback
 
-# Pipedream Integration (Connect Link API)
-PIPEDREAM_CLIENT_ID=<your-pipedream-client-id>
-PIPEDREAM_CLIENT_SECRET=<your-pipedream-client-secret>
-PIPEDREAM_PROJECT_ID=<your-pipedream-project-id>
+# Pipedream Integration (Direct OAuth)
 PIPEDREAM_REDIRECT_URI=http://localhost:5001/pipedream/callback
+
+# OAuth App IDs - for the actual OAuth flows
+PIPEDREAM_DOCS_OAUTH_APP_ID=<your-pipedream-docs-oauth-app-id>
+PIPEDREAM_SHEETS_OAUTH_APP_ID=<your-pipedream-sheets-oauth-app-id>
+PIPEDREAM_SLIDES_OAUTH_APP_ID=<your-pipedream-slides-oauth-app-id>
+PIPEDREAM_DRIVE_OAUTH_APP_ID=<your-pipedream-drive-oauth-app-id>
+PIPEDREAM_GMAIL_OAUTH_APP_ID=<your-pipedream-gmail-oauth-app-id>
+PIPEDREAM_CALENDAR_OAUTH_APP_ID=<your-pipedream-calendar-oauth-app-id>
 
 # Pipedream Service Endpoints (for Google Workspace tools)
 PIPEDREAM_DOCS_ENDPOINT=<your-pipedream-docs-endpoint>
