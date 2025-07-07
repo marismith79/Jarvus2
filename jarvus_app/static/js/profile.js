@@ -19,18 +19,24 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Connection handling
-    window.connectGoogleWorkspace = function() { window.location.href = '/connect/google-workspace'; }
+    window.connectService = function(service) {
+        if (service === 'docs') {
+            window.location.href = '/connect/docs';
+        } else {
+            showComingSoon();
+        }
+    }
+    
     window.connectNotion = function() { showComingSoon(); }
     window.connectSlack = function() { showComingSoon(); }
     window.connectZoom = function() { showComingSoon(); }
 
-    window.disconnectGoogleWorkspace = function() { disconnectService('google-workspace'); }
     window.disconnectNotion = function() { disconnectService('notion'); }
     window.disconnectSlack = function() { disconnectService('slack'); }
     window.disconnectZoom = function() { disconnectService('zoom'); }
 
     // Generic: For every tool marked as connected, call /api/connect_tool
-    const toolNames = ['google-workspace', 'notion', 'slack', 'zoom']; // Add future tools here
+    const toolNames = ['docs', 'notion', 'slack', 'zoom']; // Add future tools here
     toolNames.forEach(tool => {
         if (window[tool.replace('-', '_') + 'Connected']) {
             fetch('/api/connect_tool', {

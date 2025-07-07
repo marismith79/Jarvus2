@@ -1,7 +1,4 @@
 from datetime import datetime
-
-from flask_sqlalchemy import SQLAlchemy
-
 from ..db import db
 
 
@@ -13,14 +10,12 @@ class OAuthCredentials(db.Model):
         db.String(50), db.ForeignKey("users.id"), nullable=False
     )  # Link to users table
     service = db.Column(db.String(50), nullable=False)
-    access_token = db.Column(db.Text, nullable=False)
-    refresh_token = db.Column(db.Text, nullable=True)  # Some services might not provide refresh tokens
-    expires_at = db.Column(db.DateTime, nullable=True)  # When the access token expires
+    connect_id = db.Column(db.String(255), nullable=True)  
+    state = db.Column(db.String(255), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(
         db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
     )
-    scopes = db.Column(db.Text, nullable=True)
 
     # Relationship with User model
     user = db.relationship(
@@ -36,31 +31,30 @@ class OAuthCredentials(db.Model):
         return cls.query.filter_by(user_id=user_id, service=service).first()
 
     @classmethod
-    def store_credentials(cls, user_id, service, access_token, refresh_token=None, expires_at=None, scopes=None):
-        """Store or update OAuth credentials"""
+    def store_credentials(cls, user_id, service, connect_id, state=None):
+        """Store or update Pipedream credentials (connect_id)"""
         creds = cls.get_credentials(user_id, service)
-        scopes_str = " ".join(scopes) if scopes else ""
         if creds:
-            creds.access_token = access_token
-            if refresh_token:
-                creds.refresh_token = refresh_token
-            if expires_at:
-                creds.expires_at = expires_at
-            if scopes is not None:
-                creds.scopes = scopes_str
+            creds.connect_id = connect_id
+            if state:
+                creds.state = state
             creds.updated_at = datetime.utcnow()
         else:
             creds = cls(
                 user_id=user_id,
                 service=service,
-                access_token=access_token,
-                refresh_token=refresh_token,
-                expires_at=expires_at,
-                scopes=scopes_str,
+                connect_id=connect_id,
+                state=state,
             )
             db.session.add(creds)
         db.session.commit()
         return creds
+
+    @classmethod
+    def get_connect_id(cls, user_id, service):
+        """Get connect_id for a user and service (Pipedream authentication)"""
+        creds = cls.get_credentials(user_id, service)
+        return creds.connect_id if creds else None
 
     @classmethod
     def remove_credentials(cls, user_id, service):
@@ -86,10 +80,8 @@ class OAuthCredentials(db.Model):
             "id": self.id,
             "user_id": self.user_id,
             "service": self.service,
-            "access_token": self.access_token,
-            "refresh_token": self.refresh_token,
-            "expires_at": self.expires_at.isoformat() if self.expires_at else None,
+            "connect_id": self.connect_id,
+            "state": self.state,
             "created_at": self.created_at.isoformat(),
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
-            "scopes": self.scopes.split(" ") if self.scopes else [],
         }

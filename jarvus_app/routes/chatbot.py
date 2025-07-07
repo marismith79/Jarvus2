@@ -13,7 +13,7 @@ from ..llm.client import JarvusAIClient
 from ..services.tool_registry import tool_registry
 from flask_login import login_required, current_user
 from flask import Blueprint, jsonify, request, session
-from ..utils.tool_permissions import check_tool_access, get_user_oauth_scopes, get_user_tools
+from ..utils.tool_permissions import check_tool_access, get_user_tools
 import logging
 from azure.ai.inference.models import (
     SystemMessage,
@@ -161,39 +161,13 @@ def handle_chat_message_legacy():
             messages.append(UserMessage(content=m.get('content', '')))
     messages.append(UserMessage(content=user_text))
 
-    # Helper: map user_scopes to tool module names
-    def scopes_to_tools(user_scopes):
-        SCOPE_KEYWORDS = {
-            'gmail': ['gmail'],
-            'calendar': ['calendar'],
-            'drive': ['drive'],
-            'docs': ['documents'],
-            'sheets': ['spreadsheets'],
-            'slides': ['presentations'],
-        }
-        tool_set = set()
-        for tool, keywords in SCOPE_KEYWORDS.items():
-            for keyword in keywords:
-                if any(keyword in scope for scope in user_scopes):
-                    tool_set.add(tool)
-        return tool_set
-
     agent_tools = set(get_agent_tools(agent))
-    user_scopes = get_user_oauth_scopes(current_user.id, "google-workspace")
-    user_tools = scopes_to_tools(user_scopes)
-    allowed_tools = list(agent_tools & user_tools)
+    # For now, allow all agent tools since we're removing Google Workspace OAuth
+    allowed_tools = list(agent_tools)
     if web_search_enabled:
         allowed_tools.append('web')
     print('DEBUG agent_tools', agent_tools)
-    print('DEBUG user_tools', user_tools)
     print('DEBUG allowed_tools', allowed_tools)
-    print('DEBUG user_scopes', user_scopes)
-
-    # # Get tool categories for allowed tools
-    # allowed_tool_objs = [tool_registry.get_tool(t) for t in allowed_tools if tool_registry.get_tool(t)]
-    # allowed_categories = list(set([t.category.value for t in allowed_tool_objs if t and hasattr(t, 'category')]))
-    # print('DEBUG allowed_tool_objs', allowed_tool_objs)
-    # print('DEBUG allowed_categories', allowed_categories)
 
     # Step 1: Ask LLM which tool/category is needed
     tool_selection_prompt = (
@@ -240,7 +214,7 @@ def handle_chat_message_legacy():
             t for t in filtered_tools
             if not (hasattr(tool_registry.get_tool(t), 'category') and getattr(tool_registry.get_tool(t), 'category', None) and tool_registry.get_tool(t).category.value == 'web')
         ]
-    sdk_tools = tool_registry.get_sdk_tools_by_modules(filtered_tools, user_scopes)
+    sdk_tools = tool_registry.get_sdk_tools_by_modules(filtered_tools)
     logger.info(f"Filtered tools for LLM: {filtered_tools}")
     # --- END: Two-step tool selection orchestration ---
 

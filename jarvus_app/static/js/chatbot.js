@@ -3,12 +3,7 @@ let currentAgentId = null;
 
 // Store connection status
 const connectedTools = {
-  gmail: window.gmailConnected || false,
   docs: window.docsConnected || false,
-  slides: window.slidesConnected || false,
-  sheets: window.sheetsConnected || false,
-  drive: window.driveConnected || false,
-  calendar: window.calendarConnected || false,
   notion: window.notionConnected || false,
   slack: window.slackConnected || false,
   zoom: window.zoomConnected || false

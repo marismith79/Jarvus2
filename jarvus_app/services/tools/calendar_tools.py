@@ -1,7 +1,7 @@
 """Calendar tool registrations."""
 
 from typing import TYPE_CHECKING
-from ..tool_registry import ToolMetadata, ToolParameter, ToolCategory, format_calendar_result
+from ..tool_registry import ToolMetadata, ToolParameter, ToolCategory, format_tool_result
 
 if TYPE_CHECKING:
     from ..tool_registry import ToolRegistry
@@ -23,7 +23,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
             ToolParameter("single_events", "boolean", "Whether to expand recurring events", required=False),
             ToolParameter("order_by", "string", "Order of events (startTime)", required=False),
         ],
-        result_formatter=format_calendar_result
+        result_formatter=format_tool_result
     ))
 
     registry.register(ToolMetadata(
@@ -41,7 +41,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
             ToolParameter("location", "string", "Event location", required=False),
             ToolParameter("attendees", "array", "List of attendee email addresses", required=False, items_type="string"),
         ],
-        result_formatter=format_calendar_result
+        result_formatter=format_tool_result
     ))
 
     registry.register(ToolMetadata(
@@ -54,7 +54,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
             ToolParameter("calendar_id", "string", "Calendar ID (default: primary)", required=False),
             ToolParameter("event_id", "string", "ID of the event to retrieve", required=True),
         ],
-        result_formatter=format_calendar_result
+        result_formatter=format_tool_result
     ))
 
     registry.register(ToolMetadata(
@@ -73,7 +73,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
             ToolParameter("location", "string", "Event location", required=False),
             ToolParameter("attendees", "array", "List of attendee email addresses", required=False, items_type="string"),
         ],
-        result_formatter=format_calendar_result
+        result_formatter=format_tool_result
     ))
 
     registry.register(ToolMetadata(
@@ -86,7 +86,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
             ToolParameter("calendar_id", "string", "Calendar ID (default: primary)", required=False),
             ToolParameter("event_id", "string", "ID of the event to delete", required=True),
         ],
-        result_formatter=format_calendar_result
+        result_formatter=format_tool_result
     ))
 
     # Additional Event Operations
@@ -101,7 +101,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
             ToolParameter("event_id", "string", "ID of the event to move", required=True),
             ToolParameter("destination", "string", "Destination calendar ID", required=True),
         ],
-        result_formatter=format_calendar_result
+        result_formatter=format_tool_result
     ))
 
     registry.register(ToolMetadata(
@@ -114,7 +114,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
             ToolParameter("calendar_id", "string", "Calendar ID (default: primary)", required=False),
             ToolParameter("text", "string", "Natural language description of the event", required=True),
         ],
-        result_formatter=format_calendar_result
+        result_formatter=format_tool_result
     ))
 
     registry.register(ToolMetadata(
@@ -128,7 +128,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
             ToolParameter("event_id", "string", "ID of the recurring event", required=True),
             ToolParameter("max_results", "integer", "Maximum number of instances to return", required=False),
         ],
-        result_formatter=format_calendar_result
+        result_formatter=format_tool_result
     ))
 
     registry.register(ToolMetadata(
@@ -141,7 +141,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
             ToolParameter("calendar_id", "string", "Calendar ID (default: primary)", required=False),
             ToolParameter("event_data", "object", "Event data to import", required=True),
         ],
-        result_formatter=format_calendar_result
+        result_formatter=format_tool_result
     ))
 
     registry.register(ToolMetadata(
@@ -160,7 +160,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
             ToolParameter("location", "string", "Event location", required=False),
             ToolParameter("attendees", "array", "List of attendee email addresses", required=False, items_type="string"),
         ],
-        result_formatter=format_calendar_result
+        result_formatter=format_tool_result
     ))
 
     # Calendar Operations
@@ -173,7 +173,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
         parameters=[
             ToolParameter("max_results", "integer", "Maximum number of calendars to return", required=False),
         ],
-        result_formatter=format_calendar_result
+        result_formatter=format_tool_result
     ))
 
     registry.register(ToolMetadata(
@@ -185,7 +185,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
         parameters=[
             ToolParameter("calendar_id", "string", "ID of the calendar to retrieve", required=True),
         ],
-        result_formatter=format_calendar_result
+        result_formatter=format_tool_result
     ))
 
     registry.register(ToolMetadata(
@@ -199,7 +199,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
             ToolParameter("description", "string", "Calendar description", required=False),
             ToolParameter("time_zone", "string", "Calendar timezone (default: UTC)", required=False),
         ],
-        result_formatter=format_calendar_result
+        result_formatter=format_tool_result
     ))
 
     registry.register(ToolMetadata(
@@ -214,7 +214,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
             ToolParameter("description", "string", "Calendar description", required=False),
             ToolParameter("time_zone", "string", "Calendar timezone", required=False),
         ],
-        result_formatter=format_calendar_result
+        result_formatter=format_tool_result
     ))
 
     registry.register(ToolMetadata(
@@ -226,7 +226,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
         parameters=[
             ToolParameter("calendar_id", "string", "ID of the calendar to delete", required=True),
         ],
-        result_formatter=format_calendar_result
+        result_formatter=format_tool_result
     ))
 
     registry.register(ToolMetadata(
@@ -238,7 +238,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
         parameters=[
             ToolParameter("calendar_id", "string", "ID of the calendar to clear", required=True),
         ],
-        result_formatter=format_calendar_result
+        result_formatter=format_tool_result
     ))
 
     # Additional Resource Operations
@@ -253,7 +253,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
             ToolParameter("time_max", "string", "End time for query (ISO format)", required=True),
             ToolParameter("items", "array", "List of calendar IDs to check", required=True, items_type="object"),
         ],
-        result_formatter=format_calendar_result
+        result_formatter=format_tool_result
     ))
 
     registry.register(ToolMetadata(
@@ -263,7 +263,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
         server_path="calendar",
         requires_auth=True,
         parameters=[],
-        result_formatter=format_calendar_result
+        result_formatter=format_tool_result
     ))
 
     registry.register(ToolMetadata(
@@ -275,7 +275,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
         parameters=[
             ToolParameter("max_results", "integer", "Maximum number of settings to return", required=False),
         ],
-        result_formatter=format_calendar_result
+        result_formatter=format_tool_result
     ))
 
     registry.register(ToolMetadata(
@@ -287,7 +287,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
         parameters=[
             ToolParameter("setting", "string", "Setting name to retrieve", required=True),
         ],
-        result_formatter=format_calendar_result
+        result_formatter=format_tool_result
     ))
 
     # Meet Operations
@@ -306,7 +306,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
             ToolParameter("location", "string", "Meeting location", required=False),
             ToolParameter("conference_data_version", "integer", "Conference data version (default: 1)", required=False),
         ],
-        result_formatter=format_calendar_result
+        result_formatter=format_tool_result
     ))
 
     registry.register(ToolMetadata(
@@ -319,7 +319,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
             ToolParameter("event_id", "string", "ID of the meeting to retrieve", required=True),
             ToolParameter("calendar_id", "string", "Calendar ID (default: primary)", required=False),
         ],
-        result_formatter=format_calendar_result
+        result_formatter=format_tool_result
     ))
 
     registry.register(ToolMetadata(
@@ -338,7 +338,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
             ToolParameter("attendees", "array", "List of attendee email addresses", required=False, items_type="string"),
             ToolParameter("location", "string", "Meeting location", required=False),
         ],
-        result_formatter=format_calendar_result
+        result_formatter=format_tool_result
     ))
 
     registry.register(ToolMetadata(
@@ -351,7 +351,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
             ToolParameter("event_id", "string", "ID of the meeting to delete", required=True),
             ToolParameter("calendar_id", "string", "Calendar ID (default: primary)", required=False),
         ],
-        result_formatter=format_calendar_result
+        result_formatter=format_tool_result
     ))
 
     registry.register(ToolMetadata(
@@ -368,7 +368,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
             ToolParameter("single_events", "boolean", "Whether to expand recurring meetings", required=False),
             ToolParameter("order_by", "string", "Order of meetings (startTime)", required=False),
         ],
-        result_formatter=format_calendar_result
+        result_formatter=format_tool_result
     ))
 
     registry.register(ToolMetadata(
@@ -383,7 +383,7 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
             ToolParameter("email", "string", "Email address of the attendee", required=True),
             ToolParameter("display_name", "string", "Display name of the attendee", required=False),
         ],
-        result_formatter=format_calendar_result
+        result_formatter=format_tool_result
     ))
 
     registry.register(ToolMetadata(
@@ -397,5 +397,5 @@ def register_calendar_tools(registry: 'ToolRegistry') -> None:
             ToolParameter("calendar_id", "string", "Calendar ID (default: primary)", required=False),
             ToolParameter("email", "string", "Email address of the attendee to remove", required=True),
         ],
-        result_formatter=format_calendar_result
+        result_formatter=format_tool_result
     )) 

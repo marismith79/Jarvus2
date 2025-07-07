@@ -38,16 +38,16 @@
                 <div class="profile-card">
                     <h2>App Integrations</h2>
                     <div class="integrations-grid">
-                        <!-- Google Workspace Integration -->
+                        <!-- Google Docs Integration -->
                         <div class="integration-card">
                             <div class="integration-header">
-                                <img src="{{ url_for('static', filename='images/google-logo.png') }}" alt="Google Workspace Logo" class="integration-logo">
-                                <span class="integration-name">Google Workspace</span>
+                                <img src="{{ url_for('static', filename='images/google-logo.png') }}" alt="Google Docs Logo" class="integration-logo">
+                                <span class="integration-name">Google Docs</span>
                             </div>
-                            {% if google_workspace_connected %}
-                                <button class="cta-button secondary" onclick="disconnectGoogleWorkspace()">Disconnect</button>
+                            {% if docs_connected %}
+                                <button class="cta-button secondary" onclick="disconnectService('docs')">Disconnect</button>
                             {% else %}
-                                <button class="cta-button" onclick="connectGoogleWorkspace()">Connect</button>
+                                <button class="cta-button" onclick="connectService('docs')">Connect</button>
                             {% endif %}
                         </div>
 

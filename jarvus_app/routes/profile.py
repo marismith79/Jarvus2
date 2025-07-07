@@ -29,7 +29,7 @@ def profile():
     return render_template(
         "profile.html",
         user=current_user,
-        google_workspace_connected=connected_services["google-workspace"],
+        docs_connected=connected_services["docs"],
         notion_connected=connected_services["notion"],
         slack_connected=connected_services["slack"],
         zoom_connected=connected_services["zoom"],

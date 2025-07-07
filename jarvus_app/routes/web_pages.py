@@ -31,7 +31,7 @@ def chatbot():
         "chatbot.html",
         agents=agents,
         most_recent_agent=most_recent_agent,
-        google_workspace_connected=connected_services["google-workspace"],
+        docs_connected=connected_services["docs"],
         notion_connected=connected_services["notion"],
         slack_connected=connected_services["slack"],
         zoom_connected=connected_services["zoom"],

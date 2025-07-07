@@ -9,10 +9,11 @@ from ..models.tool_permission import ToolPermission
 
 # Define available tools and their descriptions
 TOOLS = {
-    "google-workspace": "Access to Google Workspace functionality through MCP server",
+    "docs": "Access to Google Docs functionality through MCP server",
     "notion": "Access to Notion functionality through MCP server",
     "slack": "Access to Slack functionality through MCP server",
     "zoom": "Access to Zoom functionality through MCP server",
+    "teams": "Access to Teams functionality through MCP server",
 }
 
 def grant_tool_access(user_id, tool_name, duration_days=None):
@@ -21,7 +22,7 @@ def grant_tool_access(user_id, tool_name, duration_days=None):
 
     Args:
         user_id (str): The user's ID
-        tool_name (str): The name of the tool (e.g., 'google-workspace')
+        tool_name (str): The name of the tool (e.g., 'docs')
         duration_days (int, optional): Number of days until permission expires
     """
     if tool_name not in TOOLS:
@@ -97,8 +98,6 @@ def get_connected_services(user_id):
     """Get a dictionary of connected services for a user."""
     services = {}
     for service in TOOLS.keys():
-        if service == "google-workspace":
-            # Check if user has OAuth credentials for this service
             creds = OAuthCredentials.get_credentials(user_id, service)
             
             # Debug: Print what we find
@@ -108,14 +107,4 @@ def get_connected_services(user_id):
             # Consider connected if OAuth credentials exist
             services[service] = creds is not None
             print(f"DEBUG: Final result for {service}: {services[service]}")
-        else:
-            # Mark other services as not connected (coming soon)
-            services[service] = False
     return services
-
-def get_user_oauth_scopes(user_id: str, service: str) -> list:
-    """Get the OAuth scopes granted by a user for a specific service."""
-    creds = OAuthCredentials.get_credentials(user_id, service)
-    if creds and creds.scopes:
-        return creds.scopes.split(" ")
-    return []
