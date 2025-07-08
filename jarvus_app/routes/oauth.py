@@ -79,7 +79,7 @@ def _handle_pipedream_response(response: requests.Response) -> dict:
 @login_required
 def connect_service(service):
     """Initiate OAuth flow for the specified service"""
-    if service in ["sheets", "slides", "drive", "gmail", "calendar", "google_docs"]:
+    if service in ["sheets", "slides", "drive", "gmail", "calendar", "docs"]:
         return connect_pipedream_service(service)
     elif service == "notion":
         return connect_notion()
@@ -143,6 +143,18 @@ def pipedream_callback(service):
     print(f"DEBUG: Callback URL: {request.url}")
     print(f"DEBUG: Current user: {getattr(current_user, 'id', None)}")
     print(f"DEBUG: All query parameters: {dict(request.args)}")
+    
+    # Enhanced logging for all possible callback parameters
+    print(f"DEBUG: connection_id: {request.args.get('connection_id')}")
+    print(f"DEBUG: connect_id: {request.args.get('connect_id')}")
+    print(f"DEBUG: state: {request.args.get('state')}")
+    print(f"DEBUG: code: {request.args.get('code')}")
+    print(f"DEBUG: error: {request.args.get('error')}")
+    print(f"DEBUG: error_description: {request.args.get('error_description')}")
+    print(f"DEBUG: app: {request.args.get('app')}")
+    
+    # Log all headers for debugging
+    print(f"DEBUG: All headers: {dict(request.headers)}")
     
     # Validate service
     if service not in ["docs", "sheets", "slides", "drive", "gmail", "calendar"]:
@@ -297,7 +309,6 @@ def connect_pipedream_service(service):
         token_response = oauth_session.post(
             "https://api.pipedream.com/v1/oauth/token",
             headers={
-                # "Content-Type": "application/json",
                 "X-PD-Environment": "development"
             },
             data=token_data,
@@ -323,13 +334,8 @@ def connect_pipedream_service(service):
         print("\n=== STEP 2: CREATING CONNECT TOKEN ===")
         
         connect_token_data = {
-            # "app": service,
-            "external_user_id": "user123,",
+            "external_user_id": "usde123,",
             "project_id": pipedream_project_id,
-            # "app":{ 
-            #     "id": oauth_app_id,
-            #     "name": service
-            # },
             "success_redirect_uri": f"{redirect_uri}/{service}?state={state}",
             "error_redirect_uri": f"{redirect_uri}/{service}?state={state}",
             "allowed_origins": ["http://localhost:5001"],
@@ -365,7 +371,7 @@ def connect_pipedream_service(service):
         # Add app parameter to the connect_link_url
         separator = "&" if "?" in connect_link_url else "?"
         connect_link_url_with_app = f"{connect_link_url}{separator}app={service}"
-        
+
         print(f"DEBUG: Generated Pipedream connect link: {connect_link_url_with_app}")
         return redirect(connect_link_url_with_app)
         
