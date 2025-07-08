@@ -20,6 +20,13 @@ from ..db import db
 
 oauth_bp = Blueprint("oauth", __name__)
 
+# Create a session for connection reuse
+oauth_session = requests.Session()
+oauth_session.headers.update({
+    'Accept': 'application/json',
+    'User-Agent': 'Jarvus-App/1.0'
+})
+
 # Debug environment variables
 print("\nDEBUG: Environment Variables:")
 print(f"NOTION_CLIENT_ID from env: {os.getenv('NOTION_CLIENT_ID')}")
@@ -44,11 +51,35 @@ ZOOM_CLIENT_CONFIG = {
 }
 
 
+def _handle_pipedream_response(response: requests.Response) -> dict:
+    """Enhanced response handling for Pipedream API calls"""
+    print(f"Response status code: {response.status_code}")
+    print(f"Response headers: {dict(response.headers)}")
+    
+    if response.status_code == 401:
+        raise ValueError("Authentication failed - check API credentials")
+    elif response.status_code == 403:
+        raise ValueError("Permission denied - check project access")
+    elif response.status_code == 429:
+        raise ValueError("Rate limit exceeded - try again later")
+    
+    response.raise_for_status()
+    
+    content_type = response.headers.get('content-type', '')
+    if 'application/json' in content_type:
+        try:
+            return response.json()
+        except json.JSONDecodeError:
+            raise ValueError("Invalid JSON response from Pipedream")
+    else:
+        return {"text": response.text, "status": response.status_code}
+
+
 @oauth_bp.route("/connect/<service>")
 @login_required
 def connect_service(service):
     """Initiate OAuth flow for the specified service"""
-    if service in ["sheets", "slides", "drive", "gmail", "calendar", "docs"]:
+    if service in ["sheets", "slides", "drive", "gmail", "calendar", "google_docs"]:
         return connect_pipedream_service(service)
     elif service == "notion":
         return connect_notion()
@@ -102,8 +133,6 @@ def disconnect_service(service):
     
     print(f"[DEBUG] Invalid service disconnect attempted: {service}")
     return jsonify({"success": False, "error": "Invalid service"})
-
-
 
 
 @oauth_bp.route("/pipedream/callback/<service>")
@@ -251,29 +280,25 @@ def connect_pipedream_service(service):
     print("DEBUG: OAUTH_APP_ID =", os.getenv(f"PIPEDREAM_{service.upper()}_OAUTH_APP_ID"))
     
     try:
-        import base64
-        
         # Step 1: Get Bearer token using client credentials
         print("=== STEP 1: GETTING BEARER TOKEN ===")
         
+        # Step 1: Get Bearer token
         token_data = {
             "grant_type": "client_credentials",
             "client_id": pipedream_api_client_id,
             "client_secret": pipedream_api_client_secret,
-            "project_id": pipedream_project_id,
-            "environment": "development"
+            "project_id": pipedream_project_id
         }
         
         print("Token Request URL:", "https://api.pipedream.com/v1/oauth/token")
-        print("Token Request Headers:", json.dumps({
-            "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"
-        }, indent=2))
         print("Token Request Payload:", json.dumps(token_data, indent=2))
         
-        token_response = requests.post(
+        token_response = oauth_session.post(
             "https://api.pipedream.com/v1/oauth/token",
             headers={
-                "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"
+                # "Content-Type": "application/json",
+                "X-PD-Environment": "development"
             },
             data=token_data,
             timeout=30
@@ -285,11 +310,7 @@ def connect_pipedream_service(service):
         print("Body:", token_response.text)
         print("===============================")
         
-        if token_response.status_code != 200:
-            print(f"ERROR: Failed to get Bearer token: {token_response.status_code} - {token_response.text}")
-            return redirect(url_for("profile.profile"))
-        
-        token_info = token_response.json()
+        token_info = _handle_pipedream_response(token_response)
         bearer_token = token_info.get("access_token")
         
         if not bearer_token:
@@ -300,32 +321,28 @@ def connect_pipedream_service(service):
         
         # Step 2: Use Bearer token to create connect token
         print("\n=== STEP 2: CREATING CONNECT TOKEN ===")
-        bearer_auth = f"Bearer {bearer_token}"
         
         connect_token_data = {
-            "app": service,
-            "external_user_id": str(current_user.id),
+            # "app": service,
+            "external_user_id": "user123,",
             "project_id": pipedream_project_id,
-            "oauth_app_id": oauth_app_id,
+            # "app":{ 
+            #     "id": oauth_app_id,
+            #     "name": service
+            # },
             "success_redirect_uri": f"{redirect_uri}/{service}?state={state}",
             "error_redirect_uri": f"{redirect_uri}/{service}?state={state}",
             "allowed_origins": ["http://localhost:5001"],
-            "environment": "development"
         }
 
         print("Connect Token Request URL:", f"https://api.pipedream.com/v1/connect/{pipedream_project_id}/tokens")
-        print("Connect Token Request Headers:", json.dumps({
-            "Authorization": bearer_auth,
-            "Content-Type": "application/json",
-            "X-PD-Environment": "development"
-        }, indent=2))
         print("Connect Token Request Payload:", json.dumps(connect_token_data, indent=2))
 
-        response = requests.post(
+        response = oauth_session.post(
             f"https://api.pipedream.com/v1/connect/{pipedream_project_id}/tokens",
             headers={
-                "Authorization": bearer_auth,
                 "Content-Type": "application/json",
+                "Authorization": f"Bearer {bearer_token}",
                 "X-PD-Environment": "development"
             },
             json=connect_token_data,
@@ -338,19 +355,19 @@ def connect_pipedream_service(service):
         print("Body:", response.text)
         print("===============================")
         
-        if response.status_code != 200:
-            print(f"ERROR: Failed to create Pipedream connect token: {response.status_code} - {response.text}")
-            return redirect(url_for("profile.profile"))
-        
-        connect_data = response.json()
+        connect_data = _handle_pipedream_response(response)
         connect_link_url = connect_data.get("connect_link_url")
         
         if not connect_link_url:
             print("ERROR: No connect_link_url received from Pipedream")
             return redirect(url_for("profile.profile"))
         
-        print(f"DEBUG: Generated Pipedream connect link: {connect_link_url}")
-        return redirect(connect_link_url)
+        # Add app parameter to the connect_link_url
+        separator = "&" if "?" in connect_link_url else "?"
+        connect_link_url_with_app = f"{connect_link_url}{separator}app=google_docs"
+        
+        print(f"DEBUG: Generated Pipedream connect link: {connect_link_url_with_app}")
+        return redirect(connect_link_url_with_app)
         
     except Exception as e:
         print(f"ERROR: Failed to create Pipedream connect token: {str(e)}")
