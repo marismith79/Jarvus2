@@ -364,7 +364,7 @@ def connect_pipedream_service(service):
         
         # Add app parameter to the connect_link_url
         separator = "&" if "?" in connect_link_url else "?"
-        connect_link_url_with_app = f"{connect_link_url}{separator}app=google_docs"
+        connect_link_url_with_app = f"{connect_link_url}{separator}app={service}"
         
         print(f"DEBUG: Generated Pipedream connect link: {connect_link_url_with_app}")
         return redirect(connect_link_url_with_app)
