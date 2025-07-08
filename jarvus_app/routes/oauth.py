@@ -168,7 +168,10 @@ def pipedream_callback(service):
         return redirect(url_for("profile.profile"))
     
     # Get connection_id and state from callback (Connect Link API uses connection_id)
-    connection_id = request.args.get('connection_id')
+    connection_id = (
+    request.args.get("connect_session_id")
+    or request.args.get("id")       
+    )
     state = request.args.get('state')
     
     print(f"DEBUG: Received connection_id: {connection_id}")
@@ -334,7 +337,8 @@ def connect_pipedream_service(service):
         print("\n=== STEP 2: CREATING CONNECT TOKEN ===")
         
         connect_token_data = {
-            "external_user_id": "usde123,",
+            "external_user_id": "usde123",
+            "app_id": oauth_app_id,  
             "project_id": pipedream_project_id,
             "success_redirect_uri": f"{redirect_uri}/{service}?state={state}",
             "error_redirect_uri": f"{redirect_uri}/{service}?state={state}",
@@ -370,7 +374,7 @@ def connect_pipedream_service(service):
         
         # Add app parameter to the connect_link_url
         separator = "&" if "?" in connect_link_url else "?"
-        connect_link_url_with_app = f"{connect_link_url}{separator}app={service}"
+        connect_link_url_with_app = f"{connect_link_url}{separator}app=google_docs"
 
         print(f"DEBUG: Generated Pipedream connect link: {connect_link_url_with_app}")
         return redirect(connect_link_url_with_app)
