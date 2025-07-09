@@ -26,6 +26,8 @@ from azure.ai.inference.models import (
     ChatCompletions
 )
 from jarvus_app.services.tool_registry import tool_registry
+from jarvus_app.services.pipedream_auth_service import pipedream_auth_service as default_pipedream_auth_service
+
         
 
 logger = logging.getLogger(__name__)
@@ -72,7 +74,7 @@ class AgentService:
         logger.info(f"Created new agent {new_agent.id} with memory initialization")
         return new_agent
     
-    def process_message_with_memory(
+    def process_message(
         self, 
         agent_id: int, 
         user_id: int, 
@@ -86,9 +88,7 @@ class AgentService:
         """Process a message with full memory context and tool orchestration, using two-step tool selection."""
         if logger is None:
             logger = logging.getLogger(__name__)
-        if pipedream_auth_service is None:
-            from jarvus_app.services.pipedream_auth_service import pipedream_auth_service as default_pipedream_auth_service
-            pipedream_auth_service = default_pipedream_auth_service
+        pipedream_auth_service = default_pipedream_auth_service
         if not thread_id:
             thread_id = f"thread_{agent_id}_{user_id}_{int(datetime.utcnow().timestamp())}"
         # Step 1: Get context

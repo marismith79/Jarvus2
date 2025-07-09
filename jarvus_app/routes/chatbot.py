@@ -26,10 +26,9 @@ from azure.ai.inference.models import (
 from ..config import Config
 from jarvus_app.models.history import History
 from ..db import db
-from ..services.legacy_agent_service import get_agent, get_agent_tools, get_agent_history, get_agent_interaction_history, append_message, create_agent, delete_agent, save_interaction
+from ..services.legacy_agent_service import get_agent, get_agent_interaction_history, create_agent, delete_agent
 from ..services.agent_service import agent_service
 from ..utils.token_utils import get_valid_jwt_token
-from ..services.pipedream_auth_service import pipedream_auth_service
 from ..services.pipedream_tool_registry import pipedream_tool_service
 
 
@@ -106,14 +105,13 @@ def handle_chat_message():
         web_search_enabled = data.get('web_search_enabled', True)
         if not all([user_text, agent_id]):
             return jsonify({'error': 'Message and agent_id are required.'}), 400
-        final_assistant_message, memory_info = agent_service.process_message_with_memory(
+        final_assistant_message, memory_info = agent_service.process_message(
             agent_id=agent_id,
             user_id=current_user.id,
             user_message=user_text,
             thread_id=thread_id,
             tool_choice=tool_choice,
             web_search_enabled=web_search_enabled,
-            pipedream_auth_service=pipedream_auth_service,
             logger=logger
         )
         return jsonify({
