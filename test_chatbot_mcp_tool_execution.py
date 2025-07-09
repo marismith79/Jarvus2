@@ -21,7 +21,7 @@ os.environ.update({
 
 from jarvus_app.routes.chatbot import chatbot_bp
 from jarvus_app.services.pipedream_auth_service import PipedreamAuthService
-from jarvus_app.services.legacy_agent_service import create_agent, get_agent
+from jarvus_app.services.agent_service import agent_service
 from jarvus_app.models.user import User
 from jarvus_app.db import db
 
@@ -55,7 +55,7 @@ def test_user_and_agent(app):
         db.session.add(user)
         db.session.commit()
         
-        agent = create_agent(
+        agent = agent_service.create_agent(
             user_id=user.id,
             name="Test Agent",
             tools=["google_docs"],
@@ -89,7 +89,7 @@ def test_chatbot_mcp_tool_execution_flow(
     with app.test_request_context():
         # re-query user and agent
         test_user = User.query.get(test_user_id)
-        test_agent = get_agent(test_agent_id, test_user_id)
+        test_agent = agent_service.get_agent(test_agent_id, test_user_id)
         mock_get_user.return_value = test_user
 
     # Mock tool selection response (LLM decides which tools to use)
@@ -224,7 +224,7 @@ def test_chatbot_mcp_tool_execution_with_error_handling(
     with app.test_request_context():
         # re-query user and agent
         test_user = User.query.get(test_user_id)
-        test_agent = get_agent(test_agent_id, test_user_id)
+        test_agent = agent_service.get_agent(test_agent_id, test_user_id)
         mock_get_user.return_value = test_user
 
     # Mock tool selection response

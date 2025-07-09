@@ -26,8 +26,7 @@ from azure.ai.inference.models import (
     ChatCompletions
 )
 from jarvus_app.services.tool_registry import tool_registry
-from jarvus_app.services.pipedream_auth_service import pipedream_auth_service as default_pipedream_auth_service
-
+from jarvus_app.services.pipedream_auth_service import pipedream_auth_service
         
 
 logger = logging.getLogger(__name__)
@@ -47,11 +46,11 @@ class AgentService:
         except:
             pass
         return agent
-    
+
     def get_agent_tools(self, agent: History) -> List[str]:
         """Get tools for an agent"""
         return agent.tools or []
-    
+
     def create_agent(self, user_id: int, name: str, tools: Optional[List[str]] = None, description: str = None) -> History:
         """Create a new agent with memory initialization"""
         if not name:
@@ -74,6 +73,19 @@ class AgentService:
         logger.info(f"Created new agent {new_agent.id} with memory initialization")
         return new_agent
     
+    def delete_agent(self, agent_id: int, user_id: int) -> bool:
+        """Delete an agent and all its associated data from the database."""
+        agent = self.get_agent(agent_id, user_id)  # This will 404 if agent doesn't exist or doesn't belong to user
+        try:
+            db.session.delete(agent)
+            db.session.commit()
+            logger.info(f"Successfully deleted agent {agent_id} for user {user_id}")
+            return True
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Failed to delete agent {agent_id}: {str(e)}")
+            raise
+
     def process_message(
         self, 
         agent_id: int, 
@@ -82,13 +94,11 @@ class AgentService:
         thread_id: Optional[str] = None,
         tool_choice: str = 'auto',
         web_search_enabled: bool = True,
-        pipedream_auth_service=None,
         logger=None
     ) -> Tuple[str, Dict[str, Any]]:
         """Process a message with full memory context and tool orchestration, using two-step tool selection."""
         if logger is None:
             logger = logging.getLogger(__name__)
-        pipedream_auth_service = default_pipedream_auth_service
         if not thread_id:
             thread_id = f"thread_{agent_id}_{user_id}_{int(datetime.utcnow().timestamp())}"
         # Step 1: Get context
@@ -131,6 +141,17 @@ class AgentService:
         agent = self.get_agent(agent_id, user_id)  # Re-fetch from DB
         return final_assistant_message, memory_info
     
+    def get_agent_interaction_history(self, agent: History):
+        interactions = InteractionHistory.query.filter_by(
+            history_id=agent.id,
+            user_id=agent.user_id
+        ).order_by(InteractionHistory.created_at.asc()).all()
+        history = []
+        for interaction in interactions:
+            history.append({'role': 'user', 'content': interaction.user_message})
+            history.append({'role': 'assistant', 'content': interaction.assistant_message})
+        return history
+
     def _initialize_agent_memory(self, user_id: int, agent_id: int):
         """Initialize memory structures for a new agent"""
         try:
@@ -239,7 +260,6 @@ class AgentService:
         user_id,
         agent_id,
         tool_choice,
-        pipedream_auth_service,
         logger
     ):
         """Orchestrate tool calling logic for both legacy and enhanced chat handlers."""

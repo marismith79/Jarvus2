@@ -26,7 +26,6 @@ from azure.ai.inference.models import (
 from ..config import Config
 from jarvus_app.models.history import History
 from ..db import db
-from ..services.legacy_agent_service import get_agent, get_agent_interaction_history, create_agent, delete_agent
 from ..services.agent_service import agent_service
 from ..utils.token_utils import get_valid_jwt_token
 from ..services.pipedream_tool_registry import pipedream_tool_service
@@ -77,7 +76,7 @@ def create_agent_route():
     tools = data.get('tools', [])
     description = data.get('description', '')
 
-    agent = create_agent(current_user.id, agent_name, tools, description)
+    agent = agent_service.create_agent(current_user.id, agent_name, tools, description)
     return jsonify({
         'id': agent.id,
         'name': agent.name,
@@ -88,8 +87,8 @@ def create_agent_route():
 @chatbot_bp.route('/agents/<int:agent_id>/history', methods=['GET'])
 @login_required
 def get_agent_history_route(agent_id):
-    agent = get_agent(agent_id, current_user.id)
-    interaction_history = get_agent_interaction_history(agent)
+    agent = agent_service.get_agent(agent_id, current_user.id)
+    interaction_history = agent_service.get_agent_interaction_history(agent)
     return jsonify({'history': interaction_history})
 
 @chatbot_bp.route('/send', methods=['POST'])
@@ -128,7 +127,7 @@ def handle_chat_message():
 def delete_agent_route(agent_id):
     """Delete an agent and all its associated data."""
     try:
-        success = delete_agent(agent_id, current_user.id)
+        success = agent_service.delete_agent(agent_id, current_user.id)
         if success:
             return jsonify({'message': 'Agent deleted successfully'}), 200
         else:
