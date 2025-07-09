@@ -96,134 +96,17 @@ def get_agent_history_route(agent_id):
 @chatbot_bp.route('/send', methods=['POST'])
 @login_required
 def handle_chat_message():
-    """Handle chat message with legacy approach (for backward compatibility)"""
-    return handle_chat_message_legacy()
-
-@chatbot_bp.route('/send-with-memory', methods=['POST'])
-@login_required
-def handle_chat_message_with_memory():
-    """Handle chat message with enhanced memory management"""
+    """Handle chat message (now always uses enhanced memory and tool orchestration)"""
     return handle_chat_message_enhanced()
 
-def handle_chat_message_legacy():
-    """Handle incoming chat messages, invoking LLM and tools as needed."""
-    import sys
-    logger.info("=== Starting chat message handling ===")
-    logger.info(f"Request method: {request.method}")
-    logger.info(f"Request headers: {dict(request.headers)}")
-    logger.info(f"Request args: {dict(request.args)}")
-    logger.info(f"Request form: {dict(request.form)}")
-    logger.info(f"Request json: {request.get_json(silent=True)}")
-    logger.info(f"Current user: {current_user.id}")
-    logger.info(f"Session ID: {session.sid if hasattr(session, 'sid') else 'No session ID'}")
-
-    # Log session size and key details
-    session_total_size = 0
-    logger.info("=== Session Key Size Debug ===")
-    for k, v in session.items():
-        try:
-            if isinstance(v, (str, bytes)):
-                size = len(v)
-            else:
-                size = len(json.dumps(v))
-        except Exception as e:
-            size = -1
-        session_total_size += size if size > 0 else 0
-        logger.info(f"Session key: {k} | type: {type(v).__name__} | size: {size} bytes")
-    logger.info(f"Total session size (approx): {session_total_size} bytes")
-    logger.info("====================================")
-
-    data = request.get_json() or {}
-    user_text = data.get('message', '')
-    agent_id = data.get('agent_id')
-    tool_choice = data.get('tool_choice', 'auto')
-    web_search_enabled = data.get('web_search_enabled', True)
-    jwt_token = get_valid_jwt_token()
-    if not jwt_token:
-        # Token refresh failed, force re-login
-        return redirect(url_for("auth.signin"))
-    logger.info(f"Received message: {user_text}")
-    logger.info(f"Agent ID: {agent_id}")
-    logger.info(f"Tool choice: {tool_choice}")
-    logger.info(f"JWT token present: {bool(jwt_token)}")
-
-    if not all([user_text, agent_id]):
-        return jsonify({'error': 'Message and agent_id are required.'}), 400
-
-    agent = get_agent(agent_id, current_user.id)
-    messages = []
-    for m in (agent.messages or []):
-        role = m.get('role')
-        if role == 'user':
-            messages.append(UserMessage(content=m.get('content', '')))
-        elif role == 'assistant':
-            messages.append(AssistantMessage(content=m.get('content', ''), tool_calls=None))
-        elif role == 'system':
-            messages.append(SystemMessage(content=m.get('content', '')))
-        else:
-            messages.append(UserMessage(content=m.get('content', '')))
-    messages.append(UserMessage(content=user_text))
-
-    agent_tools = set(get_agent_tools(agent))
-    # For now, allow all agent tools since we're removing Google Workspace OAuth
-    allowed_tools = list(agent_tools)
-    if web_search_enabled:
-        allowed_tools.append('web')
-    print('DEBUG agent_tools', agent_tools)
-    print('DEBUG allowed_tools', allowed_tools)
-
-    # Step 1: Ask LLM which tool/category is needed
-    tool_selection_prompt = (
-        "Given the following user message and these tool categories, "
-        "which tool(s) or tool category(ies) would you use to answer the message? "
-        "Respond with a JSON list of tool names or categories. If none, return an empty list."
-    )
-    tool_selection_messages = [
-        {"role": "system", "content": tool_selection_prompt},
-        {"role": "user", "content": user_text},
-        {"role": "system", "content": f"Available tool categories: {allowed_tools}"}
-    ]
-    tool_selection_response = jarvus_ai.create_chat_completion(tool_selection_messages)
-    # Helper to parse tool names/categories from LLM response
-    def parse_tools_from_response(resp):
-        # Try to extract a JSON list from the response
-        try:
-            if isinstance(resp, dict) and 'assistant' in resp and 'content' in resp['assistant']:
-                content = resp['assistant']['content']
-            elif isinstance(resp, dict) and 'choices' in resp and resp['choices']:
-                content = resp['choices'][0]['message']['content']
-            else:
-                content = str(resp)
-            match = re.search(r'\[.*\]', content, re.DOTALL)
-            if match:
-                return json.loads(match.group(0))
-            # fallback: try to parse whole content
-            return json.loads(content)
-        except Exception:
-            return []
-    print("DEBUG tool_selection_response", tool_selection_response)
-    needed_tools_or_categories = set(parse_tools_from_response(tool_selection_response))
-
-    # Step 2: Filter allowed tools to only those needed
-    filtered_tools = [
-        t for t in allowed_tools
-        if t in needed_tools_or_categories or (hasattr(t, 'category') and t.category.value in needed_tools_or_categories)
-    ]
-    # Filter out web tools if web_search_enabled is False
-    if not web_search_enabled:
-        filtered_tools = [
-            t for t in filtered_tools
-            if not (hasattr(tool_registry.get_tool(t), 'category') and getattr(tool_registry.get_tool(t), 'category', None) and tool_registry.get_tool(t).category.value == 'web')
-        ]
-    sdk_tools = tool_registry.get_sdk_tools_by_modules(filtered_tools)
-    logger.info(f"Filtered tools for LLM: {filtered_tools}")
-    # --- END: Two-step tool selection orchestration ---
-
+def orchestrate_tool_calls(messages, allowed_tools, user_id, agent_id, tool_choice, web_search_enabled, pipedream_auth_service, logger, sdk_tools=None):
+    """Orchestrate tool calling logic for both legacy and enhanced chat handlers."""
+    new_messages = []
+    if sdk_tools is None:
+        sdk_tools = tool_registry.get_sdk_tools_by_modules(allowed_tools)
     try:
-        new_messages = []
-        # Recursive tool calling loop
         while True:
-            logger.info("Calling Azure AI for completion")
+            logger.info("Calling Azure AI for completion (orchestrate_tool_calls)")
             response: ChatCompletions = jarvus_ai.client.complete(
                 messages=messages,
                 model=jarvus_ai.deployment_name,
@@ -231,20 +114,16 @@ def handle_chat_message_legacy():
                 stream=False,
                 tool_choice=tool_choice
             )
-            logger.info("Received response from Azure AI")
-
+            logger.info("Received response from Azure AI (orchestrate_tool_calls)")
             choice = response.choices[0]
             msg = choice.message
-            # Always ensure content is a string
             assistant_msg = AssistantMessage(content=msg.content if msg.content is not None else "", tool_calls=msg.tool_calls)
             messages.append(assistant_msg)
             new_messages.append({'role': 'assistant', 'content': assistant_msg.content})
-            logger.info(f"Assistant message: {assistant_msg}")
             if not msg.tool_calls:
-                logger.info("No tool calls in response - conversation complete")
+                logger.info("No tool calls in response - conversation complete (orchestrate_tool_calls)")
                 break
-
-            logger.info(f"Processing {len(msg.tool_calls)} tool calls")
+            logger.info(f"Processing {len(msg.tool_calls)} tool calls (orchestrate_tool_calls)")
             for call in msg.tool_calls:
                 retries = 0
                 max_retries = 3
@@ -252,30 +131,19 @@ def handle_chat_message_legacy():
                 while retries < max_retries:
                     tool_name = current_call.function.name
                     tool_args = json.loads(current_call.function.arguments) if current_call.function.arguments else {}
-                    logger.info(f"Executing tool: {tool_name} with args: {tool_args}")
+                    logger.info(f"Executing tool: {tool_name} with args: {tool_args} (orchestrate_tool_calls)")
                     try:
-
-                        # --- MCP/Pipedream tool execution wiring ---
-                        # Hardcoded for now
-                        app_slug = "google_docs"
-                        external_user_id = str(current_user.id)
+                        app_slug = "google_docs"  # TODO: Dynamically determine app_slug if needed
+                        external_user_id = str(user_id)
                         tool_result = pipedream_auth_service.execute_tool(
                             external_user_id=external_user_id,
                             app_slug=app_slug,
                             tool_name=tool_name,
                             tool_args=tool_args
                         )
-                            # # Fallback to legacy registry
-                            # tool_result = tool_registry.execute_tool(
-                            #     tool_name=tool_name,
-                            #     parameters=tool_args,
-                            #     jwt_token=jwt_token,
-                            # )
-                        # On success, append a ToolMessage with the result
                         tool_msg = ToolMessage(content=json.dumps(tool_result), tool_call_id=current_call.id)
                         messages.append(tool_msg)
-                        # Prompt the LLM again to get the final response after tool execution
-                        logger.info("Prompting LLM for final response after tool execution")
+                        logger.info("Prompting LLM for final response after tool execution (orchestrate_tool_calls)")
                         response = jarvus_ai.client.complete(
                             messages=messages,
                             model=jarvus_ai.deployment_name,
@@ -286,23 +154,19 @@ def handle_chat_message_legacy():
                         assistant_msg = AssistantMessage(content=msg.content if msg.content is not None else "", tool_calls=msg.tool_calls)
                         messages.append(assistant_msg)
                         new_messages.append({'role': 'assistant', 'content': assistant_msg.content})
-                        break  # Exit retry loop on success
+                        break
                     except Exception as e:
                         error_msg = f"Tool call '{tool_name}' failed with error: {str(e)}"
                         logger.error(error_msg)
-                        # Insert a ToolMessage with the error for this tool_call_id
                         tool_msg = ToolMessage(content=json.dumps({"error": error_msg}), tool_call_id=current_call.id)
                         messages.append(tool_msg)
-                        # Inject a clear, actionable error as a user message for the LLM to see
                         messages.append(UserMessage(content=f"{error_msg}. Please analyze the error and try a different tool or fix the arguments and call a tool again. Do not just suggest alternatives in text—actually call a tool."))
-                        # Add a system message to reinforce the instruction
                         messages.append(SystemMessage(content="When you see an error message, you must analyze it and try a different tool or fix the arguments and call a tool again. Do not just suggest alternatives in text—actually call a tool."))
                         retries += 1
                         if retries >= max_retries:
-                            logger.error(f"Max retries reached for tool call '{tool_name}'. Moving on.")
+                            logger.error(f"Max retries reached for tool call '{tool_name}'. Moving on. (orchestrate_tool_calls)")
                             break
-                        # Prompt the LLM again for a new tool call after error
-                        logger.info("Prompting LLM again after tool call failure")
+                        logger.info("Prompting LLM again after tool call failure (orchestrate_tool_calls)")
                         response = jarvus_ai.client.complete(
                             messages=messages,
                             model=jarvus_ai.deployment_name,
@@ -310,76 +174,98 @@ def handle_chat_message_legacy():
                             stream=False,
                             tool_choice="required"
                         )
-                        logger.info("Received response from Azure AI (retry)")
+                        logger.info("Received response from Azure AI (retry, orchestrate_tool_calls)")
                         choice = response.choices[0]
                         msg = choice.message
                         assistant_msg = AssistantMessage(content=msg.content if msg.content is not None else "", tool_calls=msg.tool_calls)
                         messages.append(assistant_msg)
                         new_messages.append({'role': 'assistant', 'content': assistant_msg.content})
-                        logger.info(f"Assistant message (retry): {assistant_msg}")
+                        logger.info(f"Assistant message (retry, orchestrate_tool_calls): {assistant_msg}")
                         if not msg.tool_calls:
-                            logger.info("No tool calls in response after retry - conversation complete")
+                            logger.info("No tool calls in response after retry - conversation complete (orchestrate_tool_calls)")
                             break
-                        # Use the first tool call from the new LLM response
                         current_call = msg.tool_calls[0]
-
-        # Save updated messages to DB (as dicts)
-        agent.messages = []
-        for m in messages:
-            if isinstance(m, UserMessage):
-                agent.messages.append({'role': 'user', 'content': m.content})
-            elif isinstance(m, AssistantMessage):
-                agent.messages.append({'role': 'assistant', 'content': m.content})
-            elif isinstance(m, SystemMessage):
-                agent.messages.append({'role': 'system', 'content': m.content})
-            else:
-                agent.messages.append({'role': 'user', 'content': getattr(m, 'content', '')})
-        db.session.commit()
-        
-        # Save the user input and final assistant response to interaction history
-        final_assistant_message = ""
-        if new_messages:
-            # Get the last assistant message from new_messages
-            for msg in reversed(new_messages):
-                if msg.get('role') == 'assistant' and msg.get('content'):
-                    final_assistant_message = msg.get('content')
-                    break
-        
-        if final_assistant_message:
-            save_interaction(agent, user_text, final_assistant_message)
-        
-        agent = get_agent(agent_id, current_user.id)  # Re-fetch from DB
-        return jsonify({"new_messages": [final_assistant_message]})
-
+        return new_messages, messages
     except Exception as e:
-        logger.error(f"Error processing message for agent {agent_id}: {str(e)}", exc_info=True)
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"Error in orchestrate_tool_calls: {str(e)}", exc_info=True)
+        raise
 
 def handle_chat_message_enhanced():
-    """Handle incoming chat messages with enhanced memory management."""
+    """Handle incoming chat messages with enhanced memory management and tool orchestration."""
     try:
         data = request.get_json() or {}
         user_text = data.get('message', '').strip()
         agent_id = data.get('agent_id')
         thread_id = data.get('thread_id')  # Optional thread ID for memory
-        
+        tool_choice = data.get('tool_choice', 'auto')
+        web_search_enabled = data.get('web_search_enabled', True)
         if not all([user_text, agent_id]):
             return jsonify({'error': 'Message and agent_id are required.'}), 400
-        
-        # Process message with memory
-        assistant_message, memory_info = enhanced_agent_service.process_message_with_memory(
-            agent_id=agent_id,
+        # Prepare memory-augmented context and allowed tools
+        # --- Begin replacement for prepare_message_with_memory ---
+        agent = enhanced_agent_service.get_agent(agent_id, current_user.id)
+        allowed_tools = set(enhanced_agent_service.get_agent_tools(agent))
+        if web_search_enabled:
+            allowed_tools.add('web')
+        allowed_tools = list(allowed_tools)
+        # Build messages with memory context
+        # Use similar logic as process_message_with_memory, but do not call LLM yet
+        from jarvus_app.services.memory_service import memory_service
+        from datetime import datetime
+        memory_context = memory_service.get_context_for_conversation(
             user_id=current_user.id,
-            user_message=user_text,
-            thread_id=thread_id
+            thread_id=thread_id,
+            current_message=user_text
         )
-        
+        current_state = memory_service.get_latest_state(thread_id, current_user.id)
+        if not current_state:
+            current_state = {
+                'messages': [],
+                'agent_id': agent_id,
+                'user_id': current_user.id,
+                'thread_id': thread_id
+            }
+        current_state['messages'].append({
+            'role': 'user',
+            'content': user_text,
+            'timestamp': datetime.utcnow().isoformat()
+        })
+        messages = []
+        system_message = f"""You are a helpful AI assistant with access to user memories and conversation history.\n\n{memory_context if memory_context else 'No specific memories or context available.'}\n\nPlease be helpful, accurate, and remember important information about the user when appropriate."""
+        messages.append({'role': 'system', 'content': system_message})
+        conversation_messages = current_state['messages'][-10:]
+        for msg in conversation_messages:
+            if msg.get('content'):
+                messages.append({
+                    'role': msg['role'],
+                    'content': msg['content']
+                })
+        memory_info = {
+            'thread_id': thread_id,
+            'memory_context_used': bool(memory_context)
+        }
+        # --- End replacement ---
+        new_messages, updated_messages = orchestrate_tool_calls(
+            messages=messages,
+            allowed_tools=allowed_tools,
+            user_id=current_user.id,
+            agent_id=agent_id,
+            tool_choice=tool_choice,
+            web_search_enabled=web_search_enabled,
+            pipedream_auth_service=pipedream_auth_service,
+            logger=logger
+        )
+        final_assistant_message = ""
+        if new_messages:
+            for msg in reversed(new_messages):
+                if msg.get('role') == 'assistant' and msg.get('content'):
+                    final_assistant_message = msg.get('content')
+                    break
         return jsonify({
-            'response': assistant_message,
+            'response': final_assistant_message,
             'memory_info': memory_info,
             'thread_id': memory_info.get('thread_id')
         }), 200
-        
     except Exception as e:
         logger.error(f"Error processing message with memory: {str(e)}", exc_info=True)
         return jsonify({'error': str(e)}), 500
