@@ -179,10 +179,22 @@ Please be helpful, accurate, and remember important information about the user w
         # Extract and store memories from the conversation
         try:
             conversation_messages = current_state['messages'][-2:]  # Last exchange
+            # Attempt to extract tool_call and feedback from the last exchange
+            tool_call = None
+            feedback = None
+            # Look for a tool call in the assistant's message (if structured)
+            if conversation_messages and len(conversation_messages) == 2:
+                user_msg, assistant_msg = conversation_messages
+                # Example: tool call info is in assistant_msg['tool_call'] or similar
+                if isinstance(assistant_msg, dict):
+                    tool_call = assistant_msg.get('tool_call')
+                    feedback = user_msg.get('feedback')  # If user gave feedback after tool use
             stored_memories = memory_service.extract_and_store_memories(
                 user_id=user_id,
                 conversation_messages=conversation_messages,
-                agent_id=agent_id
+                agent_id=agent_id,
+                tool_call=tool_call,
+                feedback=feedback
             )
             if stored_memories:
                 logger.info(f"Stored {len(stored_memories)} new memories")

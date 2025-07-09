@@ -1365,6 +1365,159 @@ class MemoryService:
             logger.error(f"Failed to delete hierarchical context with vector: {str(e)}")
             return False
 
+    def extract_and_store_memories(
+        self,
+        user_id: int,
+        conversation_messages: list,
+        agent_id: int = None,
+        tool_call: dict = None,
+        feedback: str = None
+    ) -> list:
+        """
+        Compress/summarize and store episodic, semantic, and procedural memories from a conversation.
+        - Store the conversation as an episodic memory (summarized).
+        - Extract and store semantic facts about the user.
+        - If a tool was used, store the workflow and feedback as procedural memory.
+        - After storing, improve and merge memories as appropriate.
+        Returns a list of stored/updated memory objects.
+        """
+        stored_memories = []
+        # 1. Summarize conversation for episodic memory
+        conversation_text = "\n".join([
+            f"{msg.get('role', 'user')}: {msg.get('content', '')}" for msg in conversation_messages if msg.get('content')
+        ])
+        summary_prompt = (
+            "Summarize the following conversation as an episode, focusing on key events, actions, and outcomes. "
+            "Be concise but capture important details.\n\nConversation:\n" + conversation_text
+        )
+        summary = self.llm_client.create_chat_completion([
+            self.llm_client.format_message("system", "You are a helpful assistant that summarizes conversations for memory storage."),
+            self.llm_client.format_message("user", summary_prompt)
+        ])
+        episode_summary = summary.get('assistant', {}).get('content', conversation_text)
+        episodic_memory = self.store_episodic_memory(
+            user_id=user_id,
+            episode_type="conversation",
+            episode_data={
+                "summary": episode_summary,
+                "raw": conversation_text,
+                "agent_id": agent_id
+            }
+        )
+        stored_memories.append(episodic_memory)
+
+        # 2. Extract semantic facts
+        semantic_prompt = (
+            "From the following conversation, extract any facts, preferences, or information about the user that should be stored as semantic memory. "
+            "Return a JSON list of facts, each as an object with 'type' and 'data'. If none, return an empty list.\n\nConversation:\n" + conversation_text
+        )
+        semantic_response = self.llm_client.create_chat_completion([
+            self.llm_client.format_message("system", "You extract user facts for semantic memory in JSON format."),
+            self.llm_client.format_message("user", semantic_prompt)
+        ])
+        import json as _json
+        facts = []
+        try:
+            facts = _json.loads(semantic_response.get('assistant', {}).get('content', '[]'))
+        except Exception:
+            pass
+        for fact in facts:
+            fact_type = fact.get('type', 'fact')
+            fact_data = fact.get('data', fact)
+            semantic_memory = self.store_semantic_memory(
+                user_id=user_id,
+                fact_type=fact_type,
+                fact_data=fact_data
+            )
+            stored_memories.append(semantic_memory)
+
+        # 3. Store procedural memory if tool was used
+        if tool_call:
+            procedure_name = tool_call.get('name', 'tool_usage')
+            procedure_data = {
+                'tool': tool_call,
+                'conversation': conversation_text,
+                'feedback': feedback
+            }
+            procedural_memory = self.store_procedural_memory(
+                user_id=user_id,
+                procedure_name=procedure_name,
+                procedure_data=procedure_data
+            )
+            stored_memories.append(procedural_memory)
+
+        # 4. Memory editing/improvement: improve and merge similar memories
+        # Improve procedural memories
+        for mem in stored_memories:
+            if getattr(mem, 'memory_type', None) == 'procedure':
+                self.improve_memory(user_id, mem.memory_id, improvement_type='procedural')
+        # Merge similar episodic, semantic, and procedural memories
+        for ns, mtype in [('episodes', 'episodic'), ('semantic', 'semantic'), ('procedures', 'procedural')]:
+            mergeable = self.find_mergeable_memories(user_id, ns)
+            for group in mergeable:
+                if len(group) > 1:
+                    self.merge_memories(user_id, [m.memory_id for m in group], merge_type=mtype)
+
+        return stored_memories
+
+    def get_context_for_conversation(
+        self,
+        user_id: int,
+        thread_id: str = None,
+        current_message: str = None,
+        max_memories: int = 5,
+        max_tokens: int = 1500
+    ) -> str:
+        """
+        Retrieve and summarize the most relevant episodic, semantic, and procedural memories for a user and thread.
+        Returns a context string engineered for LLM input, following context engineering best practices.
+        """
+        # 1. Retrieve relevant memories (hybrid/vector search if available)
+        context_sections = []
+        # Episodic (recent conversations)
+        episodic_memories = self.search_memories(
+            user_id=user_id,
+            namespace='episodes',
+            limit=max_memories,
+            search_type='efficient_hybrid'
+        )
+        # Semantic (facts/preferences)
+        semantic_memories = self.search_memories(
+            user_id=user_id,
+            namespace='semantic',
+            limit=max_memories,
+            search_type='efficient_hybrid'
+        )
+        # Procedural (workflows/tool use)
+        procedural_memories = self.search_memories(
+            user_id=user_id,
+            namespace='procedures',
+            limit=max_memories,
+            search_type='efficient_hybrid'
+        )
+        # 2. Summarize and format context sections
+        if episodic_memories:
+            episodic_summaries = [m.memory_data.get('summary') or m.memory_data.get('data', {}) for m in episodic_memories]
+            context_sections.append("[Recent Episodes]\n" + "\n".join(f"- {s}" for s in episodic_summaries if s))
+        if semantic_memories:
+            semantic_facts = [m.memory_data.get('data', m.memory_data) for m in semantic_memories]
+            context_sections.append("[User Facts & Preferences]\n" + "\n".join(f"- {f}" for f in semantic_facts if f))
+        if procedural_memories:
+            procedural_summaries = [m.memory_data.get('data', m.memory_data) for m in procedural_memories]
+            context_sections.append("[Procedures & Tool Use]\n" + "\n".join(f"- {p}" for p in procedural_summaries if p))
+        # 3. Optionally, add an example or rule if available
+        # (For now, just add a note about the agent's role)
+        role_section = (
+            "[Role]\nYou are a helpful AI assistant for this user. Use the following context to answer as accurately and personally as possible."
+        )
+        # 4. Compose the context, prioritize most relevant, and fit within token limit
+        context = "\n\n".join([role_section] + context_sections)
+        # Truncate if too long (simple token estimate: 4 chars/token)
+        max_chars = max_tokens * 4
+        if len(context) > max_chars:
+            context = context[:max_chars] + "\n..."
+        return context
+
 
 class MemoryConfig:
     """Configuration for memory management"""
