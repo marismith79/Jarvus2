@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional
 import time
 import logging
 import json
+import re
 
 from ..llm.client import JarvusAIClient
 from ..services.tool_registry import tool_registry
@@ -28,7 +29,9 @@ from ..db import db
 from ..services.agent_service import get_agent, get_agent_tools, get_agent_history, get_agent_interaction_history, append_message, create_agent, delete_agent, save_interaction
 from ..services.enhanced_agent_service import enhanced_agent_service
 from ..utils.token_utils import get_valid_jwt_token
-from ..services.mcp_token_service import pipedream_auth_service
+from ..services.pipedream_auth_service import pipedream_auth_service
+from ..services.pipedream_tool_registry import pipedream_tool_service
+
 
 jarvus_ai = JarvusAIClient()
 
@@ -41,7 +44,7 @@ tool_choice = 'required'
 def get_available_tools():
     """Return only the definitions the user has toggled on."""
     # all of your definitions:
-    all_defs = tool_registry.get_sdk_tools()
+    all_defs = pipedream_tool_service.get_sdk_tools()
 
     # which names did the user pick?
     selected = session.get('selected_tools', [])
@@ -122,7 +125,6 @@ def handle_chat_message_legacy():
             if isinstance(v, (str, bytes)):
                 size = len(v)
             else:
-                import json
                 size = len(json.dumps(v))
         except Exception as e:
             size = -1
@@ -183,8 +185,6 @@ def handle_chat_message_legacy():
     ]
     tool_selection_response = jarvus_ai.create_chat_completion(tool_selection_messages)
     # Helper to parse tool names/categories from LLM response
-    import re
-    import json as pyjson
     def parse_tools_from_response(resp):
         # Try to extract a JSON list from the response
         try:
@@ -196,9 +196,9 @@ def handle_chat_message_legacy():
                 content = str(resp)
             match = re.search(r'\[.*\]', content, re.DOTALL)
             if match:
-                return pyjson.loads(match.group(0))
+                return json.loads(match.group(0))
             # fallback: try to parse whole content
-            return pyjson.loads(content)
+            return json.loads(content)
         except Exception:
             return []
     print("DEBUG tool_selection_response", tool_selection_response)

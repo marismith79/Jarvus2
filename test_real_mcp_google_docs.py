@@ -2,7 +2,8 @@ import os
 import sys
 import time
 from flask import Flask, session
-from jarvus_app.services.mcp_token_service import PipedreamAuthService
+from jarvus_app.services.pipedream_auth_service import PipedreamAuthService
+import requests
 
 USER_ID = "b2c6c978-ce23-470e-aa97-f32e2cfb54e8"
 APP_SLUG = "google_docs"
@@ -20,24 +21,18 @@ app.secret_key = 'test_secret'
 
 with app.app_context():
     with app.test_request_context():
-        # Ensure the session is clear and ready
         session.clear()
-        # The service will fetch a real token using your .env credentials
         pipedream_auth_service = PipedreamAuthService()
-        # Discover tools (to ensure registry is fresh, not strictly needed for execution)
-        print("Discovering available tools for user...")
+        print("Discovering available tools for user via direct MCP endpoint...")
         registry = pipedream_auth_service.discover_all_tools(USER_ID)
-        print(f"Discovered apps: {list(registry._apps.keys())}")
-        if APP_SLUG in registry._apps:
-            app_tools = registry._apps["google_docs"]
-            # print(f"Available tools for {APP_SLUG}: {[t.name for t in app_tools.tools]}")
+        tools_data = pipedream_auth_service.get_tools_for_app(USER_ID, APP_SLUG)
+        print(f"Tools data: {tools_data}")
+        if tools_data and tools_data.get('tools'):
+            print(f"Available tools for {APP_SLUG}: {[t['name'] for t in tools_data['tools']]}")
         else:
             print(f"No tools found for app: {APP_SLUG}")
             sys.exit(1)
-        app_tools = registry._apps["google_docs"]
-
-        # Execute the create-document tool
-        print(f"\nExecuting tool: {TOOL_NAME} for user {USER_ID}...")
+        print(f"\nExecuting tool: {TOOL_NAME} for user {USER_ID} via direct MCP endpoint...")
         result = pipedream_auth_service.execute_tool(
             external_user_id=USER_ID,
             app_slug=APP_SLUG,

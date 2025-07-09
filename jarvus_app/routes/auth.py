@@ -16,7 +16,8 @@ from flask import (
     url_for,
 )
 from flask_login import login_user, logout_user
-from ..services.mcp_token_service import pipedream_auth_service
+from ..services.pipedream_auth_service import pipedream_auth_service
+from ..services.pipedream_tool_registry import pipedream_tool_service
 from jarvus_app.models.user import User
 
 from ..db import db
@@ -176,7 +177,7 @@ def authorized():
                     
                     # Discover available tools for the user
                     try:
-                        tools_registry = pipedream_auth_service.discover_all_tools(str(user_id))
+                        tools_registry = pipedream_tool_service.discover_all_tools(str(user_id))
                         if tools_registry and len(tools_registry._apps) > 0:
                             logger.info(f"Successfully discovered tools for {len(tools_registry._apps)} apps")
                         else:
@@ -209,7 +210,7 @@ def authorized():
 def logout():
     # Clear Pipedream tokens before clearing session
     try:
-        from ..services.mcp_token_service import pipedream_auth_service
+        from ..services.pipedream_auth_service import pipedream_auth_service
         pipedream_auth_service.clear_session_tokens()
         logger.info("Cleared Pipedream tokens during logout")
     except Exception as e:
