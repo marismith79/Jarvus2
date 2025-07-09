@@ -21,7 +21,7 @@ os.environ.update({
 
 from jarvus_app.routes.chatbot import chatbot_bp
 from jarvus_app.services.pipedream_auth_service import PipedreamAuthService
-from jarvus_app.services.agent_service import create_agent, get_agent
+from jarvus_app.services.legacy_agent_service import create_agent, get_agent
 from jarvus_app.models.user import User
 from jarvus_app.db import db
 

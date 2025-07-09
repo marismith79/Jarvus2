@@ -1,5 +1,5 @@
 import pytest
-from jarvus_app.services.enhanced_agent_service import enhanced_agent_service
+from jarvus_app.services.agent_service import agent_service
 from jarvus_app.services.memory_service import memory_service
 from jarvus_app.models.user import User
 from jarvus_app.models.history import History
@@ -19,13 +19,13 @@ def test_agent_memory_system(session, app):
         log_test_result_to_stdout("create_user", "pass", response={"user_id": user_id})
 
         # 2. Create an agent for the user
-        agent = enhanced_agent_service.create_agent(user_id=user_id, name="Test Agent")
+        agent = agent_service.create_agent(user_id=user_id, name="Test Agent")
         agent_id = agent.id
         log_test_result_to_stdout("create_agent", "pass", response={"agent_id": agent_id})
 
         # 3. Send a message to the agent (store semantic/episodic memory)
         msg1 = "My favorite color is blue."
-        assistant_message, memory_info = enhanced_agent_service.process_message_with_memory(
+        assistant_message, memory_info = agent_service.process_message_with_memory(
             agent_id=agent_id,
             user_id=user_id,
             user_message=msg1
@@ -61,7 +61,7 @@ def test_agent_memory_system(session, app):
 
         # 6. Send a follow-up message to test memory recall
         msg2 = "What is my favorite color?"
-        assistant_message2, memory_info2 = enhanced_agent_service.process_message_with_memory(
+        assistant_message2, memory_info2 = agent_service.process_message_with_memory(
             agent_id=agent_id,
             user_id=user_id,
             user_message=msg2
