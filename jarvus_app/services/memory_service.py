@@ -1368,13 +1368,50 @@ class MemoryService:
             logger.error(f"Failed to delete hierarchical context with vector: {str(e)}")
             return False
 
+    def get_importance_score_from_llm(self, memory_type: str, memory_content: str, conversation_text: str = None, user_goal: str = None) -> (float, str):
+        """
+        Use the LLM to rate the importance of a memory, given its type, content, and context.
+        Returns a tuple: (importance_score, justification)
+        """
+        prompt = f"""
+You are an AI assistant helping to organize a user's memories. Here is the context:
+
+- Memory type: {memory_type}
+- Memory content: {memory_content}
+"""
+        if conversation_text:
+            prompt += f"\n- Conversation or event: {conversation_text}"
+        if user_goal:
+            prompt += f"\n- User's current goal: {user_goal}"
+        prompt += """
+
+On a scale from 1 (not important) to 5 (very important), how important is this memory for the user's future actions or understanding? Respond with a single number and a brief reason, e.g. '4: This is a key user preference.'
+"""
+        response = self.llm_client.create_chat_completion([
+            self.llm_client.format_message("system", "You are an expert at evaluating the importance of user memories for an AI assistant."),
+            self.llm_client.format_message("user", prompt)
+        ], max_tokens=64, temperature=0.2)
+        content = response.get('assistant', {}).get('content', '')
+        import re
+        match = re.match(r"(\d(?:\.\d+)?)[^\d]*(.*)", content.strip())
+        if match:
+            score = float(match.group(1))
+            justification = match.group(2).strip()
+        else:
+            score = 3.0
+            justification = content.strip() or "No justification provided."
+        # Normalize to 1.0-5.0, then to 0.2-1.0 for storage if desired
+        normalized_score = max(1.0, min(5.0, score))
+        return normalized_score, justification
+
     def extract_and_store_memories(
         self,
         user_id: int,
         conversation_messages: list,
         agent_id: int = None,
         tool_call: dict = None,
-        feedback: str = None
+        feedback: str = None,
+        user_goal: str = None
     ) -> list:
         """
         Compress/summarize and store episodic, semantic, and procedural memories from a conversation.
@@ -1399,14 +1436,23 @@ class MemoryService:
             self.llm_client.format_message("user", summary_prompt)
         ])
         episode_summary = summary.get('assistant', {}).get('content', conversation_text)
+        # Get importance for episodic memory
+        episodic_score, episodic_justification = self.get_importance_score_from_llm(
+            memory_type="episodic",
+            memory_content=episode_summary,
+            conversation_text=conversation_text,
+            user_goal=user_goal
+        )
         episodic_memory = self.store_episodic_memory(
             user_id=user_id,
             episode_type="conversation",
             episode_data={
                 "summary": episode_summary,
                 "raw": conversation_text,
-                "agent_id": agent_id
-            }
+                "agent_id": agent_id,
+                "importance_justification": episodic_justification
+            },
+            importance_score=episodic_score
         )
         stored_memories.append(episodic_memory)
 
@@ -1428,10 +1474,18 @@ class MemoryService:
         for fact in facts:
             fact_type = fact.get('type', 'fact')
             fact_data = fact.get('data', fact)
+            # Get importance for semantic memory
+            semantic_score, semantic_justification = self.get_importance_score_from_llm(
+                memory_type=fact_type,
+                memory_content=str(fact_data),
+                conversation_text=conversation_text,
+                user_goal=user_goal
+            )
             semantic_memory = self.store_semantic_memory(
                 user_id=user_id,
                 fact_type=fact_type,
-                fact_data=fact_data
+                fact_data={**fact_data, "importance_justification": semantic_justification},
+                importance_score=semantic_score
             )
             stored_memories.append(semantic_memory)
 
@@ -1443,10 +1497,18 @@ class MemoryService:
                 'conversation': conversation_text,
                 'feedback': feedback
             }
+            # Get importance for procedural memory
+            procedural_score, procedural_justification = self.get_importance_score_from_llm(
+                memory_type="procedure",
+                memory_content=str(procedure_data),
+                conversation_text=conversation_text,
+                user_goal=user_goal
+            )
             procedural_memory = self.store_procedural_memory(
                 user_id=user_id,
                 procedure_name=procedure_name,
-                procedure_data=procedure_data
+                procedure_data={**procedure_data, "importance_justification": procedural_justification},
+                importance_score=procedural_score
             )
             stored_memories.append(procedural_memory)
 
