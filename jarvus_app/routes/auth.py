@@ -16,7 +16,7 @@ from flask import (
     url_for,
 )
 from flask_login import login_user, logout_user
-
+from ..services.mcp_token_service import pipedream_auth_service
 from jarvus_app.models.user import User
 
 from ..db import db
@@ -167,6 +167,29 @@ def authorized():
         if user:
             login_user(user, remember=True)
             logger.info(f"User logged in successfully: {user.id}")
+            
+            # Trigger Pipedream token acquisition and tool discovery after successful authentication
+            try:
+                pipedream_token = pipedream_auth_service.get_access_token()
+                if pipedream_token:
+                    logger.info("Successfully acquired Pipedream token for user authentication")
+                    
+                    # Discover available tools for the user
+                    try:
+                        tools_registry = pipedream_auth_service.discover_all_tools(str(user_id))
+                        if tools_registry and len(tools_registry._apps) > 0:
+                            logger.info(f"Successfully discovered tools for {len(tools_registry._apps)} apps")
+                        else:
+                            logger.warning("No tools discovered, but token acquisition succeeded")
+                    except Exception as tool_error:
+                        logger.error(f"Error discovering tools during authentication: {str(tool_error)}")
+                        # Don't fail the authentication if tool discovery fails
+                else:
+                    logger.warning("Failed to acquire Pipedream token, but user authentication succeeded")
+            except Exception as e:
+                logger.error(f"Error acquiring Pipedream token during authentication: {str(e)}")
+                # Don't fail the authentication if Pipedream token acquisition fails
+            
             next_url = session.pop("next_url", None)
             return redirect(next_url or url_for("web.landing"))
         else:
@@ -184,6 +207,14 @@ def authorized():
 
 @auth.route("/logout")
 def logout():
+    # Clear Pipedream tokens before clearing session
+    try:
+        from ..services.mcp_token_service import pipedream_auth_service
+        pipedream_auth_service.clear_session_tokens()
+        logger.info("Cleared Pipedream tokens during logout")
+    except Exception as e:
+        logger.error(f"Error clearing Pipedream tokens during logout: {str(e)}")
+    
     # Clear the session
     session.clear()
 

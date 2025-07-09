@@ -168,9 +168,12 @@ def pipedream_callback(service):
         return redirect(url_for("profile.profile"))
     
     # Get connection_id and state from callback (Connect Link API uses connection_id)
+    # Print all request arguments for debugging
+    print(f"DEBUG: All request arguments: {dict(request.args)}")
     connection_id = (
-    request.args.get("connect_session_id")
-    or request.args.get("id")       
+        request.args.get('connection_id')
+        or request.args.get("connect_session_id")
+        or request.args.get("id")       
     )
     state = request.args.get('state')
     
@@ -276,7 +279,9 @@ def connect_pipedream_service(service):
         print("ERROR: Pipedream API credentials not configured")
         return redirect(url_for("profile.profile"))
     
-    redirect_uri = os.getenv("PIPEDREAM_REDIRECT_URI")
+    # redirect_uri = os.getenv("PIPEDREAM_REDIRECT_URI")
+    redirect_uri = "http://localhost:5001/pipedream/callback"
+    print(f"DEBUG: This is the redirect URI: {redirect_uri}")
     if not redirect_uri:
         print(f"ERROR: PIPEDREAM_REDIRECT_URI not configured")
         return redirect(url_for("profile.profile"))
@@ -337,8 +342,12 @@ def connect_pipedream_service(service):
         print("\n=== STEP 2: CREATING CONNECT TOKEN ===")
         
         connect_token_data = {
-            "external_user_id": "usde123",
-            "app_id": oauth_app_id,  
+            # "external_user_id": str(current_user.id),
+            "external_user_id": "b2c6c978-ce23-470e-aa97-f32e2cfb54e8",
+            "app": {
+                "id": oauth_app_id,
+                "name": "google_docs"
+            },
             "project_id": pipedream_project_id,
             "success_redirect_uri": f"{redirect_uri}/{service}?state={state}",
             "error_redirect_uri": f"{redirect_uri}/{service}?state={state}",

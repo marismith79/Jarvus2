@@ -28,6 +28,7 @@ from ..db import db
 from ..services.agent_service import get_agent, get_agent_tools, get_agent_history, get_agent_interaction_history, append_message, create_agent, delete_agent, save_interaction
 from ..services.enhanced_agent_service import enhanced_agent_service
 from ..utils.token_utils import get_valid_jwt_token
+from ..services.mcp_token_service import pipedream_auth_service
 
 jarvus_ai = JarvusAIClient()
 
@@ -253,11 +254,23 @@ def handle_chat_message_legacy():
                     tool_args = json.loads(current_call.function.arguments) if current_call.function.arguments else {}
                     logger.info(f"Executing tool: {tool_name} with args: {tool_args}")
                     try:
-                        tool_result = tool_registry.execute_tool(
+
+                        # --- MCP/Pipedream tool execution wiring ---
+                        # Hardcoded for now
+                        app_slug = "google_docs"
+                        external_user_id = str(current_user.id)
+                        tool_result = pipedream_auth_service.execute_tool(
+                            external_user_id=external_user_id,
+                            app_slug=app_slug,
                             tool_name=tool_name,
-                            parameters=tool_args,
-                            jwt_token=jwt_token,
+                            tool_args=tool_args
                         )
+                            # # Fallback to legacy registry
+                            # tool_result = tool_registry.execute_tool(
+                            #     tool_name=tool_name,
+                            #     parameters=tool_args,
+                            #     jwt_token=jwt_token,
+                            # )
                         # On success, append a ToolMessage with the result
                         tool_msg = ToolMessage(content=json.dumps(tool_result), tool_call_id=current_call.id)
                         messages.append(tool_msg)
