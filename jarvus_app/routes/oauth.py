@@ -18,6 +18,9 @@ from ..utils.tool_permissions import grant_tool_access
 from ..models.user_tool import UserTool
 from ..db import db
 
+GOOGLE_SERVICES = ['gmail', 'google_docs', 'google_sheets', 'google_slides', 'google_drive', 'google_calendar'];
+
+
 oauth_bp = Blueprint("oauth", __name__)
 
 # Create a session for connection reuse
@@ -29,27 +32,6 @@ oauth_session.headers.update({
 
 # Debug environment variables
 print("\nDEBUG: Environment Variables:")
-print(f"NOTION_CLIENT_ID from env: {os.getenv('NOTION_CLIENT_ID')}")
-print(f"PIPEDREAM_DOCS_AUTH_URL from env: {os.getenv('PIPEDREAM_DOCS_AUTH_URL')}")
-
-NOTION_CLIENT_CONFIG = {
-    "client_id": os.getenv("NOTION_CLIENT_ID"),
-    "client_secret": os.getenv("NOTION_CLIENT_SECRET"),
-    "redirect_uri": os.getenv("NOTION_REDIRECT_URI"),
-}
-
-SLACK_CLIENT_CONFIG = {
-    "client_id": os.getenv("SLACK_CLIENT_ID"),
-    "client_secret": os.getenv("SLACK_CLIENT_SECRET"),
-    "redirect_uri": os.getenv("SLACK_REDIRECT_URI"),
-}
-
-ZOOM_CLIENT_CONFIG = {
-    "client_id": os.getenv("ZOOM_CLIENT_ID"),
-    "client_secret": os.getenv("ZOOM_CLIENT_SECRET"),
-    "redirect_uri": os.getenv("ZOOM_REDIRECT_URI"),
-}
-
 
 def _handle_pipedream_response(response: requests.Response) -> dict:
     """Enhanced response handling for Pipedream API calls"""
@@ -79,14 +61,8 @@ def _handle_pipedream_response(response: requests.Response) -> dict:
 @login_required
 def connect_service(service):
     """Initiate OAuth flow for the specified service"""
-    if service in ["sheets", "slides", "drive", "gmail", "calendar", "docs"]:
+    if service in GOOGLE_SERVICES:
         return connect_pipedream_service(service)
-    elif service == "notion":
-        return connect_notion()
-    elif service == "slack":
-        return connect_slack()
-    elif service == "zoom":
-        return connect_zoom()
     else:
         return redirect(url_for("profile.profile"))
 
@@ -98,7 +74,7 @@ def disconnect_service(service):
     print(
         f"[DEBUG] Disconnect requested for service: {service}, user: {current_user.id}"
     )
-    if service in ["docs", "notion", "slack", "zoom"]:
+    if service in GOOGLE_SERVICES:
         success = True
         
         # Remove OAuth credentials from database
@@ -144,20 +120,11 @@ def pipedream_callback(service):
     print(f"DEBUG: Current user: {getattr(current_user, 'id', None)}")
     print(f"DEBUG: All query parameters: {dict(request.args)}")
     
-    # Enhanced logging for all possible callback parameters
-    print(f"DEBUG: connection_id: {request.args.get('connection_id')}")
-    print(f"DEBUG: connect_id: {request.args.get('connect_id')}")
-    print(f"DEBUG: state: {request.args.get('state')}")
-    print(f"DEBUG: code: {request.args.get('code')}")
-    print(f"DEBUG: error: {request.args.get('error')}")
-    print(f"DEBUG: error_description: {request.args.get('error_description')}")
-    print(f"DEBUG: app: {request.args.get('app')}")
-    
     # Log all headers for debugging
     print(f"DEBUG: All headers: {dict(request.headers)}")
     
     # Validate service
-    if service not in ["docs", "sheets", "slides", "drive", "gmail", "calendar"]:
+    if service not in GOOGLE_SERVICES:
         print(f"ERROR: Invalid service: {service}")
         return redirect(url_for("profile.profile"))
     
@@ -234,39 +201,6 @@ def pipedream_callback(service):
         print(f"ERROR: Full error details: {repr(e)}")
         return redirect(url_for("profile.profile"))
 
-
-def connect_notion():
-    """Initiate Notion OAuth flow"""
-    auth_url = (
-        f"https://api.notion.com/v1/oauth/authorize?"
-        f"client_id={NOTION_CLIENT_CONFIG['client_id']}&"
-        f"response_type=code&owner=user&"
-        f"redirect_uri={NOTION_CLIENT_CONFIG['redirect_uri']}"
-    )
-    return redirect(auth_url)
-
-
-def connect_slack():
-    """Initiate Slack OAuth flow"""
-    auth_url = (
-        f"https://slack.com/oauth/v2/authorize?"
-        f"client_id={SLACK_CLIENT_CONFIG['client_id']}&"
-        f"redirect_uri={SLACK_CLIENT_CONFIG['redirect_uri']}"
-    )
-    return redirect(auth_url)
-
-
-def connect_zoom():
-    """Initiate Zoom OAuth flow"""
-    auth_url = (
-        f"https://zoom.us/oauth/authorize?"
-        f"response_type=code&"
-        f"client_id={ZOOM_CLIENT_CONFIG['client_id']}&"
-        f"redirect_uri={ZOOM_CLIENT_CONFIG['redirect_uri']}"
-    )
-    return redirect(auth_url)
-
-
 def connect_pipedream_service(service):
     """Initiate OAuth flow for any Pipedream service using Connect Link API with proper two-step authentication"""
     print(f"\nDEBUG: Starting {service} OAuth flow via Pipedream Connect Link API")
@@ -279,17 +213,16 @@ def connect_pipedream_service(service):
         print("ERROR: Pipedream API credentials not configured")
         return redirect(url_for("profile.profile"))
     
-    # redirect_uri = os.getenv("PIPEDREAM_REDIRECT_URI")
-    redirect_uri = "http://localhost:5001/pipedream/callback"
+    redirect_uri = os.getenv("PIPEDREAM_REDIRECT_URI")
     print(f"DEBUG: This is the redirect URI: {redirect_uri}")
     if not redirect_uri:
         print(f"ERROR: PIPEDREAM_REDIRECT_URI not configured")
         return redirect(url_for("profile.profile"))
     
-    oauth_app_id_env_var = f"PIPEDREAM_{service.upper()}_OAUTH_APP_ID"
-    oauth_app_id = os.getenv(oauth_app_id_env_var)
+    oauth_app_id_var = f"PIPEDREAM_{service.upper()}_APP_ID"
+    oauth_app_id = os.getenv(oauth_app_id_var)
     if not oauth_app_id:
-        print(f"ERROR: {oauth_app_id_env_var} not configured for {service}")
+        print(f"ERROR: {oauth_app_id_var} not configured for {service}")
         return redirect(url_for("profile.profile"))
     
     import secrets
@@ -346,7 +279,7 @@ def connect_pipedream_service(service):
             "external_user_id": "b2c6c978-ce23-470e-aa97-f32e2cfb54e8",
             "app": {
                 "id": oauth_app_id,
-                "name": "google_docs"
+                "name": service
             },
             "project_id": pipedream_project_id,
             "success_redirect_uri": f"{redirect_uri}/{service}?state={state}",
@@ -383,7 +316,7 @@ def connect_pipedream_service(service):
         
         # Add app parameter to the connect_link_url
         separator = "&" if "?" in connect_link_url else "?"
-        connect_link_url_with_app = f"{connect_link_url}{separator}app=google_docs"
+        connect_link_url_with_app = f"{connect_link_url}{separator}app={service}"
 
         print(f"DEBUG: Generated Pipedream connect link: {connect_link_url_with_app}")
         return redirect(connect_link_url_with_app)

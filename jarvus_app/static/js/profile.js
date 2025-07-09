@@ -20,20 +20,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Connection handling
     window.connectService = function(service) {
-        if (service === 'docs') {
-            // Fix: Open Pipedream Connect Link in a popup window instead of direct redirect
-            // This prevents the immediate redirect back to profile page
-            const popup = window.open('/connect/docs', 'pipedream_connect', 
-                'width=600,height=700,scrollbars=yes,resizable=yes,status=yes,location=yes,toolbar=no,menubar=no');
-            
-            // Check if popup was blocked
-            if (!popup || popup.closed || typeof popup.closed === 'undefined') {
-                alert('Please allow popups for this site to connect your Google Docs account.');
-                return;
-            }
-            
-            // Optional: Add a message to the user
-            console.log('Opening Pipedream Connect in popup window...');
+        // Handle all Google services
+        const googleServices = ['gmail', 'google_docs', 'google_sheets', 'google_slides', 'google_drive', 'google_calendar'];
+        
+        if (googleServices.includes(service)) {
+            // Open Pipedream Connect Link directly in the same window
+            window.location.href = `/connect/${service}`;
         } else {
             showComingSoon();
         }
@@ -47,26 +39,26 @@ document.addEventListener('DOMContentLoaded', function() {
     window.disconnectSlack = function() { disconnectService('slack'); }
     window.disconnectZoom = function() { disconnectService('zoom'); }
 
-    // Generic: For every tool marked as connected, call /api/connect_tool
-    const toolNames = ['docs', 'notion', 'slack', 'zoom']; // Add future tools here
-    toolNames.forEach(tool => {
-        if (window[tool.replace('-', '_') + 'Connected']) {
-            fetch('/api/connect_tool', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ tool_name: tool })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (!data.success) {
-                    console.error(`Failed to connect ${tool} tool:`, data.error);
-                }
-            })
-            .catch(err => {
-                console.error(`Error connecting ${tool} tool:`, err);
-            });
-        }
-    });
+//     // Generic: For every tool marked as connected, call /api/connect_tool
+//     const toolNames = ['docs', 'notion', 'slack', 'zoom']; // Add future tools here
+//     toolNames.forEach(tool => {
+//         if (window[tool.replace('-', '_') + 'Connected']) {
+//             fetch('/api/connect_tool', {
+//                 method: 'POST',
+//                 headers: { 'Content-Type': 'application/json' },
+//                 body: JSON.stringify({ tool_name: tool })
+//             })
+//             .then(res => res.json())
+//             .then(data => {
+//                 if (!data.success) {
+//                     console.error(`Failed to connect ${tool} tool:`, data.error);
+//                 }
+//             })
+//             .catch(err => {
+//                 console.error(`Error connecting ${tool} tool:`, err);
+//             });
+//         }
+//     });
 });
 
 function handleProfileUpdate(e) {

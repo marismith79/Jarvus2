@@ -38,6 +38,7 @@
                 <div class="profile-card">
                     <h2>App Integrations</h2>
                     <div class="integrations-grid">
+                        
                         <!-- Google Docs Integration -->
                         <div class="integration-card">
                             <div class="integration-header">
@@ -45,37 +46,70 @@
                                 <span class="integration-name">Google Docs</span>
                             </div>
                             {% if docs_connected %}
-                                <button class="cta-button secondary" onclick="disconnectService('docs')">Disconnect</button>
+                                <button class="cta-button secondary" onclick="disconnectService('google_docs')">Disconnect</button>
                             {% else %}
-                                <button class="cta-button" onclick="connectService('docs')">Connect</button>
+                                <button class="cta-button" onclick="connectService('google_docs')">Connect</button>
                             {% endif %}
                         </div>
-
-                        <!-- Notion Integration -->
+                        <!-- Google Slides Integration -->
                         <div class="integration-card">
                             <div class="integration-header">
-                                <img src="{{ url_for('static', filename='images/notion-logo.png') }}" alt="Notion Logo" class="integration-logo">
-                                <span class="integration-name">Notion</span>
+                                <img src="{{ url_for('static', filename='images/google-logo.png') }}" alt="Google Slides Logo" class="integration-logo">
+                                <span class="integration-name">Google Slides</span>
                             </div>
-                            <button class="cta-button" onclick="showComingSoon()">Coming Soon</button>
+                            {% if slides_connected %}
+                                <button class="cta-button secondary" onclick="disconnectService('google_slides')">Disconnect</button>
+                            {% else %}
+                                <button class="cta-button" onclick="connectService('google_slides')">Connect</button>
+                            {% endif %}
                         </div>
-
-                        <!-- Slack Integration -->
+                        <!-- Google Calendar Integration -->
                         <div class="integration-card">
                             <div class="integration-header">
-                                <img src="{{ url_for('static', filename='images/slack-logo.png') }}" alt="Slack Logo" class="integration-logo">
-                                <span class="integration-name">Slack</span>
+                                <img src="{{ url_for('static', filename='images/google-logo.png') }}" alt="Google Calendar Logo" class="integration-logo">
+                                <span class="integration-name">Google Calendar</span>
                             </div>
-                            <button class="cta-button" onclick="showComingSoon()">Coming Soon</button>
+                            {% if calendar_connected %}
+                                <button class="cta-button secondary" onclick="disconnectService('google_calendar')">Disconnect</button>
+                            {% else %}
+                                <button class="cta-button" onclick="connectService('google_calendar')">Connect</button>
+                            {% endif %}
                         </div>
-
-                        <!-- Zoom Integration -->
+                        <!-- Google Drive Integration -->
                         <div class="integration-card">
                             <div class="integration-header">
-                                <img src="{{ url_for('static', filename='images/zoom-logo.png') }}" alt="Zoom Logo" class="integration-logo">
-                                <span class="integration-name">Zoom</span>
+                                <img src="{{ url_for('static', filename='images/google-logo.png') }}" alt="Google Drive Logo" class="integration-logo">
+                                <span class="integration-name">Google Drive</span>
                             </div>
-                            <button class="cta-button" onclick="showComingSoon()">Coming Soon</button>
+                            {% if drive_connected %}
+                                <button class="cta-button secondary" onclick="disconnectService('google_drive')">Disconnect</button>
+                            {% else %}
+                                <button class="cta-button" onclick="connectService('google_drive')">Connect</button>
+                            {% endif %}
+                        </div>
+                        <!-- Gmail Integration -->
+                        <div class="integration-card">
+                            <div class="integration-header">
+                                <img src="{{ url_for('static', filename='images/google-logo.png') }}" alt="Gmail Logo" class="integration-logo">
+                                <span class="integration-name">Gmail</span>
+                            </div>
+                            {% if gmail_connected %}
+                                <button class="cta-button secondary" onclick="disconnectService('gmail')">Disconnect</button>
+                            {% else %}
+                                <button class="cta-button" onclick="connectService('gmail')">Connect</button>
+                            {% endif %}
+                        </div>
+                        <!-- Google Sheets Integration -->
+                        <div class="integration-card">
+                            <div class="integration-header">
+                                <img src="{{ url_for('static', filename='images/google-logo.png') }}" alt="Google Sheets Logo" class="integration-logo">
+                                <span class="integration-name">Google Sheets</span>
+                            </div>
+                            {% if sheets_connected %}
+                                <button class="cta-button secondary" onclick="disconnectService('sheets')">Disconnect</button>
+                            {% else %}
+                                <button class="cta-button" onclick="connectService('sheets')">Connect</button>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
