@@ -184,6 +184,7 @@ class MemoryService:
         importance_score: float = 1.0
     ) -> LongTermMemory:
         """Store an episodic memory (user action, feedback, etc.)"""
+        logger.info(f"store_episodic_memory called: user_id={user_id}, episode_type={episode_type}, episode_data={episode_data}")
         return self.store_memory(
             user_id=user_id,
             namespace='episodes',
@@ -205,6 +206,7 @@ class MemoryService:
         importance_score: float = 1.0
     ) -> LongTermMemory:
         """Store a semantic memory (fact, preference, etc.)"""
+        logger.info(f"store_semantic_memory called: user_id={user_id}, fact_type={fact_type}, fact_data={fact_data}")
         return self.store_memory(
             user_id=user_id,
             namespace='semantic',
@@ -225,6 +227,7 @@ class MemoryService:
         importance_score: float = 1.0
     ) -> LongTermMemory:
         """Store a procedural memory (workflow, how-to, etc.)"""
+        logger.info(f"store_procedural_memory called: user_id={user_id}, procedure_name={procedure_name}, procedure_data={procedure_data}")
         return self.store_memory(
             user_id=user_id,
             namespace='procedures',
@@ -1381,6 +1384,7 @@ class MemoryService:
         - After storing, improve and merge memories as appropriate.
         Returns a list of stored/updated memory objects.
         """
+        logger.info(f"extract_and_store_memories called: user_id={user_id}, agent_id={agent_id}, tool_call={tool_call}, feedback={feedback}")
         stored_memories = []
         # 1. Summarize conversation for episodic memory
         conversation_text = "\n".join([
@@ -1472,6 +1476,7 @@ class MemoryService:
         Retrieve and summarize the most relevant episodic, semantic, and procedural memories for a user and thread.
         Returns a context string engineered for LLM input, following context engineering best practices.
         """
+        logger.info(f"get_context_for_conversation called: user_id={user_id}, thread_id={thread_id}, current_message={current_message}")
         # 1. Retrieve relevant memories (hybrid/vector search if available)
         context_sections = []
         # Episodic (recent conversations)

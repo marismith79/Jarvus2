@@ -31,16 +31,17 @@ def db(app):
 
 @pytest.fixture(scope='function')
 def session(db, app):
-    """Create a new database session for a test."""
-    connection = db.engine.connect()
-    transaction = connection.begin()
-    options = dict(bind=connection, binds={})
-    session = db.create_scoped_session(options=options)
-    db.session = session
-    yield session
-    transaction.rollback()
-    connection.close()
-    session.remove()
+    """Create a new database session for a test, with app context active."""
+    with app.app_context():
+        connection = db.engine.connect()
+        transaction = connection.begin()
+        from sqlalchemy.orm import sessionmaker, scoped_session
+        Session = scoped_session(sessionmaker(bind=connection))
+        db.session = Session
+        yield db.session
+        transaction.rollback()
+        connection.close()
+        Session.remove()
 
 @pytest.fixture
 def test_client(app):
