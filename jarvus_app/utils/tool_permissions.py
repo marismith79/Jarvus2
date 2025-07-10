@@ -9,11 +9,12 @@ from ..models.tool_permission import ToolPermission
 
 # Define available tools and their descriptions
 TOOLS = {
-    "docs": "Access to Google Docs functionality through MCP server",
-    "notion": "Access to Notion functionality through MCP server",
-    "slack": "Access to Slack functionality through MCP server",
-    "zoom": "Access to Zoom functionality through MCP server",
-    "teams": "Access to Teams functionality through MCP server",
+    "google_docs": "Access to Google Docs functionality through MCP server",
+    "google_sheets": "Access to Google Sheets functionality through MCP server",
+    "google_slides": "Access to Google Slides functionality through MCP server",
+    "google_drive": "Access to Google Drive functionality through MCP server",
+    "google_calendar": "Access to Google Calendar functionality through MCP server",
+    "gmail": "Access to Google Gmail functionality through MCP server",
 }
 
 def grant_tool_access(user_id, tool_name, duration_days=None):
@@ -98,13 +99,14 @@ def get_connected_services(user_id):
     """Get a dictionary of connected services for a user."""
     services = {}
     for service in TOOLS.keys():
-            creds = OAuthCredentials.get_credentials(user_id, service)
-            
-            # Debug: Print what we find
-            print(f"DEBUG: Checking OAuth credentials for user {user_id}, service {service}")
-            print(f"DEBUG: OAuth credentials found: {creds is not None}")
-            
-            # Consider connected if OAuth credentials exist
-            services[service] = creds is not None
-            print(f"DEBUG: Final result for {service}: {services[service]}")
+        # Check if user is connected (status=1)
+        is_connected = OAuthCredentials.is_connected(user_id, service)
+        
+        # Debug: Print what we find
+        print(f"DEBUG: Checking OAuth credentials for user {user_id}, service {service}")
+        print(f"DEBUG: OAuth credentials found: {is_connected}")
+        
+        # Consider connected if status=1
+        services[service] = is_connected
+        print(f"DEBUG: Final result for {service}: {services[service]}")
     return services
