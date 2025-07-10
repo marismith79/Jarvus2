@@ -37,10 +37,12 @@ def chatbot():
         "chatbot.html",
         agents=agents,
         most_recent_agent=most_recent_agent,
-        docs_connected=connected_services["docs"],
-        notion_connected=connected_services["notion"],
-        slack_connected=connected_services["slack"],
-        zoom_connected=connected_services["zoom"],
+        docs_connected=connected_services["google_docs"],
+        sheets_connected=connected_services["google_sheets"],
+        slides_connected=connected_services["google_slides"],
+        drive_connected=connected_services["google_drive"],
+        calendar_connected=connected_services["google_calendar"],
+        gmail_connected=connected_services["gmail"],
     )
 
 @web.route("/chatbot/send", methods=["POST"])

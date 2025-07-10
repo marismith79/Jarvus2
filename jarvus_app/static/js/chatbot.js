@@ -3,10 +3,12 @@ let currentAgentId = null;
 
 // Store connection status
 const connectedTools = {
-  docs: window.docsConnected || false,
-  notion: window.notionConnected || false,
-  slack: window.slackConnected || false,
-  zoom: window.zoomConnected || false
+  google_docs: window.docsConnected || false,
+  google_sheets: window.sheetsConnected || false,
+  google_slides: window.slidesConnected || false,
+  google_drive: window.driveConnected || false,
+  google_calendar: window.calendarConnected || false,
+  gmail: window.gmailConnected || false
 };
   
 // Safe console logging to prevent EIO errors

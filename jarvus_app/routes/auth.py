@@ -18,7 +18,7 @@ from flask import (
 )
 from flask_login import login_user, logout_user
 from ..services.pipedream_auth_service import pipedream_auth_service
-from ..services.pipedream_tool_registry import pipedream_tool_servicefrom 
+from ..services.pipedream_tool_registry import pipedream_tool_service
 from flask import jsonify
 from jarvus_app.models.user import User
 
