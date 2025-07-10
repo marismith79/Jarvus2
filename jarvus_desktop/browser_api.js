@@ -496,8 +496,7 @@ class BrowserAPI {
             // Capture full page screenshot as base64
             const screenshotBuffer = await this.currentPage.screenshot({ 
                 fullPage: true,  // Capture entire page, not just viewport
-                type: 'png',
-                quality: 90  // High quality for AI analysis
+                type: 'png'
             });
             
             // Convert buffer to base64
