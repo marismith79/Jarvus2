@@ -19,6 +19,7 @@ class ToolCategory(Enum):
     MICROSOFT_365 = "microsoft-365"
     CUSTOM = "custom"
     WEB = "web"
+    BROWSER = "browser"
     CHROME = "chrome"
     DOCS = "docs"
     GMAIL = "gmail"
@@ -145,20 +146,38 @@ class ToolRegistry:
         jwt_token: Optional[str] = None
     ) -> Any:
         """Execute a tool operation and format the result."""
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        logger.info(f"🔧 ToolRegistry.execute_tool called with tool_name: {tool_name}")
+        logger.info(f"🔧 Parameters: {parameters}")
+        
         tool = self.get_tool(tool_name)
         if not tool or not tool.is_active:
+            logger.error(f"🔧 Tool not available or not active: {tool_name}")
             raise ValueError(f"Tool not available: {tool_name}")
 
+        logger.info(f"🔧 Found tool: {tool.name}, executor: {tool.executor}")
         executor = tool.executor or mcp_client.execute_tool
-        request_body = {
-            "operation": tool_name,
-            "parameters": parameters
-        }
-        raw_result = executor(
-            tool_name=tool.server_path,
-            payload=request_body,
-            jwt_token=jwt_token
-        )
+        
+        # For browser tools, pass parameters directly
+        if tool_name in ["open_website", "get_page_metadata", "get_tabs_info", "get_page_content", "execute_javascript"]:
+            logger.info("🔧 Using direct parameter passing for browser tool")
+            raw_result = executor(tool_name, parameters, jwt_token)
+        else:
+            # For other tools, use the legacy format
+            request_body = {
+                "operation": tool_name,
+                "parameters": parameters
+            }
+            logger.info(f"🔧 Using legacy format, request_body: {request_body}")
+            raw_result = executor(
+                tool_name=tool.server_path,
+                payload=request_body,
+                jwt_token=jwt_token
+            )
+        
+        logger.info(f"🔧 Raw result: {raw_result}")
         return self._handle_tool_response(tool, raw_result)
 
     def _handle_tool_response(self, tool: ToolMetadata, raw_result: Any) -> Any:
@@ -176,9 +195,8 @@ class ToolRegistry:
             'docs': ToolCategory.DOCS,
             'gmail': ToolCategory.GMAIL,
             'calendar': ToolCategory.CALENDAR,
-            'drive': ToolCategory.DRIVE,
-            'sheets': ToolCategory.SHEETS,
-            'slides': ToolCategory.SLIDES,
+            'web': ToolCategory.WEB,
+            'browser': ToolCategory.BROWSER,
         }
         
         category = module_to_category.get(module_name.lower())
@@ -265,6 +283,15 @@ def format_font_result(result: Any) -> str:
     return "\n".join(report)
 
 
+def format_browser_result(result: Any) -> Dict[str, Any]:
+    """Format browser tool results while preserving dictionary structure."""
+    if isinstance(result, dict):
+        return result
+    if isinstance(result, list):
+        return {"items": result}
+    return {"result": str(result)}
+
+
 # Instantiate registry
 tool_registry = ToolRegistry()
 
@@ -281,7 +308,7 @@ from .tools import (
 )
 
 # Register all tools
-register_chrome_tools(tool_registry)
+register_browser_tools(tool_registry)
 register_web_search_tools(tool_registry)
 # register_docs_tools(tool_registry)
 # register_gmail_tools(tool_registry)

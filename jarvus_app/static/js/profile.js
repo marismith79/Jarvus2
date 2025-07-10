@@ -1,3 +1,28 @@
+// Safe console logging to prevent EIO errors
+function safeLog(...args) {
+  try {
+    console.log(...args);
+  } catch (e) {
+    // Ignore EIO errors from console output
+  }
+}
+
+function safeWarn(...args) {
+  try {
+    console.warn(...args);
+  } catch (e) {
+    // Ignore EIO errors from console output
+  }
+}
+
+function safeError(...args) {
+  try {
+    console.error(...args);
+  } catch (e) {
+    // Ignore EIO errors from console output
+  }
+}
+
 // Profile page functionality
 document.addEventListener('DOMContentLoaded', function() {
     // Handle basic info form submission
@@ -91,7 +116,7 @@ function handleProfileUpdate(e) {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
+        safeError('Error:', error);
         alert('An error occurred while updating your profile');
     });
 }
@@ -120,7 +145,7 @@ function disconnectService(service) {
         }
     })
     .catch(error => {
-        console.error('Error during disconnect API call:', error);
+        safeError('Error during disconnect API call:', error);
         alert('An error occurred while trying to disconnect.');
     });
 } 

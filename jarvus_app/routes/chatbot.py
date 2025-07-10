@@ -134,3 +134,25 @@ def delete_agent_route(agent_id):
     except Exception as e:
         logger.error(f"Error deleting agent {agent_id}: {str(e)}", exc_info=True)
         return jsonify({'error': str(e)}), 500
+
+@chatbot_bp.route('/agents/most-recent', methods=['GET'])
+@login_required
+def get_most_recent_agent():
+    """Get the most recent agent for the current user."""
+    try:
+        # Get the most recent agent by creation date
+        most_recent_agent = History.query.filter_by(user_id=current_user.id).order_by(History.created_at.desc()).first()
+        
+        if most_recent_agent:
+            return jsonify({
+                'id': most_recent_agent.id,
+                'name': most_recent_agent.name,
+                'description': most_recent_agent.description,
+                'tools': most_recent_agent.tools or []
+            }), 200
+        else:
+            return jsonify({'error': 'No agents found'}), 404
+            
+    except Exception as e:
+        logger.error(f"Error getting most recent agent: {str(e)}")
+        return jsonify({'error': str(e)}), 500

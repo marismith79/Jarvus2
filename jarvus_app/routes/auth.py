@@ -4,6 +4,7 @@ import os
 import sys
 import logging
 import time
+import json
 
 import msal
 from dotenv import load_dotenv
@@ -17,7 +18,8 @@ from flask import (
 )
 from flask_login import login_user, logout_user
 from ..services.pipedream_auth_service import pipedream_auth_service
-from ..services.pipedream_tool_registry import pipedream_tool_service
+from ..services.pipedream_tool_registry import pipedream_tool_servicefrom 
+from flask import jsonify
 from jarvus_app.models.user import User
 
 from ..db import db
@@ -192,7 +194,7 @@ def authorized():
                 # Don't fail the authentication if Pipedream token acquisition fails
             
             next_url = session.pop("next_url", None)
-            return redirect(next_url or url_for("web.landing"))
+            return redirect(url_for("profile.profile") + "?just_logged_in=1")
         else:
             logger.error("User object is None after creation/retrieval")
             return render_template(
@@ -222,13 +224,8 @@ def logout():
     # Log out from Flask-Login
     logout_user()
 
-    post_logout = url_for("web.landing", _external=True)
-    logout_url = (
-        f"https://{TENANT_NAME}.b2clogin.com/{TENANT_DOMAIN}/{SIGNIN_FLOW}"
-        "/oauth2/v2.0/logout"
-        f"?post_logout_redirect_uri={post_logout}"
-    )
-    return redirect(logout_url)
+    # Return a simple JSON response instead of redirecting
+    return jsonify({"success": True, "message": "Logged out successfully"})
 
 
 @auth.route("/forgot_password")
@@ -241,3 +238,86 @@ def forgot_password():
         scopes=SCOPE, redirect_uri=REDIRECT_URI
     )
     return redirect(auth_url)
+
+
+@auth.route("/refresh-token", methods=["POST"])
+def refresh_token():
+    """Refresh token endpoint for Electron auto-login."""
+    logger.info("🔄 Refresh token endpoint called")
+    try:
+        data = request.get_json()
+        refresh_token = data.get("refresh_token")
+        
+        if not refresh_token:
+            logger.error("❌ No refresh token provided")
+            return jsonify({"error": "No refresh token provided"}), 400
+            
+        logger.info(f"🔄 Attempting to refresh token: {refresh_token[:10]}...")
+        
+        msal_app = msal.ConfidentialClientApplication(
+            CLIENT_ID, authority=SIGNIN_AUTHORITY, client_credential=CLIENT_SECRET
+        )
+        
+        result = msal_app.acquire_token_by_refresh_token(
+            refresh_token, scopes=SCOPE
+        )
+        
+        logger.info(f"🔄 Refresh result: {result}")
+        
+        if "id_token" in result:
+            # Update session
+            session["jwt_token"] = result["id_token"]
+            session["refresh_token"] = result.get("refresh_token", refresh_token)
+            
+            # Calculate expires_at safely
+            expires_at = None
+            if result.get("expires_in"):
+                expires_at = int(time.time()) + int(result["expires_in"])
+                session["expires_at"] = expires_at
+            
+            # Get user from token claims
+            claims = result["id_token_claims"]
+            user_id = claims.get("sub")
+            user = User.query.get(user_id)
+            
+            if user:
+                login_user(user, remember=True)
+                tokens_for_electron = {
+                    "id_token": result["id_token"],
+                    "refresh_token": result.get("refresh_token", refresh_token),
+                    "expires_at": expires_at,  # Use the calculated value, not from session
+                    "user_id": user_id
+                }
+                logger.info(f"✅ Token refresh successful for user: {user_id}")
+                return jsonify({
+                    "success": True,
+                    "tokens": tokens_for_electron
+                })
+        
+        logger.error("❌ Token refresh failed")
+        return jsonify({"error": "Token refresh failed"}), 401
+        
+    except Exception as e:
+        logger.error(f"❌ Token refresh error: {str(e)}")
+        return jsonify({"error": "Token refresh failed"}), 500
+
+
+@auth.route("/close-modal")
+def close_modal():
+    return """
+    <html>
+    <body>
+    <script>
+        // Notify Electron to close the modal
+        if (window && window.close) {
+            window.close();
+        }
+        // For extra safety, try to send a message to Electron
+        if (window.electronAPI && window.electronAPI.closeLoginModal) {
+            window.electronAPI.closeLoginModal();
+        }
+    </script>
+    <p>You have been logged in. You can close this window.</p>
+    </body>
+    </html>
+    """

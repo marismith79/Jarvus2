@@ -17,6 +17,12 @@ def landing():
     return render_template("landing.html")
 
 
+@web.route("/control-bar")
+def control_bar():
+    """Serve the control bar interface for the Electron desktop app"""
+    return render_template("control-bar.html")
+
+
 @web.route("/chatbot", strict_slashes=False)
 @login_required
 def chatbot():
