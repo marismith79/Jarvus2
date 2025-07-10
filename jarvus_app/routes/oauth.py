@@ -183,6 +183,7 @@ def pipedream_callback(service):
         print(f"ERROR: Pipedream returned error: {error}")
         return redirect(url_for("profile.profile"))
     
+
     # Get state from callback
     state = request.args.get('state')
     
@@ -195,6 +196,7 @@ def pipedream_callback(service):
         print("ERROR: State parameter mismatch")
         return redirect(url_for("profile.profile"))
     
+
     try:
         # Store the connection status in database (status=1 for connected)
         OAuthCredentials.store_credentials(
@@ -312,8 +314,12 @@ def connect_pipedream_service(service):
         # Step 2: Use Bearer token to create connect token
         print("\n=== STEP 2: CREATING CONNECT TOKEN ===")
         
+        external_user_id = str(current_user.id)
+        print(f"[OAUTH DEBUG] Sending external_user_id to Pipedream: {external_user_id}")
+        print(f"[OAUTH DEBUG] Current user ID: {current_user.id}")
+        
         connect_token_data = {
-            "external_user_id": str(current_user.id),
+            "external_user_id": external_user_id,
             "app": {
                 "id": oauth_app_id,
                 "name": service

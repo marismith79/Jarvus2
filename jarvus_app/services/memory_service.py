@@ -1387,11 +1387,12 @@ You are an AI assistant helping to organize a user's memories. Here is the conte
 
 On a scale from 1 (not important) to 5 (very important), how important is this memory for the user's future actions or understanding? Respond with a single number and a brief reason, e.g. '4: This is a key user preference.'
 """
-        response = self.llm_client.create_chat_completion([
+
+        response = self.llm_client.format_response(self.llm_client.create_chat_completion([
             self.llm_client.format_message("system", "You are an expert at evaluating the importance of user memories for an AI assistant."),
             self.llm_client.format_message("user", prompt)
-        ], max_tokens=64, temperature=0.2)
-        content = response.get('assistant', {}).get('content', '')
+        ], max_tokens=64, temperature=0.2))
+        content = response.get('content', '')
         import re
         match = re.match(r"(\d(?:\.\d+)?)[^\d]*(.*)", content.strip())
         if match:
@@ -1431,11 +1432,11 @@ On a scale from 1 (not important) to 5 (very important), how important is this m
             "Summarize the following conversation as an episode, focusing on key events, actions, and outcomes. "
             "Be concise but capture important details.\n\nConversation:\n" + conversation_text
         )
-        summary = self.llm_client.create_chat_completion([
+        summary = self.llm_client.format_response(self.llm_client.create_chat_completion([
             self.llm_client.format_message("system", "You are a helpful assistant that summarizes conversations for memory storage."),
             self.llm_client.format_message("user", summary_prompt)
-        ])
-        episode_summary = summary.get('assistant', {}).get('content', conversation_text)
+        ]))
+        episode_summary = summary.get('content', conversation_text)
         # Get importance for episodic memory
         episodic_score, episodic_justification = self.get_importance_score_from_llm(
             memory_type="episodic",
@@ -1461,10 +1462,10 @@ On a scale from 1 (not important) to 5 (very important), how important is this m
             "From the following conversation, extract any facts, preferences, or information about the user that should be stored as semantic memory. "
             "Return a JSON list of facts, each as an object with 'type' and 'data'. If none, return an empty list.\n\nConversation:\n" + conversation_text
         )
-        semantic_response = self.llm_client.create_chat_completion([
+        semantic_response = self.llm_client.format_response(self.llm_client.create_chat_completion([
             self.llm_client.format_message("system", "You extract user facts for semantic memory in JSON format."),
             self.llm_client.format_message("user", semantic_prompt)
-        ])
+        ]))
         import json as _json
         facts = []
         try:
@@ -1532,15 +1533,15 @@ On a scale from 1 (not important) to 5 (very important), how important is this m
         thread_id: str = None,
         current_message: str = None,
         max_memories: int = 5,
-        max_tokens: int = 1500
-    ) -> str:
+        max_tokens: int = 1500,
+        as_sections: bool = True
+    ):
         """
         Retrieve and summarize the most relevant episodic, semantic, and procedural memories for a user and thread.
-        Returns a context string engineered for LLM input, following context engineering best practices.
+        Returns a dict of context sections for LLM input, or a string if as_sections=False (legacy).
         """
         logger.info(f"get_context_for_conversation called: user_id={user_id}, thread_id={thread_id}, current_message={current_message}")
         # 1. Retrieve relevant memories (hybrid/vector search if available)
-        context_sections = []
         # Episodic (recent conversations)
         episodic_memories = self.search_memories(
             user_id=user_id,
@@ -1562,24 +1563,63 @@ On a scale from 1 (not important) to 5 (very important), how important is this m
             limit=max_memories,
             search_type='efficient_hybrid'
         )
-        # 2. Summarize and format context sections
+        # 2. Summarize and format context sections as lists of strings
+        episodic_section = []
         if episodic_memories:
-            episodic_summaries = [m.memory_data.get('summary') or m.memory_data.get('data', {}) for m in episodic_memories]
-            context_sections.append("[Recent Episodes]\n" + "\n".join(f"- {s}" for s in episodic_summaries if s))
+            for m in episodic_memories:
+                date = m.created_at.strftime('%b %d') if hasattr(m, 'created_at') else ''
+                summary = m.memory_data.get('summary')
+                if summary and isinstance(summary, str):
+                    episodic_section.append(f"\u2022 {date}: {summary}")
+        semantic_section = []
         if semantic_memories:
-            semantic_facts = [m.memory_data.get('data', m.memory_data) for m in semantic_memories]
-            context_sections.append("[User Facts & Preferences]\n" + "\n".join(f"- {f}" for f in semantic_facts if f))
+            for m in semantic_memories:
+                src = m.memory_data.get('source', '')
+                data = m.memory_data.get('data', m.memory_data)
+                if isinstance(data, str):
+                    if src:
+                        semantic_section.append(f"[From {src}] {data}")
+                    else:
+                        semantic_section.append(data)
+                elif isinstance(data, dict):
+                    for key in ['fact', 'summary', 'description', 'value']:
+                        if key in data and isinstance(data[key], str):
+                            if src:
+                                semantic_section.append(f"[From {src}] {data[key]}")
+                            else:
+                                semantic_section.append(data[key])
+                            break
+        procedural_section = []
         if procedural_memories:
-            procedural_summaries = [m.memory_data.get('data', m.memory_data) for m in procedural_memories]
-            context_sections.append("[Procedures & Tool Use]\n" + "\n".join(f"- {p}" for p in procedural_summaries if p))
-        # 3. Optionally, add an example or rule if available
-        # (For now, just add a note about the agent's role)
+            for m in procedural_memories:
+                data = m.memory_data.get('data', m.memory_data)
+                if isinstance(data, dict) and 'code' in data and isinstance(data['code'], str):
+                    procedural_section.append(f"```python\n{data['code']}\n```")
+                elif isinstance(data, dict):
+                    for key in ['summary', 'description', 'name']:
+                        if key in data and isinstance(data[key], str):
+                            procedural_section.append(data[key])
+                            break
+                elif isinstance(data, str):
+                    procedural_section.append(data)
+        if as_sections:
+            return {
+                'episodic': episodic_section,
+                'semantic': semantic_section,
+                'procedural': procedural_section
+            }
+        # Legacy: return a single string
+        context_sections = []
+        if episodic_section:
+            context_sections.append("[Recent Episodes]\n" + "\n".join(episodic_section))
+        if semantic_section:
+            context_sections.append("[User Facts & Preferences]\n" + "\n".join(semantic_section))
+        if procedural_section:
+            context_sections.append("[Procedures & Tool Use]\n" + "\n".join(procedural_section))
         role_section = (
             "[Role]\nYou are a helpful AI assistant for this user. Use the following context to answer as accurately and personally as possible."
         )
-        # 4. Compose the context, prioritize most relevant, and fit within token limit
         context = "\n\n".join([role_section] + context_sections)
-        # Truncate if too long (simple token estimate: 4 chars/token)
         max_chars = max_tokens * 4
         if len(context) > max_chars:
             context = context[:max_chars] + "\n..."

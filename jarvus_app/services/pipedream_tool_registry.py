@@ -8,6 +8,7 @@ import time
 import logging
 import requests
 import json
+from datetime import datetime
 from typing import Optional, Dict, Any, List
 from dataclasses import dataclass, field
 from azure.ai.inference.models import ChatCompletionsToolDefinition, FunctionDefinition
@@ -101,8 +102,13 @@ class PipedreamToolsRegistry:
         
         # Parse tools from the MCP response
         for tool_data in tools_data.get("tools", []):
+            tool_name = tool_data.get("name", "")
+            # print(f"[DEBUG] Registering tool: {tool_name}")
+            # print(f"[DEBUG] Tool description: {tool_data.get('description', '')}")
+            # print(f"[DEBUG] Tool input schema: {tool_data.get('inputSchema', {})}")
+            
             tool = PipedreamTool(
-                name=tool_data.get("name", ""),
+                name=tool_name,
                 description=tool_data.get("description", ""),
                 input_schema=tool_data.get("inputSchema", {}),
                 app_slug=app_slug,
@@ -209,9 +215,9 @@ class PipedreamToolService:
                 "params": {}
             }
             url = f"{base_url}/{external_user_id}/{app_slug}"
-            print(f"[DEBUG] Tool list POST URL: {url}")
-            print(f"[DEBUG] Tool list POST headers: {headers}")
-            print(f"[DEBUG] Tool list POST body: {body}")
+            # print(f"[DEBUG] Tool list POST URL: {url}")
+            # print(f"[DEBUG] Tool list POST headers: {headers}")
+            # print(f"[DEBUG] Tool list POST body: {body}")
             try:
                 response = requests.post(
                     url,
@@ -219,8 +225,8 @@ class PipedreamToolService:
                     json=body,
                     timeout=30
                 )
-                print(f"[DEBUG] Tool list POST status: {response.status_code}")
-                print(f"[DEBUG] Tool list POST response: {response.text}")
+                # print(f"[DEBUG] Tool list POST status: {response.status_code}")
+                # print(f"[DEBUG] Tool list POST response: {response.text}")
             except Exception as e:
                 print(f"[ERROR] Exception during tool list POST: {e}")
                 raise
@@ -235,6 +241,11 @@ class PipedreamToolService:
                 result = payload.get("result", {})
                 tools = result.get("tools", [])
                 print(f"Successfully retrieved {len(tools)} tools for {app_slug}")
+                
+                # Log all available tool names for debugging
+                tool_names = [tool.get("name", "unknown") for tool in tools]
+                # print(f"[DEBUG] Available tool names for {app_slug}: {tool_names}")
+                
                 return {"tools": tools}
             else:
                 print(f"Failed to get tools for {app_slug}. Status: {response.status_code}, Response: {response.text}")
@@ -273,7 +284,7 @@ class PipedreamToolService:
             
             print(f"Fetching tools for app: {app_slug}")
             tools_data = self.get_tools_for_app(external_user_id, app_slug)
-            print(f"Tools data: {tools_data}")
+            # print(f"Tools data: {tools_data}")
             
             if tools_data:
                 self.tools_registry.register_app_tools(app_slug, app_name, tools_data)
@@ -355,21 +366,36 @@ class PipedreamToolService:
             }
         }
         url = f"{base_url}/{external_user_id}/{app_slug}"
-        print(f"[DEBUG] Tool exec POST URL: {url}")
-        print(f"[DEBUG] Tool exec POST headers: {headers}")
-        print(f"[DEBUG] Tool exec POST body: {body}")
+        # print(f"[DEBUG] Tool exec POST URL: {url}")
+        # print(f"[DEBUG] Tool exec POST headers: {headers}")
+        # print(f"[DEBUG] Tool exec POST body: {body}")
+        # print(f"[DEBUG] External user ID: {external_user_id}")
+        # print(f"[DEBUG] App slug: {app_slug}")
+        # print(f"[DEBUG] Tool name: {tool_name}")
+        # print(f"[DEBUG] Tool args: {tool_args}")
         try:
+            print(f"==========Pipe Dream Tool Call==========")
+            # print(f"[DEBUG] Request started at: {datetime.now()}")
+            print(f"[DEBUG] Request body: {json.dumps(body, indent=2)}")
             response = requests.post(
                 url,
                 headers=headers,
                 json=body,
-                timeout=60
+                timeout=30  # Reduced timeout to 30 seconds
             )
+            print(f"[DEBUG] Request completed at: {datetime.now()}")
             print(f"[DEBUG] Tool exec POST status: {response.status_code}")
-            print(f"[DEBUG] Tool exec POST response: {response.text}")
+            print("==========================================")
+            # print(f"[DEBUG] Tool exec POST response: {response.text}")
+        except requests.exceptions.Timeout:
+            print(f"[ERROR] Request timed out after 30 seconds")
+            return {"error": "Request timed out after 30 seconds"}
+        except requests.exceptions.ConnectionError as e:
+            print(f"[ERROR] Connection error: {e}")
+            return {"error": f"Connection error: {e}"}
         except Exception as e:
             print(f"[ERROR] Exception during tool exec POST: {e}")
-            raise
+            return {"error": f"Request failed: {e}"}
         if response.status_code == 200:
             payload = self._parse_sse_response(response.text)
             if not payload:

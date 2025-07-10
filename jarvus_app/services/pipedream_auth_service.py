@@ -49,7 +49,7 @@ class PipedreamAuthService:
             return None
         
         try:
-            logger.info("Fetching initial Pipedream access token")
+            # logger.info("Fetching initial Pipedream access token")
             
             payload = {
                 "grant_type": "client_credentials",
@@ -73,14 +73,14 @@ class PipedreamAuthService:
                 access_token = token_data.get("access_token")
                 expires_in = token_data.get("expires_in", 3599)  # Default 1 hour
                 
-                print(f"DEBUG: Token data: {token_data}")
-                print(f"DEBUG: Access token: {access_token}")
-                print(f"DEBUG: Expires in: {expires_in}")
+                # print(f"DEBUG: Token data: {token_data}")
+                # print(f"DEBUG: Access token: {access_token}")
+                # print(f"DEBUG: Expires in: {expires_in}")
                 
                 if access_token:
                     # Store token in session
                     self._store_token_in_session(access_token, expires_in)
-                    print("Successfully acquired Pipedream access token")
+                    print("[DEBUG] Successfully acquired Pipedream access token")
                     return access_token
                 else:
                     print("No access_token in Pipedream response")
@@ -103,7 +103,7 @@ class PipedreamAuthService:
         Returns:
             Optional[str]: New access token if successful, None otherwise
         """
-        logger.info("Getting new Pipedream access token using client credentials")
+        # logger.info("Getting new Pipedream access token using client credentials")
         return self.get_access_token()
     
     def get_token_from_session(self) -> Optional[str]:

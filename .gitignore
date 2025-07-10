@@ -24,6 +24,15 @@ ENV/
 
 # Browser connection files
 jarvus_desktop/browser_connection.json
+# ChromaDB vector database files
+chroma/
+chroma.db
+chroma.sqlite3
+chroma_data/
+# Common Chroma DB artifact patterns
+*.chroma.db
+*.chroma.sqlite3
+/chroma_index/
 
 # PyInstaller / py2exe
 *.manifest
@@ -72,3 +81,4 @@ htmlcov/
 
 # Flake8 configuration
 .flake8
+

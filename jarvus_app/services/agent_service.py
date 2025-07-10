@@ -27,6 +27,7 @@ from azure.ai.inference.models import (
 )
 from jarvus_app.services.tool_registry import tool_registry
 from jarvus_app.services.pipedream_auth_service import pipedream_auth_service
+from jarvus_app.services.pipedream_tool_registry import pipedream_tool_service
         
 
 logger = logging.getLogger(__name__)
@@ -56,10 +57,18 @@ class AgentService:
         if not name:
             abort(400, 'Agent name is required.')
         
+        # Always include Google Docs tools for all agents
+        default_tools = ['docs']
+        if tools:
+            # Merge user-selected tools with default tools, avoiding duplicates
+            all_tools = list(set(default_tools + tools))
+        else:
+            all_tools = default_tools
+        
         new_agent = History(
             user_id=user_id,
             name=name,
-            tools=tools or [],
+            tools=all_tools,
             description=description or '',
             messages=[]
         )
@@ -96,7 +105,7 @@ class AgentService:
         web_search_enabled: bool = True,
         logger=None
     ) -> Tuple[str, Dict[str, Any]]:
-        """Process a message with full memory context and tool orchestration, using two-step tool selection."""
+        """Process a message with full memory context and tool orchestration, using plan-then-act."""
         if logger is None:
             logger = logging.getLogger(__name__)
         if not thread_id:
@@ -107,25 +116,32 @@ class AgentService:
         )
         # Step 2: Tool selection
         filtered_tools = self._select_tools_with_llm(user_message, allowed_tools)
-        # If web_search_enabled is False, filter out web tools
-        if not web_search_enabled:
-            filtered_tools = [
-                t for t in filtered_tools
-                if not (hasattr(tool_registry.get_tool(t), 'category') and getattr(tool_registry.get_tool(t), 'category', None) and tool_registry.get_tool(t).category.value == 'web')
+        print("[DEBUG] filtered tools:", filtered_tools)
+        if filtered_tools:
+            # Step 3: Planning step
+            plan = self._plan_task_with_llm(user_message, filtered_tools)
+            # Inject plan into system prompt
+            plan_instructions = [
+                "### Plan",
+                f"You must follow this plan exactly, step by step: {json.dumps(plan, indent=2)}",
+                "You must only make tool calls that correspond to steps in the plan, and stop making tool calls when the plan is complete."
             ]
-        # Step 3: Orchestration
+            # Insert plan as a system message after the first system message
+            messages.insert(1, {"role": "system", "content": "\n".join(plan_instructions)})
+        # Step 4: Orchestration
+        orchestration_messages = messages.copy()
         final_assistant_message = self._orchestrate_tool_calls(
-            messages=messages,
+            messages=orchestration_messages,
             allowed_tools=filtered_tools,
             user_id=user_id,
             agent_id=agent_id,
             tool_choice=tool_choice,
-            pipedream_auth_service=pipedream_auth_service,
-            logger=logger
+            logger=logger,
+            plan=plan
         )
         # Save updated messages to DB (as dicts)
         agent.messages = []
-        for m in messages:
+        for m in orchestration_messages:
             if isinstance(m, UserMessage):
                 agent.messages.append({'role': 'user', 'content': m.content})
             elif isinstance(m, AssistantMessage):
@@ -137,7 +153,7 @@ class AgentService:
         db.session.commit()
         if final_assistant_message:
             self._save_interaction(agent, user_message, final_assistant_message)
-        self._store_memories_from_interaction(user_id, agent_id, messages)
+        self._store_memories_from_interaction(user_id, agent_id, orchestration_messages)
         agent = self.get_agent(agent_id, user_id)  # Re-fetch from DB
         return final_assistant_message, memory_info
     
@@ -179,16 +195,13 @@ class AgentService:
         thread_id: Optional[str],
         web_search_enabled: bool
     ):
+        from jarvus_app import config
         agent = self.get_agent(agent_id, user_id)
         allowed_tools = set(self.get_agent_tools(agent))
         if web_search_enabled:
             allowed_tools.add('web')
         allowed_tools = list(allowed_tools)
-        memory_context = memory_service.get_context_for_conversation(
-            user_id=user_id,
-            thread_id=thread_id,
-            current_message=user_message
-        )
+        # Get current state (working memory)
         current_state = memory_service.get_latest_state(thread_id, user_id)
         if not current_state:
             current_state = {
@@ -202,19 +215,54 @@ class AgentService:
             'content': user_message,
             'timestamp': datetime.utcnow().isoformat()
         })
-        messages = []
-        system_message = f"""You are a helpful AI assistant with access to user memories and conversation history.\n\n{memory_context if memory_context else 'No specific memories or context available.'}\n\nPlease be helpful, accurate, and remember important information about the user when appropriate."""
-        messages.append({'role': 'system', 'content': system_message})
-        conversation_messages = current_state['messages'][-10:]
+        # 1. System instructions
+        system_instructions = [
+            "### System Instructions",
+            config.Config.CHATBOT_SYSTEM_PROMPT.strip(),
+        ]
+        messages = [
+            {"role": "system", "content": "\n".join(system_instructions)}
+        ]
+        # 2. Long-term memory (episodic, semantic, procedural) from memory_service
+        memory_sections = memory_service.get_context_for_conversation(
+            user_id=user_id,
+            thread_id=thread_id,
+            as_sections=True
+        )
+        long_term_sections = []
+        if memory_sections['episodic']:
+            long_term_sections.append("### Episodic Memory")
+            long_term_sections.extend(memory_sections['episodic'])
+        if memory_sections['semantic']:
+            long_term_sections.append("\n### Semantic Memory")
+            long_term_sections.extend(memory_sections['semantic'])
+        if memory_sections['procedural']:
+            long_term_sections.append("\n### Procedural Memory")
+            long_term_sections.extend(memory_sections['procedural'])
+        messages.append({
+            "role": "system",
+            "content": "\n".join(long_term_sections) if long_term_sections else ""
+        })
+        # 3. Working memory (recent turns)
+        working_turns = []
+        conversation_messages = current_state['messages'][-10:] if 'messages' in current_state else []
         for msg in conversation_messages:
-            if msg.get('content'):
-                messages.append({
-                    'role': msg['role'],
-                    'content': msg['content']
-                })
+            if msg.get('content') and msg['role'] in ['user', 'assistant']:
+                content = msg['content']
+                if not (content.startswith('{') and content.endswith('}')) and 'tool_call' not in content.lower():
+                    working_turns.append({
+                        'role': msg['role'],
+                        'content': msg['content']
+                    })
+        messages.extend(working_turns)
+        # 4. Current user query (always last)
+        messages.append({
+            'role': 'user',
+            'content': user_message
+        })
         memory_info = {
             'thread_id': thread_id,
-            'memory_context_used': bool(memory_context)
+            'memory_context_used': True
         }
         return agent, allowed_tools, memory_info, messages
 
@@ -253,6 +301,99 @@ class AgentService:
         ]
         return filtered_tools
 
+    def _plan_task_with_llm(self, user_message, allowed_tools):
+        """
+        Use the LLM to generate a step-by-step plan for the user's request.
+        Returns a list of plan steps, each a dict with 'tool' and 'parameters'.
+        """
+        jarvus_ai = self.llm_client
+        planning_prompt = [
+            f"You are an AI agent with access to the following tools: {allowed_tools}. "
+            "Given the user's request, break it down into a step-by-step plan. "
+            "Respond with a JSON list, where each item is an action with a 'tool' name and 'parameters' dict. "
+            "If the task is simple, the list may have only one step."
+        ]
+        planning_messages = [
+            {"role": "system", "content": planning_prompt},
+            {"role": "user", "content": user_message}
+        ]
+        planning_response = jarvus_ai.create_chat_completion(planning_messages, logger=logger)
+        def parse_plan_from_response(resp):
+            try:
+                if isinstance(resp, dict) and 'assistant' in resp and 'content' in resp['assistant']:
+                    content = resp['assistant']['content']
+                elif isinstance(resp, dict) and 'choices' in resp and resp['choices']:
+                    content = resp['choices'][0]['message']['content']
+                else:
+                    content = str(resp)
+                import re, json
+                match = re.search(r'\[.*\]', content, re.DOTALL)
+                if match:
+                    return json.loads(match.group(0))
+                return json.loads(content)
+            except Exception:
+                return []
+        plan = parse_plan_from_response(planning_response)
+        # Ensure plan is a list of dicts with 'tool' and 'parameters'
+        filtered_plan = []
+        for step in plan:
+            if isinstance(step, dict) and 'tool' in step and 'parameters' in step:
+                filtered_plan.append(step)
+        return filtered_plan
+
+    def _format_tool_result_for_llm(self, tool_result):
+        """
+        Format a tool result dict (from pipedream or other tool calls) into a concise, LLM-friendly summary string.
+        Looks for summary fields, titles, IDs, or falls back to a short JSON snippet.
+        """
+        import json
+        if isinstance(tool_result, str):
+            try:
+                tool_result = json.loads(tool_result)
+            except Exception:
+                return tool_result[:500]  # fallback: truncate string
+        # Try to extract a summary
+        summary = None
+        # Pipedream: {"content": [{"type": "text", "text": "{...}"}]}
+        if isinstance(tool_result, dict):
+            # Look for exports.$summary
+            try:
+                if 'content' in tool_result and isinstance(tool_result['content'], list):
+                    for item in tool_result['content']:
+                        if isinstance(item, dict) and 'text' in item:
+                            # Try to parse the text as JSON
+                            try:
+                                inner = json.loads(item['text'])
+                                summary = inner.get('exports', {}).get('$summary')
+                                if summary:
+                                    return summary
+                                # Fallback: look for title or documentId
+                                title = inner.get('ret', {}).get('title')
+                                doc_id = inner.get('ret', {}).get('documentId')
+                                if title and doc_id:
+                                    return f"Google Doc: {title} (ID: {doc_id})"
+                            except Exception:
+                                continue
+                # Direct summary
+                summary = tool_result.get('exports', {}).get('$summary')
+                if summary:
+                    return summary
+                # Fallback: title/id
+                title = tool_result.get('ret', {}).get('title')
+                doc_id = tool_result.get('ret', {}).get('documentId')
+                if title and doc_id:
+                    return f"Google Doc: {title} (ID: {doc_id})"
+                # Fallback: error
+                if 'error' in tool_result:
+                    return f"Tool error: {tool_result['error']}"
+            except Exception:
+                pass
+        # Fallback: short JSON
+        try:
+            return json.dumps(tool_result, indent=2)[:500]
+        except Exception:
+            return str(tool_result)[:500]
+
     def _orchestrate_tool_calls(
         self,
         messages,
@@ -260,21 +401,25 @@ class AgentService:
         user_id,
         agent_id,
         tool_choice,
-        logger
+        logger,
+        plan=None
     ):
-        """Orchestrate tool calling logic for both legacy and enhanced chat handlers."""
+        """Orchestrate tool calling logic for both legacy and enhanced chat handlers, with plan adherence."""
         jarvus_ai = self.llm_client
-        sdk_tools = tool_registry.get_sdk_tools_by_modules(allowed_tools)
+        if not pipedream_tool_service.tools_registry.is_fresh():
+            pipedream_tool_service.discover_all_tools(str(user_id))
+        sdk_tools = pipedream_tool_service.get_all_sdk_tools()
         new_messages = []
+        plan = plan or []
+        plan_steps_remaining = plan.copy() if plan else []
         try:
             while True:
                 logger.info("Calling Azure AI for completion (_orchestrate_tool_calls)")
-                response: ChatCompletions = jarvus_ai.client.complete(
+                response = jarvus_ai.create_chat_completion(
                     messages=messages,
-                    model=jarvus_ai.deployment_name,
                     tools=sdk_tools,
-                    stream=False,
-                    tool_choice=tool_choice
+                    tool_choice=tool_choice,
+                    logger=logger
                 )
                 logger.info("Received response from Azure AI (_orchestrate_tool_calls)")
                 choice = response.choices[0]
@@ -290,6 +435,18 @@ class AgentService:
                     retries = 0
                     max_retries = 3
                     current_call = call
+                    # Enforce plan adherence: only allow tool calls that match the next plan step
+                    allowed = False
+                    if plan_steps_remaining:
+                        next_step = plan_steps_remaining[0]
+                        if (call.function.name == next_step['tool']):
+                            allowed = True
+                    else:
+                        # If no plan, allow any tool (legacy fallback)
+                        allowed = True
+                    if not allowed:
+                        logger.warning(f"Tool call {call.function.name} not in plan or out of order. Skipping.")
+                        continue
                     while retries < max_retries:
                         tool_name = current_call.function.name
                         tool_args = json.loads(current_call.function.arguments) if current_call.function.arguments else {}
@@ -297,25 +454,19 @@ class AgentService:
                         try:
                             app_slug = "google_docs"  # TODO: Dynamically determine app_slug if needed
                             external_user_id = str(user_id)
-                            tool_result = pipedream_auth_service.execute_tool(
+                            tool_result = pipedream_tool_service.execute_tool(
                                 external_user_id=external_user_id,
                                 app_slug=app_slug,
                                 tool_name=tool_name,
                                 tool_args=tool_args
                             )
-                            tool_msg = ToolMessage(content=json.dumps(tool_result), tool_call_id=current_call.id)
+                            # Format tool result for LLM
+                            formatted_result = self._format_tool_result_for_llm(tool_result)
+                            tool_msg = ToolMessage(content=formatted_result, tool_call_id=current_call.id)
                             messages.append(tool_msg)
-                            logger.info("Prompting LLM for final response after tool execution (_orchestrate_tool_calls)")
-                            response = jarvus_ai.client.complete(
-                                messages=messages,
-                                model=jarvus_ai.deployment_name,
-                                stream=False,
-                            )
-                            choice = response.choices[0]
-                            msg = choice.message
-                            assistant_msg = AssistantMessage(content=msg.content if msg.content is not None else "", tool_calls=msg.tool_calls)
-                            messages.append(assistant_msg)
-                            new_messages.append({'role': 'assistant', 'content': assistant_msg.content})
+                            # Mark plan step as completed
+                            if plan_steps_remaining and tool_name == plan_steps_remaining[0]['tool']:
+                                plan_steps_remaining.pop(0)
                             break
                         except Exception as e:
                             error_msg = f"Tool call '{tool_name}' failed with error: {str(e)}"
@@ -329,12 +480,11 @@ class AgentService:
                                 logger.error(f"Max retries reached for tool call '{tool_name}'. Moving on. (_orchestrate_tool_calls)")
                                 break
                             logger.info("Prompting LLM again after tool call failure (_orchestrate_tool_calls)")
-                            response = jarvus_ai.client.complete(
+                            response = jarvus_ai.create_chat_completion(
                                 messages=messages,
-                                model=jarvus_ai.deployment_name,
                                 tools=sdk_tools,
-                                stream=False,
-                                tool_choice="required"
+                                tool_choice="required",
+                                logger=logger
                             )
                             logger.info("Received response from Azure AI (retry, _orchestrate_tool_calls)")
                             choice = response.choices[0]
@@ -347,6 +497,10 @@ class AgentService:
                                 logger.info("No tool calls in response after retry - conversation complete (_orchestrate_tool_calls)")
                                 break
                             current_call = msg.tool_calls[0]
+                # Stop if plan is complete
+                if plan_steps_remaining == []:
+                    logger.info("Plan is complete. Stopping tool call loop.")
+                    break
             # Return the last assistant message
             final_assistant_message = ""
             if new_messages:

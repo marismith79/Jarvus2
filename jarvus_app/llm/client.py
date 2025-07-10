@@ -57,15 +57,10 @@ class JarvusAIClient:
         frequency_penalty: float = 0.0,
         tools: Optional[List[dict]] = None,
         tool_choice: Optional[str] = None,
-    ) -> Dict:
+        logger: Optional[Any] = None,  # Add logger argument
+    ):
         """Create a chat completion using Azure AI Foundry API."""
         try:
-            print("\n=== Creating Chat Completion ===")
-            print(f"Number of messages: {len(messages)}")
-            print(f"Last message role: {messages[-1]['role'] if messages else 'None'}")
-            print(f"Tool choice: {tool_choice}")
-            # print(f"Raw messages: {messages}")
-            
             kwargs = {
                 "messages": messages,
                 "max_tokens": max_tokens,
@@ -77,27 +72,26 @@ class JarvusAIClient:
                 **({"tools": tools} if tools else {}),
                 **({"tool_choice": tool_choice} if tool_choice else {}),
             }
+            if logger:
+                logger.info(f"[AzureAI] Request kwargs: {json.dumps({k: v for k, v in kwargs.items() if k != 'messages'}, default=str)[:1000]}")
+                logger.info(f"[AzureAI] Request messages: {json.dumps(messages, default=str)}")
             response = self.client.complete(**kwargs)
-            
-            print(f"Request kwargs: {kwargs}")
-            print(f"Raw response: {response}")
-            print(f"Response choices: {response['choices']}")
-            print(f"First choice message: {response['choices'][0]['message']}")
-            
-            choice = response.choices[0] # ChatChoice
-            msg = choice.message # ChatResponseMessage
-            if msg.tool_calls:
-                # one or more ChatCompletionsToolCall objects
-                for call in msg.tool_calls:
-                    print("Function to call:", call.name)
-                    print("With args JSON:", call.arguments)
-            else:
-                return {"assistant": {"role": msg.role, "content": msg.content}}
-
+            if logger:
+                try:
+                    logger.info(f"[AzureAI] Response: {str(response)[:2000]}")
+                except Exception as e:
+                    logger.warning(f"[AzureAI] Could not log response: {e}")
+            return response
         except Exception as e:
             error_msg = f"Azure AI Foundry API Error: {str(e)}"
+            if logger:
+                logger.error(f"[AzureAI] Exception: {error_msg}")
             return {"error": error_msg}
 
     def format_message(self, role: str, content: str) -> Dict[str, str]:
         """Format a message for the chat completion."""
         return {"role": role, "content": content}
+    
+    def format_response(self, response) -> Dict:
+        """Format a response from azure open ai api"""
+        return {"assistant": {"role": response.choices[0].message.role, "content": response.choices[0].message.content}}
