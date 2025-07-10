@@ -150,6 +150,16 @@ class BrowserAPI {
             }
         });
         
+        // Take automatic screenshot (base64 only)
+        this.app.post('/api/browser/screenshot-auto', async (req, res) => {
+            try {
+                const result = await this.takeScreenshot(); // No path = base64 only
+                res.json(result);
+            } catch (error) {
+                res.json({ success: false, error: error.message });
+            }
+        });
+        
         // Get fonts
         this.app.get('/api/browser/fonts', async (req, res) => {
             try {
@@ -483,13 +493,23 @@ class BrowserAPI {
                 return { success: false, error: 'No active page' };
             }
             
-            if (!screenshotPath) {
-                const os = require('os');
-                screenshotPath = path.join(os.tmpdir(), `screenshot_${Date.now()}.png`);
-            }
+            // Capture full page screenshot as base64
+            const screenshotBuffer = await this.currentPage.screenshot({ 
+                fullPage: true,  // Capture entire page, not just viewport
+                type: 'png',
+                quality: 90  // High quality for AI analysis
+            });
             
-            await this.currentPage.screenshot({ path: screenshotPath });
-            return { success: true, path: screenshotPath };
+            // Convert buffer to base64
+            const base64Data = screenshotBuffer.toString('base64');
+            
+            // Return base64 data only
+            return { 
+                success: true, 
+                base64: base64Data,
+                size: screenshotBuffer.length,
+                format: 'png'
+            };
             
         } catch (error) {
             return { success: false, error: error.message };
@@ -836,4 +856,4 @@ class BrowserAPI {
     }
 }
 
-module.exports = BrowserAPI; 
+module.exports = BrowserAPI;
