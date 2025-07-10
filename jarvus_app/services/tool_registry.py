@@ -297,7 +297,7 @@ tool_registry = ToolRegistry()
 
 # Import all tool registration functions
 from .tools import (
-    register_chrome_tools,
+    register_browser_tools,
     register_web_search_tools,
     # register_docs_tools,
     # register_gmail_tools,
