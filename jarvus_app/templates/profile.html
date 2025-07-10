@@ -94,9 +94,9 @@
                                 <span class="integration-name">Gmail</span>
                             </div>
                             {% if gmail_connected %}
-                                <button class="cta-button secondary" onclick="disconnectService('gmail')">Disconnect</button>
+                                <button class="cta-button secondary" onclick="disconnectService('google_gmail')">Disconnect</button>
                             {% else %}
-                                <button class="cta-button" onclick="connectService('gmail')">Connect</button>
+                                <button class="cta-button" onclick="connectService('google_gmail')">Connect</button>
                             {% endif %}
                         </div>
                         <!-- Google Sheets Integration -->
@@ -106,9 +106,9 @@
                                 <span class="integration-name">Google Sheets</span>
                             </div>
                             {% if sheets_connected %}
-                                <button class="cta-button secondary" onclick="disconnectService('sheets')">Disconnect</button>
+                                <button class="cta-button secondary" onclick="disconnectService('google_sheets')">Disconnect</button>
                             {% else %}
-                                <button class="cta-button" onclick="connectService('sheets')">Connect</button>
+                                <button class="cta-button" onclick="connectService('google_sheets')">Connect</button>
                             {% endif %}
                         </div>
                     </div>

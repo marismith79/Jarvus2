@@ -18,7 +18,7 @@ from ..utils.tool_permissions import grant_tool_access
 from ..models.user_tool import UserTool
 from ..db import db
 
-GOOGLE_SERVICES = ['gmail', 'google_docs', 'google_sheets', 'google_slides', 'google_drive', 'google_calendar'];
+SERVICES = ['google_gmail', 'google_docs', 'google_sheets', 'google_slides', 'google_drive', 'google_calendar'];
 
 
 oauth_bp = Blueprint("oauth", __name__)
@@ -61,7 +61,7 @@ def _handle_pipedream_response(response: requests.Response) -> dict:
 @login_required
 def connect_service(service):
     """Initiate OAuth flow for the specified service"""
-    if service in GOOGLE_SERVICES:
+    if service in SERVICES:
         return connect_pipedream_service(service)
     else:
         return redirect(url_for("profile.profile"))
@@ -72,25 +72,46 @@ def connect_service(service):
 def disconnect_service(service):
     """Disconnect the specified service, including Pipedream API revocation"""
     from ..services.pipedream_auth_service import pipedream_auth_service
-    print(
-        f"[DEBUG] Disconnect requested for service: {service}, user: {current_user.id}"
-    )
-    if service in GOOGLE_SERVICES:
+    print(f"[DEBUG] Disconnect requested for service: {service}, user: {current_user.id}")
+    if service in SERVICES:
         success = True
         error = None
-        # Remove OAuth credentials from database (but first get connect_id)
-        creds = OAuthCredentials.get_credentials(current_user.id, service)
-        connect_id = creds.connect_id if creds else None
-        # Call Pipedream API to revoke the connected account
         project_id = os.getenv("PIPEDREAM_PROJECT_ID")
+        environment = os.getenv("PIPEDREAM_ENVIRONMENT", "development")
         access_token = pipedream_auth_service.get_token_from_session()
-        if connect_id and project_id and access_token:
-            url = f"https://api.pipedream.com/v1/connect/{project_id}/accounts/{connect_id}"
-            headers = {"Authorization": f"Bearer {access_token}"}
+        user_id = current_user.id
+
+        if project_id and access_token:
+            # 1. List all accounts for this user and app
+            list_url = f"https://api.pipedream.com/v1/connect/{project_id}/accounts?external_user_id={user_id}&app={service}"
+            headers = {
+                "Authorization": f"Bearer {access_token}",
+                "X-PD-Environment": environment
+            }
             try:
-                resp = requests.delete(url, headers=headers)
-                print(f"[DEBUG] Pipedream disconnect response: {resp.status_code} {resp.text}")
-                if resp.status_code != 204:
+                resp = requests.get(list_url, headers=headers, timeout=10)
+                if resp.status_code == 200:
+                    accounts = resp.json().get("data", [])
+                    if accounts:
+                        account_id = accounts[0].get("id")
+                        # 2. Delete the account by account_id
+                        del_url = f"https://api.pipedream.com/v1/connect/{project_id}/accounts/{account_id}"
+                        del_headers = {
+                            "Authorization": f"Bearer {access_token}",
+                            "X-PD-Environment": environment,
+                            "Content-Type": "application/json"
+                        }
+                        del_resp = requests.delete(del_url, headers=del_headers)
+                        print(f"[DEBUG] Pipedream disconnect response: {del_resp.status_code} {del_resp.text}")
+                        if del_resp.status_code != 204:
+                            success = False
+                            error = del_resp.text
+                    else:
+                        print("[DEBUG] No connected account found for this app/user.")
+                        success = False
+                        error = "No connected account found for this app/user."
+                else:
+                    print(f"[DEBUG] Failed to list accounts: {resp.status_code} {resp.text}")
                     success = False
                     error = resp.text
             except Exception as e:
@@ -98,12 +119,14 @@ def disconnect_service(service):
                 success = False
                 error = str(e)
         else:
-            print(f"[DEBUG] Missing connect_id, project_id, or access_token for disconnect")
+            print(f"[DEBUG] Missing project_id or access_token for disconnect")
             success = False
-            error = "Missing connect_id, project_id, or access_token"
-        # Remove OAuth credentials from database
+            error = "Missing project_id or access_token"
+        
+        # Remove OAuth credentials from database (set status to NULL)
         creds_removed = OAuthCredentials.remove_credentials(current_user.id, service)
         print(f"[DEBUG] OAuth credentials removal result for {service}: {creds_removed}")
+        
         # Deactivate UserTool record
         try:
             from ..models.user_tool import UserTool
@@ -115,6 +138,7 @@ def disconnect_service(service):
         except Exception as e:
             print(f"[DEBUG] Failed to deactivate UserTool: {e}")
             success = False
+        
         # Revoke all tool permissions
         try:
             from ..models.tool_permission import ToolPermission
@@ -126,10 +150,12 @@ def disconnect_service(service):
         except Exception as e:
             print(f"[DEBUG] Failed to revoke tool permissions: {e}")
             success = False
+        
         if success:
             return jsonify({"success": True})
         else:
             return jsonify({"success": False, "error": error or "Failed to disconnect"}), 400
+    
     print(f"[DEBUG] Invalid service disconnect attempted: {service}")
     return jsonify({"success": False, "error": "Invalid service"})
 
@@ -147,7 +173,7 @@ def pipedream_callback(service):
     print(f"DEBUG: All headers: {dict(request.headers)}")
     
     # Validate service
-    if service not in GOOGLE_SERVICES:
+    if service not in SERVICES:
         print(f"ERROR: Invalid service: {service}")
         return redirect(url_for("profile.profile"))
     
@@ -157,17 +183,9 @@ def pipedream_callback(service):
         print(f"ERROR: Pipedream returned error: {error}")
         return redirect(url_for("profile.profile"))
     
-    # Get connection_id and state from callback (Connect Link API uses connection_id)
-    # Print all request arguments for debugging
-    print(f"DEBUG: All request arguments: {dict(request.args)}")
-    connection_id = (
-        request.args.get('connection_id')
-        or request.args.get("connect_session_id")
-        or request.args.get("id")       
-    )
+    # Get state from callback
     state = request.args.get('state')
     
-    print(f"DEBUG: Received connection_id: {connection_id}")
     print(f"DEBUG: Received state: {state}")
     print(f"DEBUG: Expected state: {session.get('oauth_state')}")
     
@@ -177,19 +195,14 @@ def pipedream_callback(service):
         print("ERROR: State parameter mismatch")
         return redirect(url_for("profile.profile"))
     
-    if not connection_id:
-        print("ERROR: No connection_id received from Pipedream")
-        return redirect(url_for("profile.profile"))
-    
     try:
-        # Store the connection_id in database
+        # Store the connection status in database (status=1 for connected)
         OAuthCredentials.store_credentials(
             current_user.id,
             service,
-            connect_id=connection_id,  # Store as connect_id in our DB
             state=state
         )
-        print(f"DEBUG: Stored connection_id in database for {service}")
+        print(f"DEBUG: Stored connection status in database for {service}")
         
         # Grant tool permissions after successful OAuth
         try:
@@ -252,6 +265,8 @@ def connect_pipedream_service(service):
     state = secrets.token_urlsafe(32)
     session["oauth_state"] = state
     
+    environment = os.getenv("PIPEDREAM_ENVIRONMENT", "development")
+    
     print("DEBUG: PIPEDREAM_PROJECT_ID =", os.getenv("PIPEDREAM_PROJECT_ID"))
     print("DEBUG: OAUTH_APP_ID =", os.getenv(f"PIPEDREAM_{service.upper()}_OAUTH_APP_ID"))
     
@@ -273,7 +288,7 @@ def connect_pipedream_service(service):
         token_response = oauth_session.post(
             "https://api.pipedream.com/v1/oauth/token",
             headers={
-                "X-PD-Environment": "development"
+                "X-PD-Environment": environment
             },
             data=token_data,
             timeout=30
@@ -298,8 +313,7 @@ def connect_pipedream_service(service):
         print("\n=== STEP 2: CREATING CONNECT TOKEN ===")
         
         connect_token_data = {
-            # "external_user_id": str(current_user.id),
-            "external_user_id": "b2c6c978-ce23-470e-aa97-f32e2cfb54e8",
+            "external_user_id": str(current_user.id),
             "app": {
                 "id": oauth_app_id,
                 "name": service
@@ -318,7 +332,7 @@ def connect_pipedream_service(service):
             headers={
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {bearer_token}",
-                "X-PD-Environment": "development"
+                "X-PD-Environment": environment
             },
             json=connect_token_data,
             timeout=30

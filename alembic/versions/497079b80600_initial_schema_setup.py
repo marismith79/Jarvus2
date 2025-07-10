@@ -44,12 +44,11 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.String(length=50), nullable=False),
     sa.Column('service', sa.String(length=50), nullable=False),
-    sa.Column('access_token', sa.Text(), nullable=False),
-    sa.Column('refresh_token', sa.Text(), nullable=True),
-    sa.Column('expires_at', sa.DateTime(), nullable=True),
+    sa.Column('status', sa.Integer(), nullable=True),
+    sa.Column('state', sa.String(length=255), nullable=True),
+    sa.Column('account_id', sa.String(length=255), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.Column('updated_at', sa.DateTime(), nullable=True),
-    sa.Column('scopes', sa.Text(), nullable=True),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
