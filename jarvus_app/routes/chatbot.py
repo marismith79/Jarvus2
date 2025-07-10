@@ -30,7 +30,6 @@ from ..services.agent_service import agent_service
 from ..utils.token_utils import get_valid_jwt_token
 from ..services.pipedream_tool_registry import pipedream_tool_service
 
-
 jarvus_ai = JarvusAIClient()
 
 chatbot_bp = Blueprint('chatbot', __name__)
@@ -100,7 +99,7 @@ def handle_chat_message():
         user_text = data.get('message', '').strip()
         agent_id = data.get('agent_id')
         thread_id = data.get('thread_id')  # Optional thread ID for memory
-        tool_choice = data.get('tool_choice', 'auto')
+        tool_choice = data.get('tool_choice', 'required')
         web_search_enabled = data.get('web_search_enabled', True)
         if not all([user_text, agent_id]):
             return jsonify({'error': 'Message and agent_id are required.'}), 400

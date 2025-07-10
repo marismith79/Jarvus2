@@ -107,6 +107,9 @@ def setup_logging():
     )
     logging.basicConfig(level=logging.INFO)
     logging.getLogger("jarvus.memory").setLevel(logging.INFO)
+    
+    logging.getLogger("azure.core.pipeline.policies.http_logging_policy").setLevel(logging.WARNING)
+
 
     # Get a logger for your app
     logger = logging.getLogger("jarvus")

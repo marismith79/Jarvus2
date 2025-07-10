@@ -167,17 +167,8 @@ def pipedream_callback(service):
         print(f"ERROR: Pipedream returned error: {error}")
         return redirect(url_for("profile.profile"))
     
-    # Get connection_id and state from callback (Connect Link API uses connection_id)
-    # Print all request arguments for debugging
-    print(f"DEBUG: All request arguments: {dict(request.args)}")
-    connection_id = (
-        request.args.get('connection_id')
-        or request.args.get("connect_session_id")
-        or request.args.get("id")       
-    )
+    # Get state from callback and verify it
     state = request.args.get('state')
-    
-    print(f"DEBUG: Received connection_id: {connection_id}")
     print(f"DEBUG: Received state: {state}")
     print(f"DEBUG: Expected state: {session.get('oauth_state')}")
     
@@ -187,19 +178,21 @@ def pipedream_callback(service):
         print("ERROR: State parameter mismatch")
         return redirect(url_for("profile.profile"))
     
-    if not connection_id:
-        print("ERROR: No connection_id received from Pipedream")
-        return redirect(url_for("profile.profile"))
+    # For Pipedream Connect Link API, we don't need a connection_id
+    # Pipedream stores the external_user_id we sent during the OAuth flow
+    # We can call tools using just the access token and external_user_id
+    print("DEBUG: OAuth flow completed successfully - no connection_id needed")
     
     try:
-        # Store the connection_id in database
+        # Store OAuth credentials in database (no connection_id needed)
+        # We'll use a placeholder since Pipedream stores the external_user_id
         OAuthCredentials.store_credentials(
             current_user.id,
             service,
-            connect_id=connection_id,  # Store as connect_id in our DB
+            connect_id="pipedream_connected",  # Placeholder to indicate connection
             state=state
         )
-        print(f"DEBUG: Stored connection_id in database for {service}")
+        print(f"DEBUG: Stored OAuth credentials in database for {service}")
         
         # Grant tool permissions after successful OAuth
         try:
@@ -341,9 +334,12 @@ def connect_pipedream_service(service):
         # Step 2: Use Bearer token to create connect token
         print("\n=== STEP 2: CREATING CONNECT TOKEN ===")
         
+        external_user_id = str(current_user.id)
+        print(f"[OAUTH DEBUG] Sending external_user_id to Pipedream: {external_user_id}")
+        print(f"[OAUTH DEBUG] Current user ID: {current_user.id}")
+        
         connect_token_data = {
-            # "external_user_id": str(current_user.id),
-            "external_user_id": "b2c6c978-ce23-470e-aa97-f32e2cfb54e8",
+            "external_user_id": external_user_id,
             "app": {
                 "id": oauth_app_id,
                 "name": "google_docs"

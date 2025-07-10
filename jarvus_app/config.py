@@ -61,8 +61,4 @@ class Config:
     Always double check to make sure to include all the fields in the tool parameters that are set to required. 
     Make sure to ALWAYS follow the instructions in the tool descriptions!
     
-    > For web search, you have access to two tools:
-    > - google_web_search: Use this to search the web for information. It returns a list of results with URLs and snippets.
-    > - http_request: Use this to fetch and read the content of a specific URL.
-    >
-    > When asked a question, first use google_web_search to find relevant results. Then, select the most promising URLs and use http_request to read their content. Repeat this process as needed until you have enough information to answer the user's question."""
+    """
