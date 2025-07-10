@@ -14,7 +14,7 @@ TOOLS = {
     "google_slides": "Access to Google Slides functionality through MCP server",
     "google_drive": "Access to Google Drive functionality through MCP server",
     "google_calendar": "Access to Google Calendar functionality through MCP server",
-    "google_gmail": "Access to Google Gmail functionality through MCP server",
+    "gmail": "Access to Google Gmail functionality through MCP server",
 }
 
 def grant_tool_access(user_id, tool_name, duration_days=None):

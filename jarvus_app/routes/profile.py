@@ -34,7 +34,7 @@ def profile():
         notion_connected=connected_services.get("notion", False),
         slack_connected=connected_services.get("slack", False),
         zoom_connected=connected_services.get("zoom", False),
-        gmail_connected=connected_services.get("google_gmail", False),
+        gmail_connected=connected_services.get("gmail", False),
         drive_connected=connected_services.get("google_drive", False),
         sheets_connected=connected_services.get("google_sheets", False),
         slides_connected=connected_services.get("google_slides", False),

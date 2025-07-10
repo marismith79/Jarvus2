@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Connection handling
     window.connectService = function(service) {
         // Handle all Google services
-        const googleServices = ['google_gmail', 'google_docs', 'google_sheets', 'google_slides', 'google_drive', 'google_calendar'];
+        const googleServices = ['gmail', 'google_docs', 'google_sheets', 'google_slides', 'google_drive', 'google_calendar'];
         
         if (googleServices.includes(service)) {
             // Open Pipedream Connect Link directly in the same window

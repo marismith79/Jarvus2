@@ -18,7 +18,7 @@ from ..utils.tool_permissions import grant_tool_access
 from ..models.user_tool import UserTool
 from ..db import db
 
-SERVICES = ['google_gmail', 'google_docs', 'google_sheets', 'google_slides', 'google_drive', 'google_calendar'];
+SERVICES = ['gmail', 'google_docs', 'google_sheets', 'google_slides', 'google_drive', 'google_calendar'];
 
 
 oauth_bp = Blueprint("oauth", __name__)
