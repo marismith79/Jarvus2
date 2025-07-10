@@ -105,7 +105,6 @@ function showComingSoon() {
 }
 
 function disconnectService(service) {
-    console.log('Attempting to disconnect:', service);
     fetch(`/disconnect/${service}`, {
         method: 'POST',
         headers: {
@@ -114,11 +113,10 @@ function disconnectService(service) {
     })
     .then(response => response.json())
     .then(data => {
-        console.log('Disconnect API response:', data);
         if (data.success) {
             window.location.reload();
         } else {
-            alert('Failed to disconnect service.');
+            alert('Failed to disconnect service: ' + (data.error || 'Unknown error'));
         }
     })
     .catch(error => {

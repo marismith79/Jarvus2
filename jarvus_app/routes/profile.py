@@ -26,11 +26,17 @@ def profile():
     # Get connected services using centralized function
     connected_services = get_connected_services(current_user.id)
 
+    # Add all Google services for template context
     return render_template(
         "profile.html",
         user=current_user,
-        docs_connected=connected_services["docs"],
-        notion_connected=connected_services["notion"],
-        slack_connected=connected_services["slack"],
-        zoom_connected=connected_services["zoom"],
+        docs_connected=connected_services.get("docs", False),
+        notion_connected=connected_services.get("notion", False),
+        slack_connected=connected_services.get("slack", False),
+        zoom_connected=connected_services.get("zoom", False),
+        gmail_connected=connected_services.get("gmail", False),
+        drive_connected=connected_services.get("google_drive", False),
+        sheets_connected=connected_services.get("google_sheets", False),
+        slides_connected=connected_services.get("google_slides", False),
+        calendar_connected=connected_services.get("google_calendar", False),
     )

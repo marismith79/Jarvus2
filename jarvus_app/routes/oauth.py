@@ -70,17 +70,40 @@ def connect_service(service):
 @oauth_bp.route("/disconnect/<service>", methods=["POST"])
 @login_required
 def disconnect_service(service):
-    """Disconnect the specified service"""
+    """Disconnect the specified service, including Pipedream API revocation"""
+    from ..services.pipedream_auth_service import pipedream_auth_service
     print(
         f"[DEBUG] Disconnect requested for service: {service}, user: {current_user.id}"
     )
     if service in GOOGLE_SERVICES:
         success = True
-        
+        error = None
+        # Remove OAuth credentials from database (but first get connect_id)
+        creds = OAuthCredentials.get_credentials(current_user.id, service)
+        connect_id = creds.connect_id if creds else None
+        # Call Pipedream API to revoke the connected account
+        project_id = os.getenv("PIPEDREAM_PROJECT_ID")
+        access_token = pipedream_auth_service.get_token_from_session()
+        if connect_id and project_id and access_token:
+            url = f"https://api.pipedream.com/v1/connect/{project_id}/accounts/{connect_id}"
+            headers = {"Authorization": f"Bearer {access_token}"}
+            try:
+                resp = requests.delete(url, headers=headers)
+                print(f"[DEBUG] Pipedream disconnect response: {resp.status_code} {resp.text}")
+                if resp.status_code != 204:
+                    success = False
+                    error = resp.text
+            except Exception as e:
+                print(f"[DEBUG] Exception during Pipedream disconnect: {e}")
+                success = False
+                error = str(e)
+        else:
+            print(f"[DEBUG] Missing connect_id, project_id, or access_token for disconnect")
+            success = False
+            error = "Missing connect_id, project_id, or access_token"
         # Remove OAuth credentials from database
         creds_removed = OAuthCredentials.remove_credentials(current_user.id, service)
         print(f"[DEBUG] OAuth credentials removal result for {service}: {creds_removed}")
-        
         # Deactivate UserTool record
         try:
             from ..models.user_tool import UserTool
@@ -92,7 +115,6 @@ def disconnect_service(service):
         except Exception as e:
             print(f"[DEBUG] Failed to deactivate UserTool: {e}")
             success = False
-        
         # Revoke all tool permissions
         try:
             from ..models.tool_permission import ToolPermission
@@ -104,9 +126,10 @@ def disconnect_service(service):
         except Exception as e:
             print(f"[DEBUG] Failed to revoke tool permissions: {e}")
             success = False
-        
-        return jsonify({"success": success})
-    
+        if success:
+            return jsonify({"success": True})
+        else:
+            return jsonify({"success": False, "error": error or "Failed to disconnect"}), 400
     print(f"[DEBUG] Invalid service disconnect attempted: {service}")
     return jsonify({"success": False, "error": "Invalid service"})
 
