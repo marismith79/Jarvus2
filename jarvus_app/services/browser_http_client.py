@@ -100,6 +100,10 @@ class BrowserHTTPClient:
         data = {"path": path} if path else {}
         return self._make_request('POST', '/api/browser/screenshot', data)
     
+    def take_screenshot_auto(self) -> Dict[str, Any]:
+        """Take automatic screenshot and return base64 data."""
+        return self._make_request('POST', '/api/browser/screenshot-auto', {})
+    
     def get_fonts(self) -> Dict[str, Any]:
         """Get fonts from page."""
         return self._make_request('GET', '/api/browser/fonts')
@@ -186,6 +190,10 @@ def sync_close_current_tab() -> Dict[str, Any]:
 def sync_take_screenshot(path: str = None) -> Dict[str, Any]:
     """Synchronously take screenshot of current page."""
     return browser_client.take_screenshot(path)
+
+def sync_take_screenshot_auto() -> Dict[str, Any]:
+    """Synchronously take automatic screenshot and return base64 data."""
+    return browser_client.take_screenshot_auto()
 
 def sync_execute_javascript(script: str) -> Dict[str, Any]:
     """Synchronously execute JavaScript on current page."""

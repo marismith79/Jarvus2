@@ -17,6 +17,7 @@ from ..models.history import History, InteractionHistory
 from ..models.memory import ShortTermMemory, LongTermMemory
 from .memory_service import memory_service, MemoryConfig
 from ..llm.client import JarvusAIClient
+from ..services.browser_http_client import sync_take_screenshot_auto
 
 from azure.ai.inference.models import (
     SystemMessage,
@@ -110,9 +111,22 @@ class AgentService:
             logger = logging.getLogger(__name__)
         if not thread_id:
             thread_id = f"thread_{agent_id}_{user_id}_{int(datetime.utcnow().timestamp())}"
+        
+        # Capture screenshot before processing message
+        screenshot_data = None
+        try:
+            screenshot_result = sync_take_screenshot_auto()
+            if screenshot_result.get('success') and screenshot_result.get('base64'):
+                screenshot_data = screenshot_result['base64']
+                logger.info("Screenshot captured successfully for chat message")
+            else:
+                logger.warning(f"Screenshot capture failed: {screenshot_result.get('error', 'Unknown error')}")
+        except Exception as e:
+            logger.error(f"Error capturing screenshot: {str(e)}")
+        
         # Step 1: Get context
         agent, allowed_tools, memory_info, messages = self._get_context_for_message(
-            agent_id, user_id, user_message, thread_id, web_search_enabled
+            agent_id, user_id, user_message, thread_id, web_search_enabled, screenshot_data
         )
         # Step 2: Tool selection
         filtered_tools = self._select_tools_with_llm(user_message, allowed_tools)
@@ -193,7 +207,8 @@ class AgentService:
         user_id: int,
         user_message: str,
         thread_id: Optional[str],
-        web_search_enabled: bool
+        web_search_enabled: bool,
+        screenshot_data: Optional[str]
     ):
         from jarvus_app import config
         agent = self.get_agent(agent_id, user_id)
@@ -256,9 +271,15 @@ class AgentService:
                     })
         messages.extend(working_turns)
         # 4. Current user query (always last)
+        if screenshot_data:
+            # Include screenshot with the user message for multimodal input
+            user_content = f"{user_message}\n\n[SCREENSHOT: data:image/png;base64,{screenshot_data}]"
+        else:
+            user_content = user_message
+            
         messages.append({
             'role': 'user',
-            'content': user_message
+            'content': user_content
         })
         memory_info = {
             'thread_id': thread_id,
