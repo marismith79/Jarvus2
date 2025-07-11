@@ -101,23 +101,31 @@ def handle_chat_message():
         thread_id = data.get('thread_id')  # Optional thread ID for memory
         tool_choice = data.get('tool_choice', 'auto')
         web_search_enabled = data.get('web_search_enabled', True)
+        user_id = current_user.id  # Capture user_id here
         if not all([user_text, agent_id]):
             return jsonify({'error': 'Message and agent_id are required.'}), 400
-        final_assistant_message, memory_info = agent_service.process_message(
+        final_assistant_message, memory_info, orchestration_messages = agent_service.process_message(
             agent_id=agent_id,
-            user_id=current_user.id,
+            user_id=user_id,  # Use captured user_id
             user_message=user_text,
             thread_id=thread_id,
             tool_choice=tool_choice,
             web_search_enabled=web_search_enabled,
             logger=logger,
-            session_data=session
+            session_data=session,
+            return_orchestration_messages=True
         )
-        return jsonify({
+        response = jsonify({
             'response': final_assistant_message,
             'memory_info': memory_info,
             'thread_id': memory_info.get('thread_id')
-        }), 200
+        })
+        # Trigger background memory storing after responding
+        from threading import Timer
+        def background_store():
+            agent_service._store_memories_from_interaction(user_id, agent_id, orchestration_messages)  # Use captured user_id
+        Timer(0, background_store).start()
+        return response, 200
     except Exception as e:
         logger.error(f"Error processing message with memory: {str(e)}", exc_info=True)
         return jsonify({'error': str(e)}), 500

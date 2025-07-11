@@ -29,7 +29,8 @@ from jarvus_app.services.tool_registry import tool_registry
 from jarvus_app.services.pipedream_auth_service import pipedream_auth_service
 from jarvus_app.services.pipedream_tool_registry import pipedream_tool_service
 from ..services.pipedream_tool_registry import ensure_tools_discovered
-        
+from jarvus_app.celery_app import celery
+
 
 logger = logging.getLogger(__name__)
 
@@ -105,7 +106,8 @@ class AgentService:
         tool_choice="auto",
         web_search_enabled=True,
         logger=None,
-        session_data=None
+        session_data=None,
+        return_orchestration_messages=False
     ):
         """Process a message with full memory context and tool orchestration, using plan-then-act."""
         if logger is None:
@@ -155,8 +157,10 @@ class AgentService:
         db.session.commit()
         if final_assistant_message:
             self._save_interaction(agent, user_message, final_assistant_message)
-        self._store_memories_from_interaction(user_id, agent_id, orchestration_messages)
+        # Remove direct call to _store_memories_from_interaction here
         agent = self.get_agent(agent_id, user_id)  # Re-fetch from DB
+        if return_orchestration_messages:
+            return final_assistant_message, memory_info, orchestration_messages
         return final_assistant_message, memory_info
     
     def get_agent_interaction_history(self, agent: History):
@@ -515,32 +519,47 @@ class AgentService:
         db.session.commit()
     
     def _store_memories_from_interaction(self, user_id, agent_id, messages):
-        """Extract tool call and feedback and store memories from the last exchange."""
-        try:
-            last_two = messages[-2:] if len(messages) >= 2 else messages
-            tool_call = None
-            for m in reversed(messages):
-                if isinstance(m, ToolMessage):
-                    try:
-                        tool_call = json.loads(m.content)
-                    except Exception:
-                        tool_call = m.content
-                    break
-            feedback = None
-            for m in reversed(messages):
-                if isinstance(m, UserMessage) and hasattr(m, 'feedback'):
-                    feedback = m.feedback
-                    break
-            memory_service.extract_and_store_memories(
-                user_id=user_id,
-                conversation_messages=last_two,
-                agent_id=agent_id,
-                tool_call=tool_call,
-                feedback=feedback
-            )
-        except Exception as e:
-            logger.error(f"Failed to extract and store memories: {str(e)}")
+        # """Extract tool call and feedback and store memories from the last exchange."""
+        # try:
+        #     last_two = messages[-2:] if len(messages) >= 2 else messages
+        #     tool_call = None
+        #     for m in reversed(messages):
+        #         if isinstance(m, ToolMessage):
+        #             try:
+        #                 tool_call = json.loads(m.content)
+        #             except Exception:
+        #                 tool_call = m.content
+        #             break
+        #     feedback = None
+        #     for m in reversed(messages):
+        #         if isinstance(m, UserMessage) and hasattr(m, 'feedback'):
+        #             feedback = m.feedback
+        #             break
+        #     memory_service.extract_and_store_memories(
+        #         user_id=user_id,
+        #         conversation_messages=last_two,
+        #         agent_id=agent_id,
+        #         tool_call=tool_call,
+        #         feedback=feedback
+        #     )
+        # except Exception as e:
+        #     logger.error(f"Failed to extract and store memories: {str(e)}")
+        store_memories_from_interaction_task.delay(user_id, agent_id, messages)
 
 
 # Global enhanced agent service instance
 agent_service = AgentService() 
+
+
+@celery.task
+def store_memories_from_interaction_task(user_id, agent_id, messages):
+    from jarvus_app.services.memory_service import memory_service
+    try:
+        memory_service.extract_and_store_memories(
+            user_id=user_id,
+            conversation_messages=messages,
+            agent_id=agent_id
+        )
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"Failed to extract and store memories (celery): {str(e)}") 
