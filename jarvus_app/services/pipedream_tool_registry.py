@@ -406,70 +406,70 @@ class PipedreamToolService:
         if tool and tool.executor:
             payload = {"parameters": tool_args}
             return tool.executor(tool_name, payload, jwt_token=jwt_token)
-        return {"error": f"Unknown local tool: {tool_name}"}
-        remote_base = "https://remote.mcp.pipedream.net/v1"
-        base_url = remote_base
-        headers = pipedream_auth_service.get_mcp_auth_headers(external_user_id, app_slug, oauth_app_id)
-        if not headers:
-            return {"error": "No valid Pipedream access token or headers"}
-        headers["Content-Type"] = "application/json"
-        headers["Accept"] = "application/json, text/event-stream"
-        if tool_mode:
-            headers["x-pd-tool-mode"] = tool_mode
-        body = {
-            "jsonrpc": "2.0",
-            "id": 20,
-            "method": "tools/call",
-            "params": {
-                "name": tool_name,
-                "arguments": tool_args
-            }
-        }
-        url = f"{base_url}/{external_user_id}/{app_slug}"
-        # print(f"[DEBUG] Tool exec POST URL: {url}")
-        # print(f"[DEBUG] Tool exec POST headers: {headers}")
-        # print(f"[DEBUG] Tool exec POST body: {body}")
-        # print(f"[DEBUG] External user ID: {external_user_id}")
-        # print(f"[DEBUG] App slug: {app_slug}")
-        # print(f"[DEBUG] Tool name: {tool_name}")
-        # print(f"[DEBUG] Tool args: {tool_args}")
-        try:
-            print(f"==========Pipe Dream Tool Call==========")
-            # print(f"[DEBUG] Request started at: {datetime.now()}")
-            print(f"[DEBUG] Request body: {json.dumps(body, indent=2)}")
-            response = requests.post(
-                url,
-                headers=headers,
-                json=body,
-                timeout=30  # Reduced timeout to 30 seconds
-            )
-            print(f"[DEBUG] Request completed at: {datetime.now()}")
-            print(f"[DEBUG] Tool exec POST status: {response.status_code}")
-            print("==========================================")
-            # print(f"[DEBUG] Tool exec POST response: {response.text}")
-        except requests.exceptions.Timeout:
-            print(f"[ERROR] Request timed out after 30 seconds")
-            return {"error": "Request timed out after 30 seconds"}
-        except requests.exceptions.ConnectionError as e:
-            print(f"[ERROR] Connection error: {e}")
-            return {"error": f"Connection error: {e}"}
-        except Exception as e:
-            print(f"[ERROR] Exception during tool exec POST: {e}")
-            return {"error": f"Request failed: {e}"}
-        if response.status_code == 200:
-            payload = self._parse_sse_response(response.text)
-            if not payload:
-                return {"error": "Failed to parse response"}
-            if "error" in payload:
-                logger.error(f"MCP tool execution error: {payload['error']}")
-                return {"error": f"MCP error: {payload['error']}"}
-            result = payload.get("result", {})
-            return result
         else:
-            return {
-                "error": f"Failed to execute tool. Status: {response.status_code}",
-                "response": response.text
+            remote_base = "https://remote.mcp.pipedream.net/v1"
+            base_url = remote_base
+            headers = pipedream_auth_service.get_mcp_auth_headers(external_user_id, app_slug, oauth_app_id)
+            if not headers:
+                return {"error": "No valid Pipedream access token or headers"}
+            headers["Content-Type"] = "application/json"
+            headers["Accept"] = "application/json, text/event-stream"
+            if tool_mode:
+                headers["x-pd-tool-mode"] = tool_mode
+            body = {
+                "jsonrpc": "2.0",
+                "id": 20,
+                "method": "tools/call",
+                "params": {
+                    "name": tool_name,
+                    "arguments": tool_args
+                }
             }
+            url = f"{base_url}/{external_user_id}/{app_slug}"
+            # print(f"[DEBUG] Tool exec POST URL: {url}")
+            # print(f"[DEBUG] Tool exec POST headers: {headers}")
+            # print(f"[DEBUG] Tool exec POST body: {body}")
+            # print(f"[DEBUG] External user ID: {external_user_id}")
+            # print(f"[DEBUG] App slug: {app_slug}")
+            # print(f"[DEBUG] Tool name: {tool_name}")
+            # print(f"[DEBUG] Tool args: {tool_args}")
+            try:
+                print(f"==========Pipe Dream Tool Call==========")
+                # print(f"[DEBUG] Request started at: {datetime.now()}")
+                print(f"[DEBUG] Request body: {json.dumps(body, indent=2)}")
+                response = requests.post(
+                    url,
+                    headers=headers,
+                    json=body,
+                    timeout=30  # Reduced timeout to 30 seconds
+                )
+                print(f"[DEBUG] Request completed at: {datetime.now()}")
+                print(f"[DEBUG] Tool exec POST status: {response.status_code}")
+                print("==========================================")
+                # print(f"[DEBUG] Tool exec POST response: {response.text}")
+            except requests.exceptions.Timeout:
+                print(f"[ERROR] Request timed out after 30 seconds")
+                return {"error": "Request timed out after 30 seconds"}
+            except requests.exceptions.ConnectionError as e:
+                print(f"[ERROR] Connection error: {e}")
+                return {"error": f"Connection error: {e}"}
+            except Exception as e:
+                print(f"[ERROR] Exception during tool exec POST: {e}")
+                return {"error": f"Request failed: {e}"}
+            if response.status_code == 200:
+                payload = self._parse_sse_response(response.text)
+                if not payload:
+                    return {"error": "Failed to parse response"}
+                if "error" in payload:
+                    logger.error(f"MCP tool execution error: {payload['error']}")
+                    return {"error": f"MCP error: {payload['error']}"}
+                result = payload.get("result", {})
+                return result
+            else:
+                return {
+                    "error": f"Failed to execute tool. Status: {response.status_code}",
+                    "response": response.text
+                }
 
     def get_sdk_tools_for_apps(self, app_slugs: List[str]) -> List[ChatCompletionsToolDefinition]:
         """
