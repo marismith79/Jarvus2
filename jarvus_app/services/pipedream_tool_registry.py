@@ -299,7 +299,38 @@ class PipedreamToolService:
                 print(f"Successfully registered {len(tools_data.get('tools', []))} tools for {app_slug}")
             else:
                 print(f"Could not retrieve tools for {app_slug}")
-        
+        # Register local MCP tools using the same registration logic as the main ToolRegistry
+        from jarvus_app.services.tools.web_search_tools import register_web_search_tools
+        from jarvus_app.services.tool_registry import ToolRegistry
+        # Create a temporary ToolRegistry to collect local tools
+        local_registry = ToolRegistry()
+        register_web_search_tools(local_registry)
+        # Convert ToolMetadata to PipedreamTool-compatible dicts
+        local_tools = []
+        for tool in local_registry.get_all_tools():
+            # Build inputSchema from parameters
+            props = {}
+            required = []
+            if tool.parameters:
+                for p in tool.parameters:
+                    props[p.name] = p.to_schema()
+                    if p.required:
+                        required.append(p.name)
+            else:
+                props = {"query": {"type": "string", "description": "Search query or parameters for the operation"}}
+            input_schema = {
+                "type": "object",
+                "properties": props,
+                "required": required
+            }
+            local_tools.append({
+                "name": tool.name,
+                "description": tool.description,
+                "inputSchema": input_schema
+            })
+        self.tools_registry.register_app_tools(
+            "web", "Local MCP Web browser", {"tools": local_tools}
+        )
         # Mark as discovered
         self.tools_registry.mark_discovered()
         logger.info(f"Total apps with tools discovered: {len(self.tools_registry._apps)}")
@@ -359,11 +390,23 @@ class PipedreamToolService:
         tool_name: str,
         tool_args: dict,
         oauth_app_id: Optional[str] = None,
-        tool_mode: Optional[str] = None
+        tool_mode: Optional[str] = None,
+        jwt_token: Optional[str] = None
     ) -> dict:
         """
         Execute a tool via the Pipedream MCP endpoint using JSON-RPC protocol (direct, no Inspector proxy).
         """
+        # Route local MCP tools using the same executor as ToolRegistry
+        from jarvus_app.services.tools.web_search_tools import register_web_search_tools
+        from jarvus_app.services.tool_registry import ToolRegistry
+        # Create a temporary ToolRegistry and register local tools
+        local_registry = ToolRegistry()
+        register_web_search_tools(local_registry)
+        tool = local_registry.get_tool(tool_name)
+        if tool and tool.executor:
+            payload = {"parameters": tool_args}
+            return tool.executor(tool_name, payload, jwt_token=jwt_token)
+        return {"error": f"Unknown local tool: {tool_name}"}
         remote_base = "https://remote.mcp.pipedream.net/v1"
         base_url = remote_base
         headers = pipedream_auth_service.get_mcp_auth_headers(external_user_id, app_slug, oauth_app_id)

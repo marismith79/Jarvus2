@@ -297,22 +297,22 @@ tool_registry = ToolRegistry()
 
 # Import all tool registration functions
 from .tools import (
-    register_browser_tools,
+    # register_browser_tools,
     register_web_search_tools,
     # register_docs_tools,
     # register_gmail_tools,
-    register_calendar_tools,
+    # register_calendar_tools,
     # register_drive_tools,
     # register_sheets_tools,
     # register_slides_tools
 )
 
 # Register all tools
-register_browser_tools(tool_registry)
+# register_browser_tools(tool_registry)
 register_web_search_tools(tool_registry)
 # register_docs_tools(tool_registry)
 # register_gmail_tools(tool_registry)
-register_calendar_tools(tool_registry)
+# register_calendar_tools(tool_registry)
 # register_drive_tools(tool_registry)
 # register_sheets_tools(tool_registry)
 # register_slides_tools(tool_registry) 
