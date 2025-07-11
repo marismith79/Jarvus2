@@ -177,13 +177,11 @@ def authorized():
                 if pipedream_token:
                     logger.info("Successfully acquired Pipedream token for user authentication")
                     
-                    # Discover available tools for the user
+                    # Discover available tools for the user using the helper function
                     try:
-                        tools_registry = pipedream_tool_service.discover_all_tools(str(user_id))
-                        if tools_registry and len(tools_registry._apps) > 0:
-                            logger.info(f"Successfully discovered tools for {len(tools_registry._apps)} apps")
-                        else:
-                            logger.warning("No tools discovered, but token acquisition succeeded")
+                        from ..services.pipedream_tool_registry import ensure_tools_discovered
+                        ensure_tools_discovered(str(user_id), session)
+                        logger.info("Successfully ensured tools are discovered for user")
                     except Exception as tool_error:
                         logger.error(f"Error discovering tools during authentication: {str(tool_error)}")
                         # Don't fail the authentication if tool discovery fails
@@ -217,6 +215,11 @@ def logout():
         logger.info("Cleared Pipedream tokens during logout")
     except Exception as e:
         logger.error(f"Error clearing Pipedream tokens during logout: {str(e)}")
+    
+    # Clear tool registry from session
+    if 'tool_registry' in session:
+        del session['tool_registry']
+        logger.info("Cleared tool registry from session during logout")
     
     # Clear the session
     session.clear()

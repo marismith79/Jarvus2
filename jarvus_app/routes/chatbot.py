@@ -99,7 +99,7 @@ def handle_chat_message():
         user_text = data.get('message', '').strip()
         agent_id = data.get('agent_id')
         thread_id = data.get('thread_id')  # Optional thread ID for memory
-        tool_choice = data.get('tool_choice', 'required')
+        tool_choice = data.get('tool_choice', 'auto')
         web_search_enabled = data.get('web_search_enabled', True)
         if not all([user_text, agent_id]):
             return jsonify({'error': 'Message and agent_id are required.'}), 400
@@ -110,7 +110,8 @@ def handle_chat_message():
             thread_id=thread_id,
             tool_choice=tool_choice,
             web_search_enabled=web_search_enabled,
-            logger=logger
+            logger=logger,
+            session_data=session
         )
         return jsonify({
             'response': final_assistant_message,
