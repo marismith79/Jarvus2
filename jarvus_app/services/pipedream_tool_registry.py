@@ -9,7 +9,7 @@ import logging
 import requests
 import json
 from datetime import datetime, timedelta
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Callable
 from dataclasses import dataclass, field
 from azure.ai.inference.models import ChatCompletionsToolDefinition, FunctionDefinition
 import pickle
@@ -17,6 +17,7 @@ import pickle
 from .pipedream_auth_service import pipedream_auth_service
 from jarvus_app.models.tool_discovery_cache import ToolDiscoveryCache
 from jarvus_app.config import ALL_PIPEDREAM_APPS
+from jarvus_app.services.tool_registry import ToolCategory
 
 logger = logging.getLogger(__name__)
 
@@ -92,83 +93,98 @@ class PipedreamAppTools:
         return [tool.to_sdk_definition() for tool in self.tools if tool.is_active]
 
 
+@dataclass
+class PipedreamToolMetadata:
+    """Unified metadata for Pipedream MCP tools that integrates with the agent system."""
+    name: str
+    description: str
+    app_slug: str
+    app_name: str
+    category: ToolCategory  # Use the same enum as ToolMetadata
+    input_schema: Dict[str, Any]  # Keep the JSON-RPC schema
+    requires_auth: bool = True
+    is_active: bool = True
+    executor: Optional[Callable] = None
+    result_formatter: Optional[Callable] = None
+    oauth_app_id: Optional[str] = None
+    
+    def to_sdk_definition(self) -> ChatCompletionsToolDefinition:
+        """Convert to Azure SDK definition using the input_schema."""
+        properties = self.input_schema.get("properties", {})
+        required = self.input_schema.get("required", [])
+        
+        func_def = FunctionDefinition(
+            name=self.name,
+            description=self.description,
+            parameters={
+                "type": "object",
+                "properties": properties,
+                "required": required,
+                "additionalProperties": self.input_schema.get("additionalProperties", True)
+            }
+        )
+        return ChatCompletionsToolDefinition(function=func_def)
+
+
 class PipedreamToolsRegistry:
     """Registry for managing Pipedream MCP tools discovered from the server."""
     
     def __init__(self):
-        self._apps: Dict[str, PipedreamAppTools] = {}
-        self._discovered_at: Optional[int] = None
+        self._tools: Dict[str, PipedreamToolMetadata] = {}
         
     def register_app_tools(self, app_slug: str, app_name: str, tools_data: Dict[str, Any]) -> None:
         """Register tools for a specific app."""
-        tools = []
-        
-        # Parse tools from the MCP response
         for tool_data in tools_data.get("tools", []):
             tool_name = tool_data.get("name", "")
-            # print(f"[DEBUG] Registering tool: {tool_name}")
-            # print(f"[DEBUG] Tool description: {tool_data.get('description', '')}")
-            # print(f"[DEBUG] Tool input schema: {tool_data.get('inputSchema', {})}")
             
-            tool = PipedreamTool(
+            tool_metadata = PipedreamToolMetadata(
                 name=tool_name,
                 description=tool_data.get("description", ""),
-                input_schema=tool_data.get("inputSchema", {}),
                 app_slug=app_slug,
+                app_name=app_name,
+                category=ToolCategory.CUSTOM,
+                input_schema=tool_data.get("inputSchema", {}),
+                executor=self._create_executor(app_slug, tool_name),
                 is_active=True
             )
-            tools.append(tool)
+            
+            self._tools[tool_name] = tool_metadata
+    
+    def _create_executor(self, app_slug: str, tool_name: str) -> Callable:
+        """Create an executor function that calls your existing execute_tool."""
+        def executor(user_id: str, tool_args: dict, jwt_token: Optional[str] = None) -> dict:
+            return pipedream_tool_service.execute_tool(
+                external_user_id=user_id,
+                app_slug=app_slug,
+                tool_name=tool_name,
+                tool_args=tool_args,
+                jwt_token=jwt_token
+            )
+        return executor
+    
+    def get_tool(self, tool_name: str) -> Optional[PipedreamToolMetadata]:
+        """Get tool metadata by name."""
+        return self._tools.get(tool_name)
+    
+    def execute_tool(self, tool_name: str, user_id: str, parameters: Dict[str, Any] = None, jwt_token: Optional[str] = None) -> Any:
+        """Execute tool using the unified interface."""
+        tool = self.get_tool(tool_name)
+        if not tool or not tool.is_active:
+            raise ValueError(f"Tool not available: {tool_name}")
         
-        app_tools = PipedreamAppTools(
-            app_slug=app_slug,
-            app_name=app_name,
-            tools=tools,
-            is_connected=len(tools) > 0
-        )
+        raw_result = tool.executor(user_id, parameters, jwt_token)
         
-        self._apps[app_slug] = app_tools
-        logger.info(f"Registered {len(tools)} tools for app {app_slug}")
+        if tool.result_formatter:
+            return tool.result_formatter(raw_result)
+        return raw_result
     
     def get_all_sdk_tools(self) -> List[ChatCompletionsToolDefinition]:
         """Get all tools as Azure SDK definitions."""
-        all_tools = []
-        for app_tools in self._apps.values():
-            all_tools.extend(app_tools.get_sdk_tools())
-        return all_tools
-    
-    def get_tools_by_app(self, app_slug: str) -> List[ChatCompletionsToolDefinition]:
-        """Get tools for a specific app."""
-        app_tools = self._apps.get(app_slug)
-        if app_tools:
-            return app_tools.get_sdk_tools()
-        return []
-    
-    def get_connected_apps(self) -> List[str]:
-        """Get list of app slugs that have connected tools."""
-        return [app_slug for app_slug, app_tools in self._apps.items() if app_tools.is_connected]
-    
-    def is_fresh(self, max_age_seconds: int = 3600) -> bool:
-        """Check if the tools data is fresh (less than max_age_seconds old)."""
-        if not self._discovered_at:
-            return False
-        return (int(time.time()) - self._discovered_at) < max_age_seconds
-    
-    def mark_discovered(self) -> None:
-        """Mark the tools as just discovered."""
-        self._discovered_at = int(time.time())
-    
-    def clear(self) -> None:
-        """Clear all tools data."""
-        self._apps.clear()
-        self._discovered_at = None
+        return [tool.to_sdk_definition() for tool in self._tools.values() if tool.is_active]
 
     def get_tool_to_app_mapping(self) -> Dict[str, str]:
         """Get a mapping of tool names to their app slugs."""
-        mapping = {}
-        for app_slug, app_tools in self._apps.items():
-            for tool in app_tools.tools:
-                mapping[tool.name] = app_slug
-        return mapping
+        return {tool.name: tool.app_slug for tool in self._tools.values()}
 
 
 class PipedreamToolService:
@@ -226,9 +242,6 @@ class PipedreamToolService:
                 "params": {}
             }
             url = f"{base_url}/{external_user_id}/{app_slug}"
-            # print(f"[DEBUG] Tool list POST URL: {url}")
-            # print(f"[DEBUG] Tool list POST headers: {headers}")
-            # print(f"[DEBUG] Tool list POST body: {body}")
             try:
                 response = requests.post(
                     url,
@@ -236,8 +249,6 @@ class PipedreamToolService:
                     json=body,
                     timeout=30
                 )
-                # print(f"[DEBUG] Tool list POST status: {response.status_code}")
-                # print(f"[DEBUG] Tool list POST response: {response.text}")
             except Exception as e:
                 print(f"[ERROR] Exception during tool list POST: {e}")
                 raise
@@ -252,10 +263,6 @@ class PipedreamToolService:
                 result = payload.get("result", {})
                 tools = result.get("tools", [])
                 print(f"Successfully retrieved {len(tools)} tools for {app_slug}")
-                
-                # Log all available tool names for debugging
-                tool_names = [tool.get("name", "unknown") for tool in tools]
-                # print(f"[DEBUG] Available tool names for {app_slug}: {tool_names}")
                 
                 return {"tools": tools}
             else:
@@ -280,9 +287,6 @@ class PipedreamToolService:
         """
         print(f"Discovering tools for user: {user_id}")
         
-        # Clear existing registry
-        self.tools_registry.clear()
-        
         # Hardcoded list of app slugs to discover
         all_possible_apps = ALL_PIPEDREAM_APPS
 
@@ -292,13 +296,13 @@ class PipedreamToolService:
             
             print(f"Fetching tools for app: {app_slug}")
             tools_data = self.get_tools_for_app(user_id, app_slug)
-            # print(f"Tools data: {tools_data}")
             
             if tools_data:
                 self.tools_registry.register_app_tools(app_slug, app_name, tools_data)
                 print(f"Successfully registered {len(tools_data.get('tools', []))} tools for {app_slug}")
             else:
                 print(f"Could not retrieve tools for {app_slug}")
+        
         # Register local MCP tools using the same registration logic as the main ToolRegistry
         from jarvus_app.services.tools.web_search_tools import register_web_search_tools
         from jarvus_app.services.tool_registry import ToolRegistry
@@ -331,9 +335,8 @@ class PipedreamToolService:
         self.tools_registry.register_app_tools(
             "web", "Local MCP Web browser", {"tools": local_tools}
         )
-        # Mark as discovered
-        self.tools_registry.mark_discovered()
-        logger.info(f"Total apps with tools discovered: {len(self.tools_registry._apps)}")
+        
+        logger.info(f"Total tools discovered: {len(self.tools_registry._tools)}")
         return self.tools_registry
     
     def get_tools_registry(self) -> PipedreamToolsRegistry:
@@ -348,40 +351,11 @@ class PipedreamToolService:
     def get_all_sdk_tools(self, session_data=None) -> List[ChatCompletionsToolDefinition]:
         """
         Get all discovered tools as Azure SDK definitions.
-        Uses session registry if available, otherwise falls back to global registry.
         
         Returns:
             List[ChatCompletionsToolDefinition]: All tools ready for LLM
         """
-        # Try to use session registry first
-        if session_data:
-            session_registry = get_session_tool_registry(session_data)
-            if session_registry:
-                logger.debug("Using session-based tool registry")
-                return session_registry.get_all_sdk_tools()
-        
-        # Fall back to global registry
-        if not self.tools_registry.is_fresh():
-            logger.warning("Tools registry is stale, tools need to be rediscovered")
-            return []
-        
         return self.tools_registry.get_all_sdk_tools()
-    
-    def get_tools_by_app(self, app_slug: str) -> List[ChatCompletionsToolDefinition]:
-        """
-        Get tools for a specific app as Azure SDK definitions.
-        
-        Args:
-            app_slug: The app slug to get tools for
-            
-        Returns:
-            List[ChatCompletionsToolDefinition]: Tools for the specified app
-        """
-        if not self.tools_registry.is_fresh():
-            logger.warning("Tools registry is stale, tools need to be rediscovered")
-            return []
-        
-        return self.tools_registry.get_tools_by_app(app_slug)
 
     def execute_tool(
         self,
@@ -426,16 +400,8 @@ class PipedreamToolService:
                 }
             }
             url = f"{base_url}/{external_user_id}/{app_slug}"
-            # print(f"[DEBUG] Tool exec POST URL: {url}")
-            # print(f"[DEBUG] Tool exec POST headers: {headers}")
-            # print(f"[DEBUG] Tool exec POST body: {body}")
-            # print(f"[DEBUG] External user ID: {external_user_id}")
-            # print(f"[DEBUG] App slug: {app_slug}")
-            # print(f"[DEBUG] Tool name: {tool_name}")
-            # print(f"[DEBUG] Tool args: {tool_args}")
             try:
                 print(f"==========Pipe Dream Tool Call==========")
-                # print(f"[DEBUG] Request started at: {datetime.now()}")
                 print(f"[DEBUG] Request body: {json.dumps(body, indent=2)}")
                 response = requests.post(
                     url,
@@ -446,7 +412,6 @@ class PipedreamToolService:
                 print(f"[DEBUG] Request completed at: {datetime.now()}")
                 print(f"[DEBUG] Tool exec POST status: {response.status_code}")
                 print("==========================================")
-                # print(f"[DEBUG] Tool exec POST response: {response.text}")
             except requests.exceptions.Timeout:
                 print(f"[ERROR] Request timed out after 30 seconds")
                 return {"error": "Request timed out after 30 seconds"}
@@ -471,42 +436,13 @@ class PipedreamToolService:
                     "response": response.text
                 }
 
-    def get_sdk_tools_for_apps(self, app_slugs: List[str]) -> List[ChatCompletionsToolDefinition]:
-        """
-        Get SDK tools for the specified app slugs.
-        Args:
-            app_slugs: List of app slugs to get tools for
-        Returns:
-            List[ChatCompletionsToolDefinition]: Tools for the specified apps
-        """
-        if not self.tools_registry.is_fresh():
-            logger.warning("Tools registry is stale, tools need to be rediscovered")
-            return []
-        sdk_tools = []
-        for app_slug in app_slugs:
-            sdk_tools.extend(self.tools_registry.get_tools_by_app(app_slug))
-        return sdk_tools
-
     def get_tool_to_app_mapping(self, session_data=None) -> Dict[str, str]:
         """
         Get a mapping of tool names to their app slugs.
-        Uses session registry if available, otherwise falls back to global registry.
         
         Returns:
             Dict[str, str]: Mapping of tool names to app slugs
         """
-        # Try to use session registry first
-        if session_data:
-            session_registry = get_session_tool_registry(session_data)
-            if session_registry:
-                logger.debug("Using session-based tool registry for mapping")
-                return session_registry.get_tool_to_app_mapping()
-        
-        # Fall back to global registry
-        if not self.tools_registry.is_fresh():
-            logger.warning("Tools registry is stale, tools need to be rediscovered")
-            return {}
-        
         return self.tools_registry.get_tool_to_app_mapping()
 
 
@@ -515,53 +451,15 @@ pipedream_tool_service = PipedreamToolService()
 
 def ensure_tools_discovered(user_id, session_data=None):
     """
-    Ensure tools are discovered for the user if the registry is not fresh.
-    Store the registry in session data for persistence across requests.
+    Ensure tools are discovered for the user.
     Call this from login or before agent requests.
     """
     from jarvus_app.services.pipedream_tool_registry import pipedream_tool_service
     
-    # Check if we have a session-based registry
-    if session_data and 'tool_registry' in session_data:
-        # Use session-stored registry
-        registry_data = session_data['tool_registry']
-        if registry_data.get('is_fresh', False):
-            logger.debug(f"Using session-stored tool registry for user {user_id}")
-            return
-    
-    # Discover tools and store in session
     logger.info(f"Discovering tools for user {user_id}")
     tools_registry = pipedream_tool_service.discover_all_tools(user_id)
-    
-    # Store in session if session_data is provided
-    if session_data:
-        session_data['tool_registry'] = {
-            'apps': tools_registry._apps,
-            'discovered_at': tools_registry._discovered_at,
-            'is_fresh': True
-        }
-        logger.info(f"Stored tool registry in session for user {user_id}")
+    logger.info(f"Discovered {len(tools_registry._tools)} tools for user {user_id}")
 
-
-def get_session_tool_registry(session_data):
-    """
-    Get the tool registry from session data.
-    Returns None if not found or not fresh.
-    """
-    if not session_data or 'tool_registry' not in session_data:
-        return None
-    
-    registry_data = session_data['tool_registry']
-    if not registry_data.get('is_fresh', False):
-        return None
-    
-    # Reconstruct the registry from session data
-    from jarvus_app.services.pipedream_tool_registry import PipedreamToolsRegistry
-    registry = PipedreamToolsRegistry()
-    registry._apps = registry_data.get('apps', {})
-    registry._discovered_at = registry_data.get('discovered_at')
-    
-    return registry 
 
 def get_or_discover_tools_for_user_apps(user_id, app_slugs, freshness_minutes=60):
     """
@@ -589,7 +487,8 @@ def get_or_discover_tools_for_user_apps(user_id, app_slugs, freshness_minutes=60
             if tools_data and "tools" in tools_data:
                 # Convert to SDK definitions
                 pipedream_tool_service.tools_registry.register_app_tools(app_slug, app_slug, tools_data)
-                sdk_tools_list = pipedream_tool_service.tools_registry.get_tools_by_app(app_slug)
+                sdk_tools_list = [tool.to_sdk_definition() for tool in pipedream_tool_service.tools_registry._tools.values() 
+                                 if tool.app_slug == app_slug and tool.is_active]
                 sdk_tools.extend(sdk_tools_list)
                 # Update or create cache
                 tools_json = json.dumps(tools_data["tools"])
