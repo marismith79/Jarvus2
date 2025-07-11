@@ -78,5 +78,8 @@ ALL_PIPEDREAM_APPS = [
     {"slug": "google_sheets", "name": "Google Sheets"},
     {"slug": "google_slides", "name": "Google Slides"},
     {"slug": "google_drive", "name": "Google Drive"},
+    {"slug": "zoom", "name": "Zoom"},
+    {"slug": "slack", "name": "Slack"},
+    {"slug": "notion", "name": "Notion"},
     # Add more as needed
 ]
