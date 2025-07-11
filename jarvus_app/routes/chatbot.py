@@ -110,7 +110,8 @@ def handle_chat_message():
             thread_id=thread_id,
             tool_choice=tool_choice,
             web_search_enabled=web_search_enabled,
-            logger=logger
+            logger=logger,
+            session_data=session
         )
         
         # # Add debug logging
