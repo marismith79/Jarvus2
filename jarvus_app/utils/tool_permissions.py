@@ -6,16 +6,10 @@ from datetime import datetime, timedelta
 
 from ..models.oauth import OAuthCredentials
 from ..models.tool_permission import ToolPermission
+from jarvus_app.config import ALL_PIPEDREAM_APPS
 
-# Define available tools and their descriptions
-TOOLS = {
-    "google_docs": "Access to Google Docs functionality through MCP server",
-    "google_sheets": "Access to Google Sheets functionality through MCP server",
-    "google_slides": "Access to Google Slides functionality through MCP server",
-    "google_drive": "Access to Google Drive functionality through MCP server",
-    "google_calendar": "Access to Google Calendar functionality through MCP server",
-    "gmail": "Access to Google Gmail functionality through MCP server",
-}
+# Define available tools and their descriptions, generated from ALL_PIPEDREAM_APPS
+TOOLS = {app["slug"]: f"Access to {app['name']} functionality through MCP server" for app in ALL_PIPEDREAM_APPS}
 
 def grant_tool_access(user_id, tool_name, duration_days=None):
     """

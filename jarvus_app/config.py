@@ -69,3 +69,14 @@ class Config:
     Make sure to ALWAYS follow the instructions in the tool descriptions!
     
     """
+
+# Centralized list of all Pipedream MCP tool apps
+ALL_PIPEDREAM_APPS = [
+    {"slug": "google_docs", "name": "Google Docs"},
+    {"slug": "gmail", "name": "Gmail"},
+    {"slug": "google_calendar", "name": "Google Calendar"},
+    {"slug": "google_sheets", "name": "Google Sheets"},
+    {"slug": "google_slides", "name": "Google Slides"},
+    {"slug": "google_drive", "name": "Google Drive"},
+    # Add more as needed
+]

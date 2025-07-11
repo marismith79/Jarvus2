@@ -8,6 +8,7 @@ from sqlalchemy.exc import ProgrammingError
 from ..utils.tool_permissions import get_connected_services
 from .chatbot import handle_chat_message
 from ..models.history import History
+from jarvus_app.config import ALL_PIPEDREAM_APPS
 
 web = Blueprint("web", __name__)
 
@@ -33,16 +34,20 @@ def chatbot():
     agents = History.query.filter_by(user_id=current_user.id).order_by(History.created_at.desc()).all()
     most_recent_agent = agents[0] if agents else None
 
+    # Build tool_list with a 'connected' property for each tool
+    tool_list = []
+    for app in ALL_PIPEDREAM_APPS:
+        slug = app["slug"]
+        tool = app.copy()
+        tool["connected"] = connected_services.get(slug, False)
+        tool_list.append(tool)
+    tool_slugs = [tool["slug"] for tool in tool_list]
     return render_template(
         "chatbot.html",
+        tool_list=tool_list,
+        tool_slugs=tool_slugs,
         agents=agents,
-        most_recent_agent=most_recent_agent,
-        docs_connected=connected_services["google_docs"],
-        sheets_connected=connected_services["google_sheets"],
-        slides_connected=connected_services["google_slides"],
-        drive_connected=connected_services["google_drive"],
-        calendar_connected=connected_services["google_calendar"],
-        gmail_connected=connected_services["gmail"],
+        most_recent_agent=most_recent_agent
     )
 
 @web.route("/chatbot/send", methods=["POST"])

@@ -39,78 +39,19 @@
                     <h2>App Integrations</h2>
                     <div class="integrations-grid">
                         
-                        <!-- Google Docs Integration -->
+                        {% for tool in tool_list %}
                         <div class="integration-card">
                             <div class="integration-header">
-                                <img src="{{ url_for('static', filename='images/google-logo.png') }}" alt="Google Docs Logo" class="integration-logo">
-                                <span class="integration-name">Google Docs</span>
+                                <img src="{{ url_for('static', filename='images/google-logo.png') }}" alt="{{ tool.name }} Logo" class="integration-logo">
+                                <span class="integration-name">{{ tool.name }}</span>
                             </div>
-                            {% if docs_connected %}
-                                <button class="cta-button secondary" onclick="disconnectService('google_docs')">Disconnect</button>
+                            {% if tool.connected %}
+                                <button class="cta-button secondary" onclick="disconnectService('{{ tool.slug }}')">Disconnect</button>
                             {% else %}
-                                <button class="cta-button" onclick="connectService('google_docs')">Connect</button>
+                                <button class="cta-button" onclick="connectService('{{ tool.slug }}')">Connect</button>
                             {% endif %}
                         </div>
-                        <!-- Google Slides Integration -->
-                        <div class="integration-card">
-                            <div class="integration-header">
-                                <img src="{{ url_for('static', filename='images/google-logo.png') }}" alt="Google Slides Logo" class="integration-logo">
-                                <span class="integration-name">Google Slides</span>
-                            </div>
-                            {% if slides_connected %}
-                                <button class="cta-button secondary" onclick="disconnectService('google_slides')">Disconnect</button>
-                            {% else %}
-                                <button class="cta-button" onclick="connectService('google_slides')">Connect</button>
-                            {% endif %}
-                        </div>
-                        <!-- Google Calendar Integration -->
-                        <div class="integration-card">
-                            <div class="integration-header">
-                                <img src="{{ url_for('static', filename='images/google-logo.png') }}" alt="Google Calendar Logo" class="integration-logo">
-                                <span class="integration-name">Google Calendar</span>
-                            </div>
-                            {% if calendar_connected %}
-                                <button class="cta-button secondary" onclick="disconnectService('google_calendar')">Disconnect</button>
-                            {% else %}
-                                <button class="cta-button" onclick="connectService('google_calendar')">Connect</button>
-                            {% endif %}
-                        </div>
-                        <!-- Google Drive Integration -->
-                        <div class="integration-card">
-                            <div class="integration-header">
-                                <img src="{{ url_for('static', filename='images/google-logo.png') }}" alt="Google Drive Logo" class="integration-logo">
-                                <span class="integration-name">Google Drive</span>
-                            </div>
-                            {% if drive_connected %}
-                                <button class="cta-button secondary" onclick="disconnectService('google_drive')">Disconnect</button>
-                            {% else %}
-                                <button class="cta-button" onclick="connectService('google_drive')">Connect</button>
-                            {% endif %}
-                        </div>
-                        <!-- Gmail Integration -->
-                        <div class="integration-card">
-                            <div class="integration-header">
-                                <img src="{{ url_for('static', filename='images/google-logo.png') }}" alt="Gmail Logo" class="integration-logo">
-                                <span class="integration-name">Gmail</span>
-                            </div>
-                            {% if gmail_connected %}
-                                <button class="cta-button secondary" onclick="disconnectService('gmail')">Disconnect</button>
-                            {% else %}
-                                <button class="cta-button" onclick="connectService('gmail')">Connect</button>
-                            {% endif %}
-                        </div>
-                        <!-- Google Sheets Integration -->
-                        <div class="integration-card">
-                            <div class="integration-header">
-                                <img src="{{ url_for('static', filename='images/google-logo.png') }}" alt="Google Sheets Logo" class="integration-logo">
-                                <span class="integration-name">Google Sheets</span>
-                            </div>
-                            {% if sheets_connected %}
-                                <button class="cta-button secondary" onclick="disconnectService('google_sheets')">Disconnect</button>
-                            {% else %}
-                                <button class="cta-button" onclick="connectService('google_sheets')">Connect</button>
-                            {% endif %}
-                        </div>
+                        {% endfor %}
                     </div>
                 </div>
             </div>
@@ -127,5 +68,8 @@
 {% endblock %}
 
 {% block extra_js %}
+<script>
+window.toolSlugs = {{ tool_list | map(attribute='slug') | list | tojson }};
+</script>
 <script src="{{ url_for('static', filename='js/profile.js') }}"></script>
 {% endblock %}

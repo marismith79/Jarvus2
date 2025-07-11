@@ -17,8 +17,9 @@ from ..models.oauth import OAuthCredentials  # Uncommented
 from ..utils.tool_permissions import grant_tool_access
 from ..models.user_tool import UserTool
 from ..db import db
+from jarvus_app.config import ALL_PIPEDREAM_APPS
 
-SERVICES = ['gmail', 'google_docs', 'google_sheets', 'google_slides', 'google_drive', 'google_calendar'];
+SERVICES = [app["slug"] for app in ALL_PIPEDREAM_APPS]
 
 
 oauth_bp = Blueprint("oauth", __name__)

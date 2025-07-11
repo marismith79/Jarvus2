@@ -60,7 +60,7 @@ class AgentService:
             abort(400, 'Agent name is required.')
         
         # Always include Google Docs tools for all agents
-        default_tools = ['docs']
+        default_tools = ['web']
         if tools:
             # Merge user-selected tools with default tools, avoiding duplicates
             all_tools = list(set(default_tools + tools))
@@ -114,22 +114,22 @@ class AgentService:
         if not thread_id:
             thread_id = f"thread_{agent_id}_{user_id}_{int(datetime.utcnow().timestamp())}"
         
-        plan = None  # Initialize plan to avoid UnboundLocalError
-        # Capture screenshot before processing message
-        screenshot_data = None
-        try:
-            screenshot_result = sync_take_screenshot_auto()
-            if screenshot_result.get('success') and screenshot_result.get('base64'):
-                screenshot_data = screenshot_result['base64']
-                logger.info("Screenshot captured successfully for chat message")
-            else:
-                logger.warning(f"Screenshot capture failed: {screenshot_result.get('error', 'Unknown error')}")
-        except Exception as e:
-            logger.error(f"Error capturing screenshot: {str(e)}")
+        # plan = None  # Initialize plan to avoid UnboundLocalError
+        # # Capture screenshot before processing message
+        # screenshot_data = None
+        # try:
+        #     screenshot_result = sync_take_screenshot_auto()
+        #     if screenshot_result.get('success') and screenshot_result.get('base64'):
+        #         screenshot_data = screenshot_result['base64']
+        #         logger.info("Screenshot captured successfully for chat message")
+        #     else:
+        #         logger.warning(f"Screenshot capture failed: {screenshot_result.get('error', 'Unknown error')}")
+        # except Exception as e:
+        #     logger.error(f"Error capturing screenshot: {str(e)}")
         
         # Step 1: Get context
         agent, allowed_tools, memory_info, messages = self._get_context_for_message(
-            agent_id, user_id, user_message, thread_id, web_search_enabled, screenshot_data
+            agent_id, user_id, user_message, thread_id, web_search_enabled #, screenshot_data
         )
         # Step 2: Tool selection
         filtered_tools = self._select_tools_with_llm(user_message, allowed_tools)
@@ -211,13 +211,13 @@ class AgentService:
         user_message: str,
         thread_id: Optional[str],
         web_search_enabled: bool,
-        screenshot_data: Optional[str]
+        # screenshot_data: Optional[str]
     ):
         from jarvus_app import config
         agent = self.get_agent(agent_id, user_id)
         allowed_tools = set(self.get_agent_tools(agent))
-        if web_search_enabled:
-            allowed_tools.add('web')
+        if not web_search_enabled:
+            allowed_tools.remove('web')
         allowed_tools = list(allowed_tools)
         # Get current state (working memory)
         current_state = memory_service.get_latest_state(thread_id, user_id)
@@ -274,29 +274,29 @@ class AgentService:
                     })
         messages.extend(working_turns)
         # 4. Current user query (always last)
-        if screenshot_data:
-            # Create proper multimodal content with text and image
-            # from azure.ai.inference.models import TextContentItem, ImageContentItem
-            # content_items = [TextContentItem(text=user_message)]
-            # Create data URL for the screenshot
-            data_url = f"data:image/png;base64,{screenshot_data}"
-            # content_items.append(ImageContentItem(image_url=data_url))
-            # user_message_obj = UserMessage(content=content_items)
-            messages.append(
-                {
-                    'role': 'user',
-                    'content': [
-                        {'type': 'text', 'text': user_message},
-                        {'type': 'image_url', 'image_url': {'url': data_url}}
-                    ]
-                }
-            )
-        else:
-            # Regular text message
-            messages.append({
-                'role': 'user',
-                'content': user_message
-            })
+        # if screenshot_data:
+        #     # Create proper multimodal content with text and image
+        #     # from azure.ai.inference.models import TextContentItem, ImageContentItem
+        #     # content_items = [TextContentItem(text=user_message)]
+        #     # Create data URL for the screenshot
+        #     data_url = f"data:image/png;base64,{screenshot_data}"
+        #     # content_items.append(ImageContentItem(image_url=data_url))
+        #     # user_message_obj = UserMessage(content=content_items)
+        #     messages.append(
+        #         {
+        #             'role': 'user',
+        #             'content': [
+        #                 {'type': 'text', 'text': user_message},
+        #                 {'type': 'image_url', 'image_url': {'url': data_url}}
+        #             ]
+        #         }
+        #     )
+        # else:
+        # Regular text message
+        messages.append({
+            'role': 'user',
+            'content': user_message
+        })
         memory_info = {
             'thread_id': thread_id,
             'memory_context_used': True
@@ -449,7 +449,7 @@ class AgentService:
         # # Use DB-cached tool discovery for allowed app slugs
         # from jarvus_app.services.pipedream_tool_registry import get_or_discover_tools_for_user_apps
         # sdk_tools = get_or_discover_tools_for_user_apps(user_id, allowed_tools)
-        print("DEBUG allowed_sdk_tools", sdk_tools)
+        print("[DEBUG] allowed_sdk_tools", sdk_tools)
         new_messages = []
         try:
             while True:

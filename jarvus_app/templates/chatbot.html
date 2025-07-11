@@ -91,12 +91,10 @@
     window.mostRecentAgentId = {{ most_recent_agent.id if most_recent_agent else 'null' }};
     window.mostRecentAgentName = {{ most_recent_agent.name|tojson if most_recent_agent else 'null' }};
     // Pass connection status to JavaScript
-    window.docsConnected = {{ 'true' if docs_connected else 'false' }};
-    window.sheetsConnected = {{ 'true' if sheets_connected else 'false' }};
-    window.slidesConnected = {{ 'true' if slides_connected else 'false' }};
-    window.driveConnected = {{ 'true' if drive_connected else 'false' }};
-    window.calendarConnected = {{ 'true' if calendar_connected else 'false' }};
-    window.gmailConnected = {{ 'true' if gmail_connected else 'false' }};
+    {% for tool in tool_list -%}
+    window.{{ tool.slug }}Connected = {{ 'true' if tool.connected else 'false' }};
+    {% endfor %}
+    window.toolSlugs = {{ tool_list | map(attribute='slug') | list | tojson }};
 </script>
 <script src="{{ url_for('static', filename='js/marked.min.js') }}"></script>
 <script src="{{ url_for('static', filename='js/chatbot.js') }}?v=3"></script>

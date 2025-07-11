@@ -1,15 +1,14 @@
 let selectedTools = [];
 let currentAgentId = null;
 
-// Store connection status
-const connectedTools = {
-  google_docs: window.docsConnected || false,
-  google_sheets: window.sheetsConnected || false,
-  google_slides: window.slidesConnected || false,
-  google_drive: window.driveConnected || false,
-  google_calendar: window.calendarConnected || false,
-  gmail: window.gmailConnected || false
-};
+// Store connection status dynamically from window.toolSlugs
+const connectedTools = {};
+if (window.toolSlugs) {
+  window.toolSlugs.forEach(slug => {
+    const varName = slug + 'Connected';
+    connectedTools[slug] = window[varName] || false;
+  });
+}
   
 // Safe console logging to prevent EIO errors
 function safeLog(...args) {

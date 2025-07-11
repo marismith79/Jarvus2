@@ -16,6 +16,7 @@ import pickle
 
 from .pipedream_auth_service import pipedream_auth_service
 from jarvus_app.models.tool_discovery_cache import ToolDiscoveryCache
+from jarvus_app.config import ALL_PIPEDREAM_APPS
 
 logger = logging.getLogger(__name__)
 
@@ -283,15 +284,7 @@ class PipedreamToolService:
         self.tools_registry.clear()
         
         # Hardcoded list of app slugs to discover
-        all_possible_apps = [
-            {"slug": "google_docs", "name": "Google Docs"},
-            {"slug": "gmail", "name": "Gmail"},
-            {"slug": "google_calendar", "name": "Google Calendar"},
-            {"slug": "google_sheets", "name": "Google Sheets"},
-            {"slug": "google_slides", "name": "Google Slides"},
-            {"slug": "google_drive", "name": "Google Drive"},
-            # Add more as needed
-        ]
+        all_possible_apps = ALL_PIPEDREAM_APPS
 
         for app in all_possible_apps:
             app_slug = app["slug"]

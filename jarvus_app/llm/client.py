@@ -87,13 +87,13 @@ class JarvusAIClient:
             #     # Log message count instead of full content to avoid base64 spam
             #     message_count = len(messages)
             #     logger.info(f"[AzureAI] Request messages: {message_count} messages")
-            # response = self.client.complete(**kwargs)
+            response = self.client.complete(**kwargs)
             # if logger:
             #     try:
             #         logger.info(f"[AzureAI] Response Logged")
             #     except Exception as e:
             #         logger.warning(f"[AzureAI] Could not log response: {e}")
-            # return response
+            return response
         except Exception as e:
             error_msg = f"Azure AI Foundry API Error: {str(e)}"
             if logger:
