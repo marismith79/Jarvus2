@@ -34,7 +34,7 @@ jarvus_ai = JarvusAIClient()
 
 chatbot_bp = Blueprint('chatbot', __name__)
 logger = logging.getLogger(__name__)
-tool_choice = 'required'
+tool_choice = 'auto'
 
 @chatbot_bp.route('/tools', methods=['GET'])
 @login_required
@@ -99,7 +99,7 @@ def handle_chat_message():
         user_text = data.get('message', '').strip()
         agent_id = data.get('agent_id')
         thread_id = data.get('thread_id')  # Optional thread ID for memory
-        tool_choice = data.get('tool_choice', 'required')
+        tool_choice = data.get('tool_choice', 'auto')
         web_search_enabled = data.get('web_search_enabled', True)
         if not all([user_text, agent_id]):
             return jsonify({'error': 'Message and agent_id are required.'}), 400
@@ -112,11 +112,23 @@ def handle_chat_message():
             web_search_enabled=web_search_enabled,
             logger=logger
         )
-        return jsonify({
+        
+        # # Add debug logging
+        # logger.info(f"Final assistant message type: {type(final_assistant_message)}")
+        # logger.info(f"Final assistant message length: {len(str(final_assistant_message)) if final_assistant_message else 0}")
+        # logger.info(f"Final assistant message: {final_assistant_message[:200] if final_assistant_message else 'None'}...")
+        # logger.info(f"Memory info: {memory_info}")
+        
+        response_data = {
             'response': final_assistant_message,
             'memory_info': memory_info,
             'thread_id': memory_info.get('thread_id')
-        }), 200
+        }
+        
+        # Log response metadata without the full content to avoid base64 spam
+        logger.info(f"Sending response - length: {len(str(final_assistant_message)) if final_assistant_message else 0}, thread_id: {memory_info.get('thread_id')}")
+        
+        return jsonify(response_data), 200
     except Exception as e:
         logger.error(f"Error processing message with memory: {str(e)}", exc_info=True)
         return jsonify({'error': str(e)}), 500

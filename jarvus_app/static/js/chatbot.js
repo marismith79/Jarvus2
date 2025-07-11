@@ -38,6 +38,7 @@ function safeError(...args) {
 
 // Helper to append a message bubble into #chat-history
 function appendMessage(who, text) {
+    safeLog(`appendMessage called - who: ${who}, text length: ${text ? text.length : 0}`);
     const history = document.getElementById('chat-history');
     const wrapper = document.createElement('div');
     wrapper.classList.add('message', who);
@@ -54,6 +55,8 @@ function appendMessage(who, text) {
   
     history.appendChild(wrapper);
     history.scrollTop = history.scrollHeight;
+    
+    safeLog(`Message appended successfully - wrapper:`, wrapper);
   
     return wrapper;
 }
@@ -209,17 +212,22 @@ async function sendCommand() {
         safeLog('Raw response:', res);
         const data = await res.json();
         safeLog('Parsed data:', data);
+        safeLog('Response content:', data.response);
+        safeLog('Response length:', data.response ? data.response.length : 0);
         thinkingMsg.remove();
 
         if (data.error) {
+            safeLog('Error in response:', data.error);
             appendMessage('bot', `⚠️ Error: ${data.error}`);
             return;
         }
 
         // Updated: handle new response format
         if (data.response) {
+            safeLog('Appending bot message:', data.response.substring(0, 100) + '...');
             appendMessage('bot', data.response);
         } else if (Array.isArray(data.new_messages)) {
+            safeLog('Processing new_messages array:', data.new_messages);
             data.new_messages.forEach(msg => {
                 if (typeof msg === 'string') {
                     appendMessage('bot', msg);
@@ -228,6 +236,8 @@ async function sendCommand() {
                     appendMessage(cls, msg.content);
                 }
             });
+        } else {
+            safeLog('No response or new_messages found in data:', data);
         }
     } catch (err) {
         safeError('Fetch error:', err);

@@ -1,15 +1,24 @@
 """
 Azure AI Inference client implementation for handling LLM interactions.
 This module provides a clean interface for communicating with Azure AI Foundry API
-and managing conversation state.
+and managing conversation state with multimodal support.
 """
 
 import json
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from azure.ai.inference import ChatCompletionsClient
 from azure.core.credentials import AzureKeyCredential
+from azure.ai.inference.models import (
+    SystemMessage,
+    UserMessage,
+    AssistantMessage,
+    ToolMessage,
+    TextContentItem,
+    ImageContentItem,
+    ImageUrl
+)
 
 
 class JarvusAIClient:
@@ -48,7 +57,7 @@ class JarvusAIClient:
 
     def create_chat_completion(
         self,
-        messages: List[Dict[str, str]],
+        messages: List[Union[Dict[str, str], SystemMessage, UserMessage, AssistantMessage, ToolMessage]],
         max_tokens: int = 2048,
         temperature: float = 0.8,
         top_p: float = 0.1,
@@ -59,8 +68,9 @@ class JarvusAIClient:
         tool_choice: Optional[str] = None,
         logger: Optional[Any] = None,  # Add logger argument
     ):
-        """Create a chat completion using Azure AI Foundry API."""
+        """Create a chat completion using Azure AI Foundry API with multimodal support."""
         try:
+            # Messages are already in the correct format from agent_service
             kwargs = {
                 "messages": messages,
                 "max_tokens": max_tokens,
@@ -72,16 +82,18 @@ class JarvusAIClient:
                 **({"tools": tools} if tools else {}),
                 **({"tool_choice": tool_choice} if tool_choice else {}),
             }
-            if logger:
-                logger.info(f"[AzureAI] Request kwargs: {json.dumps({k: v for k, v in kwargs.items() if k != 'messages'}, default=str)[:1000]}")
-                logger.info(f"[AzureAI] Request messages: {json.dumps(messages, default=str)}")
-            response = self.client.complete(**kwargs)
-            if logger:
-                try:
-                    logger.info(f"[AzureAI] Response: {str(response)[:2000]}")
-                except Exception as e:
-                    logger.warning(f"[AzureAI] Could not log response: {e}")
-            return response
+            # if logger:
+            #     logger.info(f"[AzureAI] Request kwargs: {json.dumps({k: v for k, v in kwargs.items() if k != 'messages'}, default=str)[:1000]}")
+            #     # Log message count instead of full content to avoid base64 spam
+            #     message_count = len(messages)
+            #     logger.info(f"[AzureAI] Request messages: {message_count} messages")
+            # response = self.client.complete(**kwargs)
+            # if logger:
+            #     try:
+            #         logger.info(f"[AzureAI] Response Logged")
+            #     except Exception as e:
+            #         logger.warning(f"[AzureAI] Could not log response: {e}")
+            # return response
         except Exception as e:
             error_msg = f"Azure AI Foundry API Error: {str(e)}"
             if logger:

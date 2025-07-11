@@ -112,6 +112,7 @@ class AgentService:
         if not thread_id:
             thread_id = f"thread_{agent_id}_{user_id}_{int(datetime.utcnow().timestamp())}"
         
+        plan = None  # Initialize plan to avoid UnboundLocalError
         # Capture screenshot before processing message
         screenshot_data = None
         try:
@@ -272,15 +273,28 @@ class AgentService:
         messages.extend(working_turns)
         # 4. Current user query (always last)
         if screenshot_data:
-            # Include screenshot with the user message for multimodal input
-            user_content = f"{user_message}\n\n[SCREENSHOT: data:image/png;base64,{screenshot_data}]"
+            # Create proper multimodal content with text and image
+            # from azure.ai.inference.models import TextContentItem, ImageContentItem
+            # content_items = [TextContentItem(text=user_message)]
+            # Create data URL for the screenshot
+            data_url = f"data:image/png;base64,{screenshot_data}"
+            # content_items.append(ImageContentItem(image_url=data_url))
+            # user_message_obj = UserMessage(content=content_items)
+            messages.append(
+                {
+                    'role': 'user',
+                    'content': [
+                        {'type': 'text', 'text': user_message},
+                        {'type': 'image_url', 'image_url': {'url': data_url}}
+                    ]
+                }
+            )
         else:
-            user_content = user_message
-            
-        messages.append({
-            'role': 'user',
-            'content': user_content
-        })
+            # Regular text message
+            messages.append({
+                'role': 'user',
+                'content': user_message
+            })
         memory_info = {
             'thread_id': thread_id,
             'memory_context_used': True
@@ -504,7 +518,7 @@ class AgentService:
                             response = jarvus_ai.create_chat_completion(
                                 messages=messages,
                                 tools=sdk_tools,
-                                tool_choice="required",
+                                tool_choice="auto",
                                 logger=logger
                             )
                             logger.info("Received response from Azure AI (retry, _orchestrate_tool_calls)")
@@ -513,7 +527,7 @@ class AgentService:
                             assistant_msg = AssistantMessage(content=msg.content if msg.content is not None else "", tool_calls=msg.tool_calls)
                             messages.append(assistant_msg)
                             new_messages.append({'role': 'assistant', 'content': assistant_msg.content})
-                            logger.info(f"Assistant message (retry, _orchestrate_tool_calls): {assistant_msg}")
+                            # logger.info(f"Assistant message (retry, _orchestrate_tool_calls): {assistant_msg}")
                             if not msg.tool_calls:
                                 logger.info("No tool calls in response after retry - conversation complete (_orchestrate_tool_calls)")
                                 break

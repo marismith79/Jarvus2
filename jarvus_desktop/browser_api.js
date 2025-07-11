@@ -40,7 +40,12 @@ class BrowserAPI {
             res.json({ 
                 success: true, 
                 connected: this.isConnected,
-                pages: this.pages.length 
+                pages: this.pages.length,
+                current_page: this.currentPage ? {
+                    url: this.currentPage.url(),
+                    title: this.currentPage.title()
+                } : null,
+                server_status: 'running'
             });
         });
         
@@ -153,7 +158,7 @@ class BrowserAPI {
         // Take automatic screenshot (base64 only)
         this.app.post('/api/browser/screenshot-auto', async (req, res) => {
             try {
-                const result = await this.takeScreenshot(); // No path = base64 only
+                const result = await this.takeScreenshot();
                 res.json(result);
             } catch (error) {
                 res.json({ success: false, error: error.message });
@@ -274,6 +279,23 @@ class BrowserAPI {
             // Connect to existing browser
             this.browser = await chromium.connectOverCDP(connectionInfo.wsEndpoint);
             
+            // Wait for at least one context to appear (max 2 seconds)
+            let retries = 20;
+            while (this.browser.contexts.length === 0 && retries-- > 0) {
+                await new Promise(res => setTimeout(res, 100));
+            }
+            console.log('DEBUG: Number of contexts after wait:', this.browser.contexts.length);
+            this.browser.contexts.forEach((ctx, i) => {
+                console.log(`DEBUG: Context ${i} has ${ctx.pages.length} pages`);
+                ctx.pages.forEach((page, j) => {
+                    try {
+                        console.log(`DEBUG:   Page ${j}: ${page.url()}`);
+                    } catch (e) {
+                        console.log(`DEBUG:   Page ${j}: (error getting URL)`);
+                    }
+                });
+            });
+            
             // Get existing context and pages
             if (this.browser.contexts.length > 0) {
                 this.context = this.browser.contexts[0];
@@ -283,11 +305,29 @@ class BrowserAPI {
                 this.pages = [];
             }
             
-            if (this.pages.length > 0) {
+            // If no pages exist, create an initial blank page (do not navigate to Google)
+            if (this.pages.length === 0) {
+                console.log('📄 Creating initial blank page...');
+                this.currentPage = await this.context.newPage();
+                this.pages.push(this.currentPage);
+            } else {
                 this.currentPage = this.pages[0];
             }
             
             this.isConnected = true;
+            
+            // Debug: Log all contexts and their pages after connecting
+            console.log('DEBUG: Number of contexts:', this.browser.contexts.length);
+            this.browser.contexts.forEach((ctx, i) => {
+                console.log(`DEBUG: Context ${i} has ${ctx.pages.length} pages`);
+                ctx.pages.forEach((page, j) => {
+                    try {
+                        console.log(`DEBUG:   Page ${j}: ${page.url()}`);
+                    } catch (e) {
+                        console.log(`DEBUG:   Page ${j}: (error getting URL)`);
+                    }
+                });
+            });
             
             return { 
                 success: true, 
@@ -308,8 +348,21 @@ class BrowserAPI {
                     return connectResult;
                 }
             }
-            
+
             if (newTab) {
+                // Open a new tab in the same window using window.open
+                if (!this.currentPage) {
+                    // If no current page, fallback to context.newPage()
+                    this.currentPage = await this.context.newPage();
+                    this.pages.push(this.currentPage);
+                }
+                const [newPage] = await Promise.all([
+                    this.context.waitForEvent('page'),
+                    this.currentPage.evaluate(() => window.open('about:blank', '_blank'))
+                ]);
+                this.currentPage = newPage;
+                this.pages.push(newPage);
+            } else {
                 // Use existing page if available, otherwise create new one
                 if (this.pages.length > 0) {
                     this.currentPage = this.pages[0];
@@ -318,18 +371,82 @@ class BrowserAPI {
                     this.pages.push(this.currentPage);
                 }
             }
-            
+
             const response = await this.currentPage.goto(url, { 
                 waitUntil: 'commit', 
                 timeout: 30000 
             });
-            
+
             return { 
                 success: true, 
                 url: url,
-                finalUrl: this.currentPage.url,
-                status: response ? response.status : null
+                finalUrl: this.currentPage.url(),
+                status: response ? response.status() : null
             };
+
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    }
+
+    // Add a new method to get the currently active tab from the browser
+    async getCurrentActiveTab() {
+        try {
+            if (!this.isConnected || !this.context) {
+                return { success: false, error: 'Not connected to browser' };
+            }
+            
+            // Get all pages from the context
+            const allPages = this.context.pages();
+            
+            // Find the page that is currently active (has focus)
+            for (const page of allPages) {
+                try {
+                    // Check if this page is currently active by trying to get its title
+                    // The active page will respond quickly, inactive ones might be slower
+                    const isActive = await page.evaluate(() => {
+                        return document.hasFocus() || document.visibilityState === 'visible';
+                    });
+                    
+                    if (isActive) {
+                        // Update our tracking
+                        this.currentPage = page;
+                        
+                        // Make sure it's in our pages array
+                        if (!this.pages.includes(page)) {
+                            this.pages.push(page);
+                        }
+                        
+                        return { 
+                            success: true, 
+                            currentPage: {
+                                url: page.url(),
+                                title: await page.title()
+                            }
+                        };
+                    }
+                } catch (error) {
+                    // Skip pages that might be closed or inaccessible
+                    continue;
+                }
+            }
+            
+            // If no active page found, use the first available page
+            if (allPages.length > 0) {
+                this.currentPage = allPages[0];
+                if (!this.pages.includes(this.currentPage)) {
+                    this.pages.push(this.currentPage);
+                }
+                return { 
+                    success: true, 
+                    currentPage: {
+                        url: this.currentPage.url(),
+                        title: await this.currentPage.title()
+                    }
+                };
+            }
+            
+            return { success: false, error: 'No active pages found' };
             
         } catch (error) {
             return { success: false, error: error.message };
@@ -489,8 +606,18 @@ class BrowserAPI {
     
     async takeScreenshot(screenshotPath) {
         try {
-            if (!this.isConnected || !this.currentPage) {
-                return { success: false, error: 'No active page' };
+            if (!this.isConnected || !this.context) {
+                return { success: false, error: 'Not connected to browser' };
+            }
+            
+            // First, try to get the currently active tab
+            const activeTabResult = await this.getCurrentActiveTab();
+            if (activeTabResult.success) {
+                this.currentPage = this.context.pages().find(page => page.url() === activeTabResult.currentPage.url);
+            }
+            
+            if (!this.currentPage) {
+                return { success: false, error: 'No active page found' };
             }
             
             // Capture full page screenshot as base64
@@ -507,7 +634,9 @@ class BrowserAPI {
                 success: true, 
                 base64: base64Data,
                 size: screenshotBuffer.length,
-                format: 'png'
+                format: 'png',
+                url: this.currentPage.url(),
+                title: await this.currentPage.title()
             };
             
         } catch (error) {
@@ -834,16 +963,35 @@ class BrowserAPI {
     }
     
     start() {
-        return new Promise((resolve, reject) => {
-            this.server = this.app.listen(this.port, () => {
-                console.log(`🌐 Browser API server running on port ${this.port}`);
-                resolve();
-            });
-            
-            this.server.on('error', (error) => {
-                console.error('❌ Browser API server error:', error);
+        return new Promise(async (resolve, reject) => {
+            try {
+                // Start the server first
+                this.server = this.app.listen(this.port, async () => {
+                    console.log(`🌐 Browser API server running on port ${this.port}`);
+                    
+                    // Then automatically connect to the browser
+                    console.log('🔗 Auto-connecting to browser...');
+                    const connectResult = await this.connectToBrowser();
+                    
+                    if (connectResult.success) {
+                        console.log(`✅ Auto-connected to browser with ${connectResult.pages} pages`);
+                    } else {
+                        console.warn(`⚠️ Auto-connection failed: ${connectResult.error}`);
+                        // Don't reject - server is still running, just not connected
+                    }
+                    
+                    resolve();
+                });
+                
+                this.server.on('error', (error) => {
+                    console.error('❌ Browser API server error:', error);
+                    reject(error);
+                });
+                
+            } catch (error) {
+                console.error('❌ Failed to start Browser API server:', error);
                 reject(error);
-            });
+            }
         });
     }
     

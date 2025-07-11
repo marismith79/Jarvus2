@@ -270,6 +270,7 @@ class ControlBar {
                 await this.fetchMostRecentAgent();
             }
             const agentId = this.mostRecentAgentId;
+            safeLog('[OVERLAY] Sending message:', message, 'agentId:', agentId);
             // Show thinking message
             const thinkingDiv = this.addMessage('Assistant', '…', 'assistant');
             try {
@@ -287,7 +288,6 @@ class ControlBar {
                         web_search_enabled: true
                     })
                 });
-                
                 // Handle 401 authentication error
                 if (res.status === 401) {
                     if (thinkingDiv) thinkingDiv.remove();
@@ -298,14 +298,17 @@ class ControlBar {
                     }
                     return;
                 }
-                
                 const data = await res.json();
+                safeLog('[OVERLAY] Received response:', data);
                 if (thinkingDiv) thinkingDiv.remove();
                 if (data.error) {
                     this.addMessage('Assistant', `⚠️ Error: ${data.error}`, 'assistant');
                     return;
                 }
-                if (Array.isArray(data.new_messages)) {
+                if (data.response) {
+                    safeLog('[OVERLAY] Displaying assistant response:', data.response);
+                    this.addMessage('Assistant', data.response, 'assistant');
+                } else if (Array.isArray(data.new_messages)) {
                     data.new_messages.forEach(msg => {
                         if (typeof msg === 'string') {
                             this.addMessage('Assistant', msg, 'assistant');
@@ -334,7 +337,12 @@ class ControlBar {
     addMessage(sender, text, type) {
         const messageDiv = document.createElement('div');
         messageDiv.className = `chat-message ${type}`;
-        messageDiv.textContent = text;
+        // Render markdown for assistant replies, plain text for user
+        if (type === 'assistant' && window.marked) {
+            messageDiv.innerHTML = window.marked.parse(text);
+        } else {
+            messageDiv.textContent = text;
+        }
         this.chatPopupMessages.appendChild(messageDiv);
         this.chatPopupMessages.scrollTop = this.chatPopupMessages.scrollHeight;
         return messageDiv;

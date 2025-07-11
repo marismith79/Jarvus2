@@ -335,17 +335,18 @@ class ChromeLauncher {
                 const page = this.browser.pages()[0] || await this.browser.newPage();
                 console.log('✅ Page available successfully');
                 
-                console.log('🧪 Navigating to test page...');
-                await page.goto('https://example.com');
-                console.log('✅ Test page loaded successfully');
+                // REMOVE: Navigating to test page and related code
+                // console.log('🧪 Navigating to test page...');
+                // await page.goto('https://example.com');
+                // console.log('✅ Test page loaded successfully');
                 
                 // Get page title to confirm it loaded
-                const title = await page.title();
-                console.log(`📄 Page title: "${title}"`);
+                // const title = await page.title();
+                // console.log(`📄 Page title: "${title}"`);
                 
                 // Check if page is visible
-                const isVisible = await page.isVisible('body');
-                console.log(`👁️ Page visible: ${isVisible}`);
+                // const isVisible = await page.isVisible('body');
+                // console.log(`👁️ Page visible: ${isVisible}`);
                 
             } catch (pageError) {
                 console.error('❌ Error creating or navigating page:', pageError.message);
