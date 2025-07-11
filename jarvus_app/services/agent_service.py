@@ -434,6 +434,7 @@ class AgentService:
 
     def _orchestrate_tool_calls(self, user_id, allowed_tools, messages, tool_choice, logger, session_data=None):
         """Orchestrate tool calling logic for both legacy and enhanced chat handlers, with plan adherence."""
+        from jarvus_app.utils.token_utils import get_valid_jwt_token
         jarvus_ai = self.llm_client
         # Ensure tools are discovered if needed
         ensure_tools_discovered(user_id, session_data)
@@ -482,13 +483,14 @@ class AgentService:
                         try:
                             # Get the app slug for this tool from the mapping
                             app_slug = tool_to_app_mapping.get(tool_name, "google_docs")  # fallback
-                            
                             external_user_id = str(user_id)
+                            jwt_token = get_valid_jwt_token()
                             tool_result = pipedream_tool_service.execute_tool(
                                 external_user_id=external_user_id,
                                 app_slug=app_slug,
                                 tool_name=tool_name,
-                                tool_args=tool_args
+                                tool_args=tool_args,
+                                jwt_token=jwt_token
                             )
                             # Format tool result for LLM
                             formatted_result = self._format_tool_result_for_llm(tool_result)
