@@ -455,12 +455,18 @@ class AgentService:
         try:
             while True:
                 logger.info("Calling Azure AI for completion (_orchestrate_tool_calls)")
-                response = jarvus_ai.create_chat_completion(
-                    messages=messages,
-                    tools=sdk_tools,
-                    tool_choice=tool_choice,
-                    logger=logger
-                )
+                if len(allowed_tools) == 0:
+                    response = jarvus_ai.create_chat_completion(
+                        messages=messages,
+                        logger=logger
+                    )
+                else:
+                    response = jarvus_ai.create_chat_completion(
+                        messages=messages,
+                        tools=sdk_tools,
+                        tool_choice=tool_choice,
+                        logger=logger
+                    )
                 logger.info("Received response from Azure AI (_orchestrate_tool_calls)")
                 choice = response.choices[0]
                 msg = choice.message
