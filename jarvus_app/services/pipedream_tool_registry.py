@@ -177,7 +177,74 @@ class PipedreamToolService:
     def __init__(self):
         """Initialize the Pipedream tool service."""
         self.tools_registry = PipedreamToolsRegistry()
+        self._initialized = False
+        self._initialization_lock = False  # Simple lock to prevent concurrent initialization
     
+    def ensure_initialized(self, user_id: str, force_refresh: bool = False) -> None:
+        """
+        Ensure tools are discovered and cached. Only discovers if not already done or if forced.
+        
+        Args:
+            user_id: The user ID to discover tools for
+            force_refresh: If True, force rediscovery even if already initialized
+        """
+        # Check if we need to initialize
+        if self._initialized and not force_refresh and self.tools_registry.is_fresh():
+            logger.debug("Tools already initialized and fresh, skipping discovery")
+            return
+        
+        # Prevent concurrent initialization
+        if self._initialization_lock:
+            logger.debug("Tool initialization already in progress, waiting...")
+            return
+        
+        try:
+            self._initialization_lock = True
+            logger.info(f"Initializing tools for user {user_id}")
+            self.discover_all_tools(user_id, force_refresh=force_refresh)
+            self._initialized = True
+            logger.info("Tool initialization completed successfully")
+        except Exception as e:
+            logger.error(f"Failed to initialize tools: {str(e)}")
+            raise
+        finally:
+            self._initialization_lock = False
+    
+    def reset_initialization(self) -> None:
+        """
+        Reset the initialization state, forcing rediscovery on next ensure_initialized call.
+        Useful for testing or when you need to force a refresh.
+        """
+        self._initialized = False
+        self._initialization_lock = False
+        self.tools_registry.clear()
+        logger.info("Tool initialization state reset")
+    
+    def is_initialized(self) -> bool:
+        """
+        Check if tools have been initialized and are fresh.
+        
+        Returns:
+            bool: True if tools are initialized and fresh, False otherwise
+        """
+        return self._initialized and self.tools_registry.is_fresh()
+    
+    def get_initialization_status(self) -> dict:
+        """
+        Get detailed initialization status for debugging.
+        
+        Returns:
+            dict: Status information including initialized flag, lock status, and freshness
+        """
+        return {
+            'initialized': self._initialized,
+            'initialization_lock': self._initialization_lock,
+            'registry_fresh': self.tools_registry.is_fresh(),
+            'discovered_at': self.tools_registry._discovered_at,
+            'apps_count': len(self.tools_registry._apps),
+            'total_tools': len(self.tools_registry.get_all_sdk_tools())
+        }
+
     def _parse_sse_response(self, response_text: str) -> Optional[Dict[str, Any]]:
         """
         Parse SSE (Server-Sent Events) response and extract JSON data.
@@ -268,20 +335,25 @@ class PipedreamToolService:
             print(f"Unexpected error getting tools for {app_slug}: {str(e)}")
             return None
     
-    def discover_all_tools(self, user_id):
+    def discover_all_tools(self, user_id, force_refresh=False):
         """
         Discover tools for a user from hardcoded list of apps.
         
         Args:
-            external_user_id: The user's ID in your system
+            user_id: The user's ID in your system
+            force_refresh: If True, force rediscovery even if already fresh
             
         Returns:
             PipedreamToolsRegistry: Registry containing all discovered tools
         """
         print(f"Discovering tools for user: {user_id}")
         
-        # Clear existing registry
-        self.tools_registry.clear()
+        # Only clear if forcing refresh or if not fresh
+        if force_refresh or not self.tools_registry.is_fresh():
+            self.tools_registry.clear()
+        else:
+            print("Tools registry is fresh, skipping discovery")
+            return self.tools_registry
         
         # Hardcoded list of app slugs to discover
         all_possible_apps = ALL_PIPEDREAM_APPS
@@ -496,19 +568,21 @@ class PipedreamToolService:
 # Create singleton instance
 pipedream_tool_service = PipedreamToolService() 
 
-def ensure_tools_discovered(user_id, session_data=None):
+def ensure_tools_discovered(user_id, session_data=None, force_refresh=False):
     """
     Ensure tools are discovered for the user if the registry is not fresh.
     Use only the DB cache or in-memory registry. Do NOT store the registry in the session.
     Call this from login or before agent requests.
+    
+    Args:
+        user_id: The user ID to discover tools for
+        session_data: Deprecated, kept for compatibility
+        force_refresh: If True, force rediscovery even if already initialized
     """
     from jarvus_app.services.pipedream_tool_registry import pipedream_tool_service
     
-    # No longer use session_data for tool registry storage
-    # Always use DB cache or in-memory registry
-    logger.info(f"Discovering tools for user {user_id}")
-    pipedream_tool_service.discover_all_tools(user_id)
-    # No session storage here
+    # Use the new initialization method that caches properly
+    pipedream_tool_service.ensure_initialized(str(user_id), force_refresh=force_refresh)
 
 
 def get_session_tool_registry(session_data):

@@ -447,7 +447,7 @@ class AgentService:
         """Orchestrate tool calling logic for both legacy and enhanced chat handlers, with plan adherence."""
         from jarvus_app.utils.token_utils import get_valid_jwt_token
         jarvus_ai = self.llm_client
-        # Ensure tools are discovered if needed
+        # Ensure tools are discovered if needed (now optimized to avoid repeated discovery)
         # No longer pass session_data; tool discovery uses DB cache or in-memory registry only
         ensure_tools_discovered(user_id)
         # Only include SDK tools that are in allowed_tools
