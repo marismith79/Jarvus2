@@ -105,6 +105,7 @@ class AgentService:
         thread_id=None,
         tool_choice="auto",
         web_search_enabled=True,
+        current_task=None,
         logger=None
     ):
         """Process a message with full memory context and tool orchestration, using plan-then-act."""
@@ -128,7 +129,7 @@ class AgentService:
         
         # Step 1: Get context
         agent, allowed_tools, memory_info, messages = self._get_context_for_message(
-            agent_id, user_id, user_message, thread_id, web_search_enabled #, screenshot_data
+            agent_id, user_id, user_message, thread_id, web_search_enabled, current_task #, screenshot_data
         )
         # Step 2: Tool selection
         filtered_tools = self._select_tools_with_llm(user_message, allowed_tools)
@@ -209,6 +210,7 @@ class AgentService:
         user_message: str,
         thread_id: Optional[str],
         web_search_enabled: bool,
+        current_task=None,
         # screenshot_data: Optional[str]
     ):
         from jarvus_app import config
@@ -236,6 +238,17 @@ class AgentService:
             "### System Instructions",
             config.Config.CHATBOT_SYSTEM_PROMPT.strip(),
         ]
+        
+        # Add current task context
+        task_text = current_task.text if current_task else "General tasks and conversation"
+        system_instructions.extend([
+            "",
+            "### Current Task Context",
+            f"You are currently working on: {task_text}",
+            "When responding to the user, consider how your response relates to this current task.",
+            "If the user's request is related to this task, prioritize helping them complete it.",
+            "If the user's request is unrelated, you can still help but be mindful of their current focus."
+        ])
         messages = [
             {"role": "system", "content": "\n".join(system_instructions)}
         ]

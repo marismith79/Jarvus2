@@ -1,5 +1,6 @@
 let selectedTools = [];
 let currentAgentId = null;
+let currentTask = null;
 
 // Store connection status dynamically from window.toolSlugs
 const connectedTools = {};
@@ -384,6 +385,10 @@ async function toggleTodo(checkbox) {
         // Update UI
         if (checkbox.checked) {
             todoItem.classList.add('completed');
+            // If completing a current task, clear it
+            if (todoItem.classList.contains('current-task')) {
+                await setCurrentTask(null);
+            }
         } else {
             todoItem.classList.remove('completed');
         }
@@ -393,6 +398,104 @@ async function toggleTodo(checkbox) {
         // Revert checkbox state
         checkbox.checked = !checkbox.checked;
         alert('Error updating todo. Please try again.');
+    }
+}
+
+async function setCurrentTask(todoId) {
+    try {
+        // If clicking on the same task that's already current, deselect it
+        if (todoId && currentTask && currentTask.id == todoId) {
+            todoId = null; // Deselect current task
+        }
+        
+        if (todoId) {
+            const response = await fetch(`/chatbot/todos/${todoId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    current_task: true
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            currentTask = data.todo;
+        } else {
+            // Clear all current tasks
+            const response = await fetch('/chatbot/todos/clear-current', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            currentTask = null;
+        }
+        
+        // Update UI to reflect current task
+        updateCurrentTaskDisplay();
+        updateTodoListCurrentTask();
+        
+    } catch (error) {
+        safeError('Failed to set current task:', error);
+        alert('Error setting current task. Please try again.');
+    }
+}
+
+function updateCurrentTaskDisplay() {
+    const currentTaskDisplay = document.getElementById('current-task-display');
+    if (!currentTaskDisplay) return;
+    
+    if (currentTask) {
+        currentTaskDisplay.innerHTML = `
+            <div class="current-task-banner">
+                <span class="current-task-icon">🎯</span>
+                <span class="current-task-text">Currently working on: ${currentTask.text}</span>
+                <button class="clear-current-task-btn" onclick="setCurrentTask(null)">×</button>
+            </div>
+        `;
+        currentTaskDisplay.style.display = 'block';
+    } else {
+        // Show general task when no specific task is selected
+        currentTaskDisplay.innerHTML = `
+            <div class="current-task-banner general-task">
+                <span class="current-task-icon">📋</span>
+                <span class="current-task-text">Currently working on: General tasks and conversation</span>
+            </div>
+        `;
+        currentTaskDisplay.style.display = 'block';
+    }
+}
+
+function updateTodoListCurrentTask() {
+    // Remove current-task class from all todos
+    document.querySelectorAll('.todo-item').forEach(item => {
+        item.classList.remove('current-task');
+        const currentTaskBtn = item.querySelector('.current-task-btn');
+        if (currentTaskBtn) {
+            currentTaskBtn.classList.remove('active');
+        }
+    });
+    
+    // Add current-task class to the current task
+    if (currentTask) {
+        const currentTaskItem = document.querySelector(`[data-todo-id="${currentTask.id}"]`);
+        if (currentTaskItem) {
+            currentTaskItem.classList.add('current-task');
+            const currentTaskBtn = currentTaskItem.querySelector('.current-task-btn');
+            if (currentTaskBtn) {
+                currentTaskBtn.classList.add('active');
+            }
+        }
     }
 }
 
@@ -458,16 +561,24 @@ async function loadTodos() {
             todoItem.dataset.todoId = todo.id;
             
             if (todo.completed) todoItem.classList.add('completed');
+            if (todo.current_task) {
+                todoItem.classList.add('current-task');
+                currentTask = todo;
+            }
             
             todoItem.innerHTML = `
                 <input type="checkbox" class="todo-checkbox" ${todo.completed ? 'checked' : ''} onchange="toggleTodo(this)">
                 <span class="todo-text" contenteditable="true" onblur="saveTodoText(this, ${todo.id})">${todo.text}</span>
+                <button class="current-task-btn ${todo.current_task ? 'active' : ''}" onclick="setCurrentTask(${todo.id})" title="Set as current task">🎯</button>
                 <button class="todo-edit-btn" onclick="editTodo(this)">✏️</button>
                 <button class="todo-delete-btn" onclick="deleteTodo(${todo.id})">🗑️</button>
             `;
             
             todoList.appendChild(todoItem);
         });
+        
+        // Update current task display after loading todos
+        updateCurrentTaskDisplay();
         
     } catch (error) {
         safeError('Failed to load todos:', error);

@@ -105,6 +105,10 @@ def handle_chat_message():
         web_search_enabled = data.get('web_search_enabled', True)
         if not all([user_text, agent_id]):
             return jsonify({'error': 'Message and agent_id are required.'}), 400
+        
+        # Get current task context
+        current_task = Todo.get_current_task(current_user.id)
+        
         final_assistant_message, memory_info = agent_service.process_message(
             agent_id=agent_id,
             user_id=current_user.id,
@@ -112,6 +116,7 @@ def handle_chat_message():
             thread_id=thread_id,
             tool_choice=tool_choice,
             web_search_enabled=web_search_enabled,
+            current_task=current_task,
             logger=logger
         )
         
@@ -183,6 +188,33 @@ def get_todos():
         logger.error(f"Error fetching todos: {str(e)}", exc_info=True)
         return jsonify({'error': 'Failed to fetch todos'}), 500
 
+@chatbot_bp.route('/todos/current', methods=['GET'])
+@login_required
+def get_current_task():
+    """Get the current active task for the user."""
+    try:
+        current_task = Todo.get_current_task(current_user.id)
+        if current_task:
+            return jsonify({'current_task': current_task.to_dict()}), 200
+        else:
+            return jsonify({'current_task': None}), 200
+    except Exception as e:
+        logger.error(f"Error fetching current task: {str(e)}", exc_info=True)
+        return jsonify({'error': 'Failed to fetch current task'}), 500
+
+@chatbot_bp.route('/todos/clear-current', methods=['POST'])
+@login_required
+def clear_current_task():
+    """Clear all current tasks for the user."""
+    try:
+        # Clear all current tasks for this user
+        Todo.query.filter_by(user_id=current_user.id, current_task=True).update({'current_task': False})
+        db.session.commit()
+        return jsonify({'message': 'Current task cleared'}), 200
+    except Exception as e:
+        logger.error(f"Error clearing current task: {str(e)}", exc_info=True)
+        return jsonify({'error': 'Failed to clear current task'}), 500
+
 @chatbot_bp.route('/todos', methods=['POST'])
 @login_required
 def create_todo():
@@ -218,8 +250,9 @@ def update_todo(todo_id):
         data = request.get_json() or {}
         text = data.get('text')
         completed = data.get('completed')
+        current_task = data.get('current_task')
         
-        todo.update_todo(text=text, completed=completed)
+        todo.update_todo(text=text, completed=completed, current_task=current_task)
         
         return jsonify({'todo': todo.to_dict()}), 200
         
