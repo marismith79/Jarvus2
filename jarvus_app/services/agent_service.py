@@ -38,6 +38,13 @@ logger = logging.getLogger(__name__)
 class AgentService:
     """Enhanced agent service with memory management capabilities"""
     
+    # Configuration constants for smart thread management
+    NEW_CONVERSATION_TIMEOUT_MINUTES = 30  # Time gap to consider new conversation
+    MAX_WORKING_MEMORY_CHECKPOINTS = 20    # Max checkpoints to keep per thread
+    WORKING_MEMORY_CONTEXT_LIMIT = 10      # Max messages to include in context
+    LLM_ANALYSIS_TIMEOUT_SECONDS = 5       # Timeout for LLM conversation analysis
+    ENABLE_LLM_CONVERSATION_DETECTION = True  # Enable/disable LLM-based detection
+    
     def __init__(self):
         self.llm_client = JarvusAIClient()
     
@@ -111,10 +118,8 @@ class AgentService:
         """Process a message with full memory context and tool orchestration, using plan-then-act."""
         if logger is None:
             logger = logging.getLogger(__name__)
-        # Use a consistent thread_id for the conversation session
-        # If no thread_id provided, create one based on agent and user (without timestamp)
-        if not thread_id:
-            thread_id = f"thread_{agent_id}_{user_id}"
+        # Smart thread ID management
+        thread_id = self._get_or_create_thread_id(agent_id, user_id, user_message, thread_id)
         logger.info(f"Using thread_id: {thread_id} for agent {agent_id}, user {user_id}")
         
         # plan = None  # Initialize plan to avoid UnboundLocalError
@@ -199,6 +204,9 @@ class AgentService:
                 state_data=current_state
             )
             logger.info(f"Saved working memory checkpoint for thread {thread_id} with {len(current_state['messages'])} messages")
+            
+            # Clean up old working memory checkpoints to prevent indefinite growth
+            self._cleanup_old_working_memory(thread_id, user_id)
         
         if final_assistant_message:
             self._save_interaction(agent, user_message, final_assistant_message)
@@ -312,7 +320,7 @@ class AgentService:
         })
         # 3. Working memory (recent turns)
         working_turns = []
-        conversation_messages = current_state['messages'][-10:] if 'messages' in current_state else []
+        conversation_messages = current_state['messages'][-self.WORKING_MEMORY_CONTEXT_LIMIT:] if 'messages' in current_state else []
         logger.info(f"Retrieved {len(conversation_messages)} messages from working memory for thread {thread_id}")
         for msg in conversation_messages:
             if msg.get('content') and msg['role'] in ['user', 'assistant']:
@@ -353,6 +361,144 @@ class AgentService:
             'memory_context_used': True
         }
         return agent, allowed_tools, memory_info, messages, current_state
+
+    def _detect_new_conversation(self, user_message: str, current_state: dict) -> bool:
+        """
+        Use LLM to detect if the user is starting a new conversation based on:
+        1. Message content and context
+        2. Time gap since last message
+        3. Semantic analysis of conversation continuity
+        """
+        if not current_state or not current_state.get('messages'):
+            return True
+        
+        # Check time gap first (if more than configured timeout, consider it a new conversation)
+        if current_state.get('messages'):
+            last_message = current_state['messages'][-1]
+            if 'timestamp' in last_message:
+                from datetime import datetime, timedelta
+                try:
+                    last_time = datetime.fromisoformat(last_message['timestamp'].replace('Z', '+00:00'))
+                    current_time = datetime.utcnow()
+                    time_diff = current_time - last_time.replace(tzinfo=None)
+                    if time_diff > timedelta(minutes=self.NEW_CONVERSATION_TIMEOUT_MINUTES):
+                        logger.info(f"Time gap of {time_diff.total_seconds()/60:.1f} minutes detected, treating as new conversation")
+                        return True
+                except:
+                    pass
+        
+        # Use LLM to analyze conversation continuity (if enabled)
+        if self.ENABLE_LLM_CONVERSATION_DETECTION:
+            return self._analyze_conversation_continuity_with_llm(user_message, current_state)
+        else:
+            # Fallback to simple keyword detection
+            return self._fallback_conversation_detection(user_message)
+    
+    def _analyze_conversation_continuity_with_llm(self, user_message: str, current_state: dict) -> bool:
+        """
+        Use LLM to determine if the user message is starting a new conversation
+        or continuing the existing one.
+        """
+        try:
+            # Build conversation context for the LLM
+            conversation_context = ""
+            if current_state.get('messages'):
+                # Get last 4 messages for context (to keep it focused)
+                recent_messages = current_state['messages'][-4:] if len(current_state['messages']) > 4 else current_state['messages']
+                for msg in recent_messages:
+                    if msg.get('content') and msg.get('role') in ['user', 'assistant']:
+                        conversation_context += f"{msg['role']}: {msg['content']}\n"
+            
+            # Create the analysis prompt
+            analysis_prompt = f"""
+You are analyzing conversation continuity. Determine if the user's message starts a new conversation or continues the existing one.
+
+Recent conversation context:
+{conversation_context.strip() if conversation_context else "No previous conversation"}
+
+New user message: "{user_message}"
+
+Analysis criteria:
+- "NEW" if: greeting, new topic request, help request, topic change, reset command
+- "CONTINUE" if: response to previous message, clarification, confirmation, follow-up question
+
+Examples:
+- "hello" → NEW
+- "yes" → CONTINUE  
+- "can you help me with something else?" → NEW
+- "what about tomorrow?" → CONTINUE
+- "let's start over" → NEW
+- "that sounds good" → CONTINUE
+
+Respond with ONLY "NEW" or "CONTINUE".
+"""
+            
+            # Get LLM analysis
+            analysis_messages = [
+                {"role": "system", "content": "You are a conversation analysis expert. Respond with only 'NEW' or 'CONTINUE'."},
+                {"role": "user", "content": analysis_prompt}
+            ]
+            
+            try:
+                response = self.llm_client.create_chat_completion(analysis_messages)
+                analysis_result = response['choices'][0]['message']['content'].strip().upper()
+            except Exception as e:
+                logger.warning(f"LLM analysis failed: {str(e)}")
+                return self._fallback_conversation_detection(user_message)
+            
+            is_new_conversation = analysis_result == "NEW"
+            
+            logger.info(f"LLM conversation analysis: '{analysis_result}' for message: '{user_message[:50]}...' (context: {len(conversation_context.split(chr(10)))} lines)")
+            
+            return is_new_conversation
+            
+        except Exception as e:
+            logger.error(f"Failed to analyze conversation continuity with LLM: {str(e)}")
+            # Fallback to simple keyword detection
+            return self._fallback_conversation_detection(user_message)
+    
+    def _fallback_conversation_detection(self, user_message: str) -> bool:
+        """
+        Fallback conversation detection using simple keyword matching
+        when LLM analysis fails.
+        """
+        new_conversation_indicators = [
+            'hello', 'hi', 'hey', 'good morning', 'good afternoon', 'good evening',
+            'start over', 'new conversation', 'reset', 'begin', 'let\'s start',
+            'can you help me', 'i need help', 'i want to', 'i would like to'
+        ]
+        
+        user_message_lower = user_message.lower().strip()
+        
+        for indicator in new_conversation_indicators:
+            if indicator in user_message_lower:
+                logger.info(f"Fallback detection: found indicator '{indicator}' in message")
+                return True
+        
+        return False
+
+    def _get_or_create_thread_id(self, agent_id: int, user_id: int, user_message: str, existing_thread_id: str = None) -> str:
+        """
+        Smart thread ID management:
+        - Use existing thread_id if provided
+        - Create new thread_id if starting new conversation
+        - Maintain continuity for ongoing conversations
+        """
+        if existing_thread_id:
+            return existing_thread_id
+        
+        # Check if we should start a new conversation
+        current_state = memory_service.get_latest_state(f"thread_{agent_id}_{user_id}", user_id)
+        if self._detect_new_conversation(user_message, current_state):
+            # Start new conversation with timestamp
+            new_thread_id = f"thread_{agent_id}_{user_id}_{int(datetime.utcnow().timestamp())}"
+            logger.info(f"Detected new conversation, creating new thread_id: {new_thread_id}")
+            return new_thread_id
+        else:
+            # Continue existing conversation
+            thread_id = f"thread_{agent_id}_{user_id}"
+            logger.info(f"Continuing existing conversation with thread_id: {thread_id}")
+            return thread_id
 
     def _select_tools_with_llm(self, user_message, allowed_tools, conversation_context=None):
         jarvus_ai = self.llm_client
@@ -661,6 +807,38 @@ class AgentService:
             )
         except Exception as e:
             logger.error(f"Failed to extract and store memories: {str(e)}")
+
+    def _cleanup_old_working_memory(self, thread_id: str, user_id: int, max_checkpoints: int = None):
+        """
+        Clean up old working memory checkpoints to prevent indefinite growth.
+        Keeps the most recent checkpoints and removes older ones.
+        """
+        if max_checkpoints is None:
+            max_checkpoints = self.MAX_WORKING_MEMORY_CHECKPOINTS
+        """
+        Clean up old working memory checkpoints to prevent indefinite growth.
+        Keeps the most recent checkpoints and removes older ones.
+        """
+        try:
+            from jarvus_app.models.memory import ShortTermMemory
+            
+            # Get all checkpoints for this thread, ordered by step number
+            checkpoints = ShortTermMemory.query.filter_by(
+                thread_id=thread_id, 
+                user_id=user_id
+            ).order_by(ShortTermMemory.step_number.desc()).all()
+            
+            # If we have more than max_checkpoints, delete the oldest ones
+            if len(checkpoints) > max_checkpoints:
+                checkpoints_to_delete = checkpoints[max_checkpoints:]
+                for checkpoint in checkpoints_to_delete:
+                    db.session.delete(checkpoint)
+                db.session.commit()
+                logger.info(f"Cleaned up {len(checkpoints_to_delete)} old working memory checkpoints for thread {thread_id}")
+                
+        except Exception as e:
+            logger.error(f"Failed to cleanup old working memory: {str(e)}")
+            db.session.rollback()
 
 
 # Global enhanced agent service instance
