@@ -111,8 +111,11 @@ class AgentService:
         """Process a message with full memory context and tool orchestration, using plan-then-act."""
         if logger is None:
             logger = logging.getLogger(__name__)
+        # Use a consistent thread_id for the conversation session
+        # If no thread_id provided, create one based on agent and user (without timestamp)
         if not thread_id:
-            thread_id = f"thread_{agent_id}_{user_id}_{int(datetime.utcnow().timestamp())}"
+            thread_id = f"thread_{agent_id}_{user_id}"
+        logger.info(f"Using thread_id: {thread_id} for agent {agent_id}, user {user_id}")
         
         # plan = None  # Initialize plan to avoid UnboundLocalError
         # # Capture screenshot before processing message
@@ -128,12 +131,23 @@ class AgentService:
         #     logger.error(f"Error capturing screenshot: {str(e)}")
         
         # Step 1: Get context
-        agent, allowed_tools, memory_info, messages = self._get_context_for_message(
+        agent, allowed_tools, memory_info, messages, current_state = self._get_context_for_message(
             agent_id, user_id, user_message, thread_id, web_search_enabled, current_task #, screenshot_data
         )
         # Step 2: Tool selection
-        filtered_tools = self._select_tools_with_llm(user_message, allowed_tools)
+        # Extract conversation context from messages for tool selection
+        conversation_context = []
+        for msg in messages:
+            if msg.get('role') in ['user', 'assistant'] and msg.get('content'):
+                conversation_context.append({
+                    'role': msg['role'],
+                    'content': msg['content']
+                })
+        
+        filtered_tools = self._select_tools_with_llm(user_message, allowed_tools, conversation_context)
         print("[DEBUG] allowed_tools", allowed_tools)
+        print("[DEBUG] conversation_context_length", len(conversation_context))
+        print("[DEBUG] conversation_context", conversation_context[-2:] if len(conversation_context) >= 2 else conversation_context)
         print("[DEBUG] filtered_tools", filtered_tools)
         # if filtered_tools:
         #     # Step 3: Planning step
@@ -167,6 +181,25 @@ class AgentService:
             else:
                 agent.messages.append({'role': 'user', 'content': getattr(m, 'content', '')})
         db.session.commit()
+        
+        # Save conversation to working memory (short-term memory)
+        if final_assistant_message:
+            # Add the assistant's response to the current state
+            current_state['messages'].append({
+                'role': 'assistant',
+                'content': final_assistant_message,
+                'timestamp': datetime.utcnow().isoformat()
+            })
+            
+            # Save the updated state back to working memory
+            memory_service.save_checkpoint(
+                thread_id=thread_id,
+                user_id=user_id,
+                agent_id=agent_id,
+                state_data=current_state
+            )
+            logger.info(f"Saved working memory checkpoint for thread {thread_id} with {len(current_state['messages'])} messages")
+        
         if final_assistant_message:
             self._save_interaction(agent, user_message, final_assistant_message)
         self._store_memories_from_interaction(user_id, agent_id, orchestration_messages)
@@ -221,6 +254,7 @@ class AgentService:
         allowed_tools = list(allowed_tools)
         # Get current state (working memory)
         current_state = memory_service.get_latest_state(thread_id, user_id)
+        logger.info(f"Retrieved working memory state for thread {thread_id}: {current_state is not None}")
         if not current_state:
             current_state = {
                 'messages': [],
@@ -228,6 +262,10 @@ class AgentService:
                 'user_id': user_id,
                 'thread_id': thread_id
             }
+            logger.info(f"Created new working memory state for thread {thread_id}")
+        else:
+            logger.info(f"Found existing working memory with {len(current_state.get('messages', []))} messages")
+        
         current_state['messages'].append({
             'role': 'user',
             'content': user_message,
@@ -275,6 +313,7 @@ class AgentService:
         # 3. Working memory (recent turns)
         working_turns = []
         conversation_messages = current_state['messages'][-10:] if 'messages' in current_state else []
+        logger.info(f"Retrieved {len(conversation_messages)} messages from working memory for thread {thread_id}")
         for msg in conversation_messages:
             if msg.get('content') and msg['role'] in ['user', 'assistant']:
                 content = msg['content']
@@ -284,6 +323,7 @@ class AgentService:
                         'content': msg['content']
                     })
         messages.extend(working_turns)
+        logger.info(f"Added {len(working_turns)} working memory turns to context")
         # 4. Current user query (always last)
         # if screenshot_data:
         #     # Create proper multimodal content with text and image
@@ -312,18 +352,45 @@ class AgentService:
             'thread_id': thread_id,
             'memory_context_used': True
         }
-        return agent, allowed_tools, memory_info, messages
+        return agent, allowed_tools, memory_info, messages, current_state
 
-    def _select_tools_with_llm(self, user_message, allowed_tools):
+    def _select_tools_with_llm(self, user_message, allowed_tools, conversation_context=None):
         jarvus_ai = self.llm_client
-        tool_selection_prompt = (
-            "Given the following user message and these tool categories, "
-            "which tool(s) or tool category(ies) would you use to answer the message? "
-            "Respond with a JSON list of tool names or categories. Return the exact name that is provided. If none, return an empty list."
-        )
+        
+        # Build context-aware prompt
+        if conversation_context and len(conversation_context) > 1:
+            # Include recent conversation context
+            context_prompt = (
+                "Given the following conversation context and the user's latest message, "
+                "which tool(s) or tool category(ies) would you use to answer the message? "
+                "Consider the full conversation context, not just the latest message in isolation. "
+                "Pay special attention to:\n"
+                "- If the user is confirming or continuing a previous workflow (like 'yes', 'ok', 'sure')\n"
+                "- If the conversation is about creating, updating, or managing calendar events\n"
+                "- If the conversation involves email, documents, or web searches\n"
+                "- If the assistant previously mentioned using specific tools\n"
+                "Respond with a JSON list of tool names or categories. Return the exact name that is provided. If none, return an empty list.\n\n"
+                "Conversation Context:\n"
+            )
+            
+            # Add recent conversation turns (last 4 turns to keep it focused)
+            recent_context = conversation_context[-4:] if len(conversation_context) > 4 else conversation_context
+            for msg in recent_context:
+                if msg.get('role') in ['user', 'assistant'] and msg.get('content'):
+                    context_prompt += f"{msg['role']}: {msg['content']}\n"
+            
+            context_prompt += f"\nLatest User Message: {user_message}\n"
+        else:
+            # Fallback to original prompt for single messages
+            context_prompt = (
+                "Given the following user message and these tool categories, "
+                "which tool(s) or tool category(ies) would you use to answer the message? "
+                "Respond with a JSON list of tool names or categories. Return the exact name that is provided. If none, return an empty list.\n\n"
+                f"User Message: {user_message}"
+            )
+        
         tool_selection_messages = [
-            {"role": "system", "content": tool_selection_prompt},
-            {"role": "user", "content": user_message},
+            {"role": "system", "content": context_prompt},
             {"role": "system", "content": f"Available tool categories: {allowed_tools}"}
         ]
         tool_selection_response = jarvus_ai.create_chat_completion(tool_selection_messages)
