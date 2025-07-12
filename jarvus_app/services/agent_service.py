@@ -30,6 +30,7 @@ from jarvus_app.services.tool_registry import tool_registry
 from jarvus_app.services.pipedream_auth_service import pipedream_auth_service
 from jarvus_app.services.pipedream_tool_registry import pipedream_tool_service
 from ..services.pipedream_tool_registry import ensure_tools_discovered
+from ..services.parameter_inference_service import parameter_inference_service
         
 
 logger = logging.getLogger(__name__)
@@ -150,10 +151,10 @@ class AgentService:
                 })
         
         filtered_tools = self._select_tools_with_llm(user_message, allowed_tools, conversation_context)
-        # print("[DEBUG] allowed_tools", allowed_tools)
-        # print("[DEBUG] conversation_context_length", len(conversation_context))
-        # print("[DEBUG] conversation_context", conversation_context[-2:] if len(conversation_context) >= 2 else conversation_context)
-        # print("[DEBUG] filtered_tools", filtered_tools)
+        print("[DEBUG] allowed_tools", allowed_tools)
+        print("[DEBUG] conversation_context_length", len(conversation_context))
+        print("[DEBUG] conversation_context", conversation_context[-2:] if len(conversation_context) >= 2 else conversation_context)
+        print("[DEBUG] filtered_tools", filtered_tools)
         # if filtered_tools:
         #     # Step 3: Planning step
         #     plan = self._plan_task_with_llm(user_message, filtered_tools)
@@ -172,7 +173,8 @@ class AgentService:
             allowed_tools=filtered_tools,
             messages=orchestration_messages,
             tool_choice=tool_choice,
-            logger=logger
+            logger=logger,
+            user_message=user_message
         )
         # Save updated messages to DB (as dicts)
         agent.messages = []
@@ -657,7 +659,7 @@ Respond with ONLY "NEW" or "CONTINUE".
         # For any other type, convert to string
         return str(tool_result)
 
-    def _orchestrate_tool_calls(self, user_id, allowed_tools, messages, tool_choice, logger):
+    def _orchestrate_tool_calls(self, user_id, allowed_tools, messages, tool_choice, logger, user_message=None):
         """Orchestrate tool calling logic for both legacy and enhanced chat handlers, with plan adherence."""
         from jarvus_app.utils.token_utils import get_valid_jwt_token
         jarvus_ai = self.llm_client
@@ -710,7 +712,29 @@ Respond with ONLY "NEW" or "CONTINUE".
                     while retries < max_retries:
                         tool_name = current_call.function.name
                         tool_args = json.loads(current_call.function.arguments) if current_call.function.arguments else {}
-                        logger.info(f"Executing tool: {tool_name} with args: {tool_args} (_orchestrate_tool_calls)")
+                        
+                        # Get user message from messages if not provided
+                        if user_message is None:
+                            for msg in reversed(messages):
+                                if isinstance(msg, UserMessage) or (isinstance(msg, dict) and msg.get('role') == 'user'):
+                                    user_message = msg.content if hasattr(msg, 'content') else msg.get('content', '')
+                                    break
+                        
+                        # Infer missing parameters before executing tool
+                        logger.info(f"🔍 Parameter inference: tool={tool_name}, original_args={tool_args}")
+                        inferred_args = parameter_inference_service.infer_missing_parameters(
+                            user_id=user_id,
+                            tool_name=tool_name,
+                            provided_params=tool_args,
+                            user_message=user_message or ''
+                        )
+                        
+                        if inferred_args != tool_args:
+                            logger.info(f"✅ Parameter inference successful for {tool_name}: {inferred_args} (original: {tool_args})")
+                        else:
+                            logger.info(f"ℹ️  No parameter inference needed for {tool_name}")
+                        
+                        logger.info(f"Executing tool: {tool_name} with args: {inferred_args} (_orchestrate_tool_calls)")
                         try:
                             # Get the app slug for this tool from the mapping
                             app_slug = tool_to_app_mapping.get(tool_name, "google_docs")  # fallback
@@ -720,7 +744,7 @@ Respond with ONLY "NEW" or "CONTINUE".
                                 external_user_id=external_user_id,
                                 app_slug=app_slug,
                                 tool_name=tool_name,
-                                tool_args=tool_args,
+                                tool_args=inferred_args,
                                 jwt_token=jwt_token
                             )
                             # Format tool result for LLM
