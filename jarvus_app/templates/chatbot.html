@@ -17,17 +17,67 @@
             <button class="cta-button new-agent-btn">New Agent +</button>
         </div>
         <div class="dashboard-content">
-            <div class="chat-list">
-                {% for agent in agents %}
-                <div class="chat-item" data-agent-id="{{ agent.id }}">
-                    <span class="agent-name">{{ agent.name }}</span>
-                    <button class="delete-agent-btn" onclick="deleteAgent('{{ agent.id }}')" title="Delete agent">
-                        <svg class="trash-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </button>
+            <!-- Agents Section -->
+            <div class="sidebar-section">
+                <h3 class="section-title">Agents</h3>
+                <div class="chat-list">
+                    {% for agent in agents %}
+                    <div class="chat-item" data-agent-id="{{ agent.id }}">
+                        <span class="agent-name">{{ agent.name }}</span>
+                        <button class="delete-agent-btn" onclick="deleteAgent('{{ agent.id }}')" title="Delete agent">
+                            <svg class="trash-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                    </div>
+                    {% endfor %}
                 </div>
-                {% endfor %}
+            </div>
+            
+            <!-- Workflows Section -->
+            <div class="sidebar-section">
+                <h3 class="section-title">Workflows</h3>
+                <div class="workflow-tabs">
+                    <button class="workflow-tab active" data-tab="scheduled">Scheduled</button>
+                    <button class="workflow-tab" data-tab="running">Running</button>
+                    <button class="workflow-tab" data-tab="suggested">Suggested</button>
+                </div>
+                <div class="workflow-content">
+                    <div class="workflow-section active" id="scheduled-workflows">
+                        <div class="workflow-item">
+                            <div class="workflow-icon">📅</div>
+                            <div class="workflow-details">
+                                <div class="workflow-name">Morning Email Review</div>
+                                <div class="workflow-time">Daily at 9:00 AM</div>
+                            </div>
+                        </div>
+                        <div class="workflow-item">
+                            <div class="workflow-icon">📊</div>
+                            <div class="workflow-details">
+                                <div class="workflow-name">Weekly Report</div>
+                                <div class="workflow-time">Every Monday at 8:00 AM</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="workflow-section" id="running-workflows">
+                        <div class="workflow-item running">
+                            <div class="workflow-icon">🔄</div>
+                            <div class="workflow-details">
+                                <div class="workflow-name">Email Processing</div>
+                                <div class="workflow-status">Running...</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="workflow-section" id="suggested-workflows">
+                        <div class="workflow-item">
+                            <div class="workflow-icon">💡</div>
+                            <div class="workflow-details">
+                                <div class="workflow-name">Calendar Optimization</div>
+                                <div class="workflow-desc">Based on your schedule patterns</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </aside>
@@ -55,6 +105,54 @@
             <button type="submit" class="icon-btn send-btn" id="send-btn">→</button>
         </form>
     </section>
+
+    <!-- Right Sidebar - Todo and Calendar -->
+    <aside class="right-sidebar">
+        <!-- Todo List Panel -->
+        <div class="todo-panel">
+            <div class="panel-header">
+                <h3 class="panel-title">Today's Tasks</h3>
+                <div class="todo-buttons">
+                    <button class="dev-generate-btn" onclick="generateMorningTodos()" title="Generate todos (dev)">🎯</button>
+                    <button class="add-todo-btn" onclick="addTodoItem()">+</button>
+                </div>
+            </div>
+            <div class="todo-list" id="todo-list">
+                <div class="todo-item">
+                    <input type="checkbox" class="todo-checkbox">
+                    <span class="todo-text">Review morning emails</span>
+                    <button class="todo-edit-btn" onclick="editTodo(this)">✏️</button>
+                    <button class="todo-delete-btn" onclick="deleteTodo(1)">🗑️</button>
+                </div>
+                <div class="todo-item">
+                    <input type="checkbox" class="todo-checkbox">
+                    <span class="todo-text">Prepare weekly report</span>
+                    <button class="todo-edit-btn" onclick="editTodo(this)">✏️</button>
+                    <button class="todo-delete-btn" onclick="deleteTodo(2)">🗑️</button>
+                </div>
+                <div class="todo-item completed">
+                    <input type="checkbox" class="todo-checkbox" checked>
+                    <span class="todo-text">Team standup meeting</span>
+                    <button class="todo-edit-btn" onclick="editTodo(this)">✏️</button>
+                    <button class="todo-delete-btn" onclick="deleteTodo(3)">🗑️</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Calendar Panel -->
+        <div class="calendar-panel">
+            <div class="panel-header">
+                <h3 class="panel-title">Calendar</h3>
+                <div class="calendar-buttons">
+                    <button class="debug-calendar-btn" onclick="debugCalendar()" title="Debug calendar">🔧</button>
+                    <button class="refresh-calendar-btn" onclick="refreshCalendar()">🔄</button>
+                </div>
+            </div>
+            <div class="calendar-content" id="calendar-content">
+                <div class="calendar-loading">Loading calendar...</div>
+            </div>
+        </div>
+    </aside>
 
     <!-- Centered New Agent Button if no agents -->
     {% if not most_recent_agent %}
@@ -97,6 +195,6 @@
     window.toolSlugs = {{ tool_list | map(attribute='slug') | list | tojson }};
 </script>
 <script src="{{ url_for('static', filename='js/marked.min.js') }}"></script>
-<script src="{{ url_for('static', filename='js/chatbot.js') }}?v=3"></script>
+<script src="{{ url_for('static', filename='js/chatbot.js') }}?v=4"></script>
 {% endblock %}
 
