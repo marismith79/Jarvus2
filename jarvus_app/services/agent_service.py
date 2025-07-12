@@ -150,10 +150,10 @@ class AgentService:
                 })
         
         filtered_tools = self._select_tools_with_llm(user_message, allowed_tools, conversation_context)
-        print("[DEBUG] allowed_tools", allowed_tools)
-        print("[DEBUG] conversation_context_length", len(conversation_context))
-        print("[DEBUG] conversation_context", conversation_context[-2:] if len(conversation_context) >= 2 else conversation_context)
-        print("[DEBUG] filtered_tools", filtered_tools)
+        # print("[DEBUG] allowed_tools", allowed_tools)
+        # print("[DEBUG] conversation_context_length", len(conversation_context))
+        # print("[DEBUG] conversation_context", conversation_context[-2:] if len(conversation_context) >= 2 else conversation_context)
+        # print("[DEBUG] filtered_tools", filtered_tools)
         # if filtered_tools:
         #     # Step 3: Planning step
         #     plan = self._plan_task_with_llm(user_message, filtered_tools)
@@ -203,7 +203,7 @@ class AgentService:
                 agent_id=agent_id,
                 state_data=current_state
             )
-            logger.info(f"Saved working memory checkpoint for thread {thread_id} with {len(current_state['messages'])} messages")
+            # logger.info(f"Saved working memory checkpoint for thread {thread_id} with {len(current_state['messages'])} messages")
             
             # Clean up old working memory checkpoints to prevent indefinite growth
             self._cleanup_old_working_memory(thread_id, user_id)
@@ -240,7 +240,7 @@ class AgentService:
                 memory_type="config",
                 importance_score=2.0
             )
-            logger.info(f"Initialized memory for agent {agent_id}")
+            # logger.info(f"Initialized memory for agent {agent_id}")
         except Exception as e:
             logger.error(f"Failed to initialize memory for agent {agent_id}: {str(e)}")
     
@@ -262,7 +262,7 @@ class AgentService:
         allowed_tools = list(allowed_tools)
         # Get current state (working memory)
         current_state = memory_service.get_latest_state(thread_id, user_id)
-        logger.info(f"Retrieved working memory state for thread {thread_id}: {current_state is not None}")
+        # logger.info(f"Retrieved working memory state for thread {thread_id}: {current_state is not None}")
         if not current_state:
             current_state = {
                 'messages': [],
@@ -270,9 +270,10 @@ class AgentService:
                 'user_id': user_id,
                 'thread_id': thread_id
             }
-            logger.info(f"Created new working memory state for thread {thread_id}")
+            # logger.info(f"Created new working memory state for thread {thread_id}")
         else:
-            logger.info(f"Found existing working memory with {len(current_state.get('messages', []))} messages")
+            # logger.info(f"Found existing working memory with {len(current_state.get('messages', []))} messages")
+            pass
         
         current_state['messages'].append({
             'role': 'user',
@@ -321,7 +322,7 @@ class AgentService:
         # 3. Working memory (recent turns)
         working_turns = []
         conversation_messages = current_state['messages'][-self.WORKING_MEMORY_CONTEXT_LIMIT:] if 'messages' in current_state else []
-        logger.info(f"Retrieved {len(conversation_messages)} messages from working memory for thread {thread_id}")
+        # logger.info(f"Retrieved {len(conversation_messages)} messages from working memory for thread {thread_id}")
         for msg in conversation_messages:
             if msg.get('content') and msg['role'] in ['user', 'assistant']:
                 content = msg['content']
@@ -331,7 +332,7 @@ class AgentService:
                         'content': msg['content']
                     })
         messages.extend(working_turns)
-        logger.info(f"Added {len(working_turns)} working memory turns to context")
+        # logger.info(f"Added {len(working_turns)} working memory turns to context")
         # 4. Current user query (always last)
         # if screenshot_data:
         #     # Create proper multimodal content with text and image
@@ -382,7 +383,7 @@ class AgentService:
                     current_time = datetime.utcnow()
                     time_diff = current_time - last_time.replace(tzinfo=None)
                     if time_diff > timedelta(minutes=self.NEW_CONVERSATION_TIMEOUT_MINUTES):
-                        logger.info(f"Time gap of {time_diff.total_seconds()/60:.1f} minutes detected, treating as new conversation")
+                        # logger.info(f"Time gap of {time_diff.total_seconds()/60:.1f} minutes detected, treating as new conversation")
                         return True
                 except:
                     pass
@@ -448,7 +449,7 @@ Respond with ONLY "NEW" or "CONTINUE".
             
             is_new_conversation = analysis_result == "NEW"
             
-            logger.info(f"LLM conversation analysis: '{analysis_result}' for message: '{user_message[:50]}...' (context: {len(conversation_context.split(chr(10)))} lines)")
+            # logger.info(f"LLM conversation analysis: '{analysis_result}' for message: '{user_message[:50]}...' (context: {len(conversation_context.split(chr(10)))} lines)")
             
             return is_new_conversation
             
@@ -472,7 +473,7 @@ Respond with ONLY "NEW" or "CONTINUE".
         
         for indicator in new_conversation_indicators:
             if indicator in user_message_lower:
-                logger.info(f"Fallback detection: found indicator '{indicator}' in message")
+                # logger.info(f"Fallback detection: found indicator '{indicator}' in message")
                 return True
         
         return False
@@ -492,12 +493,12 @@ Respond with ONLY "NEW" or "CONTINUE".
         if self._detect_new_conversation(user_message, current_state):
             # Start new conversation with timestamp
             new_thread_id = f"thread_{agent_id}_{user_id}_{int(datetime.utcnow().timestamp())}"
-            logger.info(f"Detected new conversation, creating new thread_id: {new_thread_id}")
+            # logger.info(f"Detected new conversation, creating new thread_id: {new_thread_id}")
             return new_thread_id
         else:
             # Continue existing conversation
             thread_id = f"thread_{agent_id}_{user_id}"
-            logger.info(f"Continuing existing conversation with thread_id: {thread_id}")
+            # logger.info(f"Continuing existing conversation with thread_id: {thread_id}")
             return thread_id
 
     def _select_tools_with_llm(self, user_message, allowed_tools, conversation_context=None):
@@ -540,7 +541,7 @@ Respond with ONLY "NEW" or "CONTINUE".
             {"role": "system", "content": f"Available tool categories: {allowed_tools}"}
         ]
         tool_selection_response = jarvus_ai.create_chat_completion(tool_selection_messages)
-        print("[DEBUG] tool_selection_response:", tool_selection_response)
+        # print("[DEBUG] tool_selection_response:", tool_selection_response)
         # def parse_tools_from_response(resp):
         #     try:
         #         if isinstance(resp, dict) and 'assistant' in resp and 'content' in resp['assistant']:
@@ -557,7 +558,7 @@ Respond with ONLY "NEW" or "CONTINUE".
         #     except Exception:
         #         return []
         needed_tools_or_categories = tool_selection_response['choices'][0]['message']['content']
-        print("[DEBUG] needed_tools_or_categories:", needed_tools_or_categories)
+        # print("[DEBUG] needed_tools_or_categories:", needed_tools_or_categories)
         filtered_tools = [
             t for t in allowed_tools
             if t in needed_tools_or_categories or (hasattr(t, 'category') and t.category.value in needed_tools_or_categories)
@@ -674,7 +675,7 @@ Respond with ONLY "NEW" or "CONTINUE".
         # # Use DB-cached tool discovery for allowed app slugs
         # from jarvus_app.services.pipedream_tool_registry import get_or_discover_tools_for_user_apps
         # sdk_tools = get_or_discover_tools_for_user_apps(user_id, allowed_tools)
-        print("[DEBUG] allowed_sdk_tools", sdk_tools)
+        # print("[DEBUG] allowed_sdk_tools", sdk_tools)
         new_messages = []
         try:
             while True:
@@ -834,7 +835,7 @@ Respond with ONLY "NEW" or "CONTINUE".
                 for checkpoint in checkpoints_to_delete:
                     db.session.delete(checkpoint)
                 db.session.commit()
-                logger.info(f"Cleaned up {len(checkpoints_to_delete)} old working memory checkpoints for thread {thread_id}")
+                # logger.info(f"Cleaned up {len(checkpoints_to_delete)} old working memory checkpoints for thread {thread_id}")
                 
         except Exception as e:
             logger.error(f"Failed to cleanup old working memory: {str(e)}")

@@ -26,9 +26,9 @@ class PipedreamAuthService:
         
         # Load configuration from environment
         self.client_id = os.getenv("PIPEDREAM_API_CLIENT_ID")
-        print(f"PIPEDREAM_API_CLIENT_ID: {self.client_id}")
+        # print(f"PIPEDREAM_API_CLIENT_ID: {self.client_id}")
         self.client_secret = os.getenv("PIPEDREAM_API_CLIENT_SECRET")
-        print(f"PIPEDREAM_API_CLIENT_SECRET: {self.client_secret}")
+        # print(f"PIPEDREAM_API_CLIENT_SECRET: {self.client_secret}")
         self.project_id = os.getenv("PIPEDREAM_PROJECT_ID")
         self.environment = os.getenv("PIPEDREAM_ENVIRONMENT", "development")
         self.refresh_threshold = int("3600")  # 10 minutes default
@@ -80,20 +80,20 @@ class PipedreamAuthService:
                 if access_token:
                     # Store token in session
                     self._store_token_in_session(access_token, expires_in)
-                    print("[DEBUG] Successfully acquired Pipedream access token")
+                    # print("[DEBUG] Successfully acquired Pipedream access token")
                     return access_token
                 else:
-                    print("No access_token in Pipedream response")
+                    # print("No access_token in Pipedream response")
                     return None
             else:
-                print(f"Failed to acquire Pipedream token. Status: {response.status_code}, Response: {response.text}")
+                # print(f"Failed to acquire Pipedream token. Status: {response.status_code}, Response: {response.text}")
                 return None
                 
         except requests.exceptions.RequestException as e:
-            print(f"Request error acquiring Pipedream token: {str(e)}")
+            # print(f"Request error acquiring Pipedream token: {str(e)}")
             return None
         except Exception as e:
-            print(f"Unexpected error acquiring Pipedream token: {str(e)}")
+            # print(f"Unexpected error acquiring Pipedream token: {str(e)}")
             return None
     
     def refresh_access_token(self) -> Optional[str]:

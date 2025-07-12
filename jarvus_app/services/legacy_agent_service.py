@@ -22,19 +22,24 @@ def get_agent_tools(agent):
     return agent.tools or []
 
 def get_agent_history(agent):
-    logger.info(f"[DEBUG] get_agent_history called with agent.messages: {agent.messages}")
-    messages = agent.messages or []
-    logger.info(f"[DEBUG] Total messages in agent: {len(messages)}")
+    """Get the conversation history for an agent"""
+    messages = []
     
-    # Return all messages in chronological order (user + assistant pairs)
-    # Filter out any messages without content
-    filtered = []
-    for msg in messages:
-        if msg.get('content') and msg.get('role') in ['user', 'assistant']:
-            filtered.append(msg)
-            logger.info(f"[DEBUG] Added message: {msg.get('role')} - {msg.get('content', '')[:50]}...")
+    # logger.info(f"[DEBUG] get_agent_history called with agent.messages: {agent.messages}")
     
-    logger.info(f"[DEBUG] get_agent_history filtered result: {filtered}")
+    # logger.info(f"[DEBUG] Total messages in agent: {len(messages)}")
+    
+    for msg in agent.messages:
+        if msg.get('role') in ['user', 'assistant']:
+            messages.append({
+                'role': msg.get('role'),
+                'content': msg.get('content', '')
+            })
+            # logger.info(f"[DEBUG] Added message: {msg.get('role')} - {msg.get('content', '')[:50]}...")
+    
+    filtered = [msg for msg in messages if msg.get('content', '').strip()]
+    # logger.info(f"[DEBUG] get_agent_history filtered result: {filtered}")
+    
     return filtered
 
 def get_agent_interaction_history(agent):
@@ -96,12 +101,11 @@ def delete_agent(agent_id, user_id):
     agent = get_agent(agent_id, user_id)  # This will 404 if agent doesn't exist or doesn't belong to user
     
     try:
-        # Delete the agent (History record)
+        # Delete the agent
         db.session.delete(agent)
         db.session.commit()
         logger.info(f"Successfully deleted agent {agent_id} for user {user_id}")
         return True
     except Exception as e:
-        db.session.rollback()
         logger.error(f"Failed to delete agent {agent_id}: {str(e)}")
-        raise 
+        return False 

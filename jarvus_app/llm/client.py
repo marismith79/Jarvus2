@@ -52,7 +52,7 @@ class JarvusAIClient:
                 return {}
             return json.loads(arguments)
         except json.JSONDecodeError as e:
-            print(f"Failed to parse tool arguments: {e}")
+            # print(f"Failed to parse tool arguments: {e}")
             return {}
 
     def create_chat_completion(

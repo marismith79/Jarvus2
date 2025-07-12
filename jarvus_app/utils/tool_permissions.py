@@ -97,10 +97,10 @@ def get_connected_services(user_id):
         is_connected = OAuthCredentials.is_connected(user_id, service)
         
         # Debug: Print what we find
-        print(f"DEBUG: Checking OAuth credentials for user {user_id}, service {service}")
-        print(f"DEBUG: OAuth credentials found: {is_connected}")
+        # print(f"DEBUG: Checking OAuth credentials for user {user_id}, service {service}")
+        # print(f"DEBUG: OAuth credentials found: {is_connected}")
         
         # Consider connected if status=1
         services[service] = is_connected
-        print(f"DEBUG: Final result for {service}: {services[service]}")
+        # print(f"DEBUG: Final result for {service}: {services[service]}")
     return services

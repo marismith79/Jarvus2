@@ -184,7 +184,7 @@ class MemoryService:
         importance_score: float = 1.0
     ) -> LongTermMemory:
         """Store an episodic memory (user action, feedback, etc.)"""
-        logger.info(f"store_episodic_memory called: user_id={user_id}, episode_type={episode_type}, episode_data={episode_data}")
+        # logger.info(f"store_episodic_memory called: user_id={user_id}, episode_type={episode_type}, episode_data={episode_data}")
         return self.store_memory(
             user_id=user_id,
             namespace='episodes',
@@ -206,7 +206,7 @@ class MemoryService:
         importance_score: float = 1.0
     ) -> LongTermMemory:
         """Store a semantic memory (fact, preference, etc.)"""
-        logger.info(f"store_semantic_memory called: user_id={user_id}, fact_type={fact_type}, fact_data={fact_data}")
+        # logger.info(f"store_semantic_memory called: user_id={user_id}, fact_type={fact_type}, fact_data={fact_data}")
         return self.store_memory(
             user_id=user_id,
             namespace='semantic',
@@ -227,7 +227,7 @@ class MemoryService:
         importance_score: float = 1.0
     ) -> LongTermMemory:
         """Store a procedural memory (workflow, how-to, etc.)"""
-        logger.info(f"store_procedural_memory called: user_id={user_id}, procedure_name={procedure_name}, procedure_data={procedure_data}")
+        # logger.info(f"store_procedural_memory called: user_id={user_id}, procedure_name={procedure_name}, procedure_data={procedure_data}")
         return self.store_memory(
             user_id=user_id,
             namespace='procedures',
@@ -1422,7 +1422,7 @@ On a scale from 1 (not important) to 5 (very important), how important is this m
         - After storing, improve and merge memories as appropriate.
         Returns a list of stored/updated memory objects.
         """
-        logger.info(f"extract_and_store_memories called: user_id={user_id}, agent_id={agent_id}, tool_call={tool_call}, feedback={feedback}")
+        # logger.info(f"extract_and_store_memories called: user_id={user_id}, agent_id={agent_id}, tool_call={tool_call}, feedback={feedback}")
         stored_memories = []
         # 1. Summarize conversation for episodic memory
         conversation_text = "\n".join([
@@ -1540,90 +1540,47 @@ On a scale from 1 (not important) to 5 (very important), how important is this m
         Retrieve and summarize the most relevant episodic, semantic, and procedural memories for a user and thread.
         Returns a dict of context sections for LLM input, or a string if as_sections=False (legacy).
         """
-        logger.info(f"get_context_for_conversation called: user_id={user_id}, thread_id={thread_id}, current_message={current_message}")
-        # 1. Retrieve relevant memories (hybrid/vector search if available)
-        # Episodic (recent conversations)
-        episodic_memories = self.search_memories(
-            user_id=user_id,
-            namespace='episodes',
-            limit=max_memories,
-            search_type='efficient_hybrid'
-        )
-        # Semantic (facts/preferences)
-        semantic_memories = self.search_memories(
-            user_id=user_id,
-            namespace='semantic',
-            limit=max_memories,
-            search_type='efficient_hybrid'
-        )
-        # Procedural (workflows/tool use)
-        procedural_memories = self.search_memories(
-            user_id=user_id,
-            namespace='procedures',
-            limit=max_memories,
-            search_type='efficient_hybrid'
-        )
-        # 2. Summarize and format context sections as lists of strings
-        episodic_section = []
-        if episodic_memories:
-            for m in episodic_memories:
-                date = m.created_at.strftime('%b %d') if hasattr(m, 'created_at') else ''
-                summary = m.memory_data.get('summary')
-                if summary and isinstance(summary, str):
-                    episodic_section.append(f"\u2022 {date}: {summary}")
-        semantic_section = []
-        if semantic_memories:
-            for m in semantic_memories:
-                src = m.memory_data.get('source', '')
-                data = m.memory_data.get('data', m.memory_data)
-                if isinstance(data, str):
-                    if src:
-                        semantic_section.append(f"[From {src}] {data}")
-                    else:
-                        semantic_section.append(data)
-                elif isinstance(data, dict):
-                    for key in ['fact', 'summary', 'description', 'value']:
-                        if key in data and isinstance(data[key], str):
-                            if src:
-                                semantic_section.append(f"[From {src}] {data[key]}")
-                            else:
-                                semantic_section.append(data[key])
-                            break
-        procedural_section = []
-        if procedural_memories:
-            for m in procedural_memories:
-                data = m.memory_data.get('data', m.memory_data)
-                if isinstance(data, dict) and 'code' in data and isinstance(data['code'], str):
-                    procedural_section.append(f"```python\n{data['code']}\n```")
-                elif isinstance(data, dict):
-                    for key in ['summary', 'description', 'name']:
-                        if key in data and isinstance(data[key], str):
-                            procedural_section.append(data[key])
-                            break
-                elif isinstance(data, str):
-                    procedural_section.append(data)
-        if as_sections:
-            return {
-                'episodic': episodic_section,
-                'semantic': semantic_section,
-                'procedural': procedural_section
+        # logger.info(f"get_context_for_conversation called: user_id={user_id}, thread_id={thread_id}, current_message={current_message}")
+        
+        try:
+            # Get recent episodic memories
+            episodic_memories = self.search_memories(
+                user_id, "episodes", current_message, limit=max_memories, search_type='efficient_hybrid'
+            )
+            
+            # Get relevant semantic memories
+            semantic_memories = self.search_memories(
+                user_id, "semantic", current_message, limit=max_memories, search_type='efficient_hybrid'
+            )
+            
+            # Get relevant procedural memories
+            procedural_memories = self.search_memories(
+                user_id, "procedures", current_message, limit=max_memories, search_type='efficient_hybrid'
+            )
+            
+            # Combine context - filter out None values and ensure string values to prevent join errors
+            def safe_string(value):
+                """Convert value to string safely, return None if not convertible"""
+                if value is None:
+                    return None
+                if isinstance(value, str):
+                    return value
+                try:
+                    return str(value)
+                except:
+                    return None
+            
+            context = {
+                "episodic": [safe_string(m.memory_data.get('summary')) for m in episodic_memories if safe_string(m.memory_data.get('summary')) is not None],
+                "semantic": [safe_string(m.memory_data.get('data')) for m in semantic_memories if safe_string(m.memory_data.get('data')) is not None],
+                "procedural": [safe_string(m.memory_data.get('data')) for m in procedural_memories if safe_string(m.memory_data.get('data')) is not None]
             }
-        # Legacy: return a single string
-        context_sections = []
-        if episodic_section:
-            context_sections.append("[Recent Episodes]\n" + "\n".join(episodic_section))
-        if semantic_section:
-            context_sections.append("[User Facts & Preferences]\n" + "\n".join(semantic_section))
-        if procedural_section:
-            context_sections.append("[Procedures & Tool Use]\n" + "\n".join(procedural_section))
-        role_section = (
-            "[Role]\nYou are a helpful AI assistant for this user. Use the following context to answer as accurately and personally as possible."
-        )
-        context = "\n\n".join([role_section] + context_sections)
-        max_chars = max_tokens * 4
-        if len(context) > max_chars:
-            context = context[:max_chars] + "\n..."
-        return context
+            
+            return context
+            
+        except Exception as e:
+            logger.error(f"Failed to get context for conversation: {str(e)}")
+            return {"episodic": [], "semantic": [], "procedural": []}
 
 
 class MemoryConfig:

@@ -99,7 +99,7 @@ class ToolRegistry:
 
     def __init__(self):
         self._tools: Dict[str, ToolMetadata] = {}
-        print("Tool Registry initialized")
+        # print("Tool Registry initialized")
 
     def register(self, tool: ToolMetadata) -> None:
         """Register a new tool's metadata."""
@@ -149,20 +149,20 @@ class ToolRegistry:
         import logging
         logger = logging.getLogger(__name__)
         
-        logger.info(f"🔧 ToolRegistry.execute_tool called with tool_name: {tool_name}")
-        logger.info(f"🔧 Parameters: {parameters}")
+        # logger.info(f"🔧 ToolRegistry.execute_tool called with tool_name: {tool_name}")
+        # logger.info(f"🔧 Parameters: {parameters}")
         
         tool = self.get_tool(tool_name)
         if not tool or not tool.is_active:
             logger.error(f"🔧 Tool not available or not active: {tool_name}")
             raise ValueError(f"Tool not available: {tool_name}")
 
-        logger.info(f"🔧 Found tool: {tool.name}, executor: {tool.executor}")
+        # logger.info(f"🔧 Found tool: {tool.name}, executor: {tool.executor}")
         executor = tool.executor or mcp_client.execute_tool
         
         # For browser tools, pass parameters directly
         if tool_name in ["open_website", "get_page_metadata", "get_tabs_info", "get_page_content", "execute_javascript"]:
-            logger.info("🔧 Using direct parameter passing for browser tool")
+            # logger.info("🔧 Using direct parameter passing for browser tool")
             raw_result = executor(tool_name, parameters, jwt_token)
         else:
             # For other tools, use the legacy format
@@ -170,19 +170,19 @@ class ToolRegistry:
                 "operation": tool_name,
                 "parameters": parameters
             }
-            logger.info(f"🔧 Using legacy format, request_body: {request_body}")
+            # logger.info(f"🔧 Using legacy format, request_body: {request_body}")
             raw_result = executor(
                 tool_name=tool.server_path,
                 payload=request_body,
                 jwt_token=jwt_token
             )
         
-        logger.info(f"🔧 Raw result: {raw_result}")
+        # logger.info(f"🔧 Raw result: {raw_result}")
         return self._handle_tool_response(tool, raw_result)
 
     def _handle_tool_response(self, tool: ToolMetadata, raw_result: Any) -> Any:
         """Handle and optionally format the raw tool execution result."""
-        print(f"\nTool Registry: Got result from {tool.name}")
+        # print(f"\nTool Registry: Got result from {tool.name}")
         if tool.result_formatter:
             return tool.result_formatter(raw_result)
         return raw_result
@@ -206,9 +206,9 @@ class ToolRegistry:
                     for m in self._tools.values() 
                     if m.is_active and m.category == category]
             
-            print(f"Found {len(tools)} tools for category {category}")
+            # print(f"Found {len(tools)} tools for category {category}")
             return tools
-        print(f"No category found for module {module_name}")
+        # print(f"No category found for module {module_name}")
         return []
 
     def get_sdk_tools_by_modules(self, module_names: List[str]) -> List[ChatCompletionsToolDefinition]:

@@ -301,17 +301,17 @@ def get_calendar_events():
         start_time = datetime.combine(today, datetime.min.time()).isoformat() + 'Z'
         end_time = datetime.combine(today, datetime.max.time()).isoformat() + 'Z'
         
-        logger.info(f"Fetching events for today: {today}")
-        logger.info(f"Time range: {start_time} to {end_time}")
+        # logger.info(f"Fetching events for today: {today}")
+        # logger.info(f"Time range: {start_time} to {end_time}")
         
         # Try to get available tools first to see what's available
-        logger.info(f"Attempting to get calendar events for user {external_user_id}")
+        # logger.info(f"Attempting to get calendar events for user {external_user_id}")
         
         # First, let's try to discover what tools are available
         tools_data = pipedream_tool_service.get_tools_for_app(external_user_id, app_slug)
         if tools_data and 'tools' in tools_data:
             available_tools = [tool.get('name', '') for tool in tools_data['tools']]
-            logger.info(f"Available Google Calendar tools: {available_tools}")
+            # logger.info(f"Available Google Calendar tools: {available_tools}")
             
             # Find the best matching tool for listing events
             list_events_tool = None
@@ -335,7 +335,7 @@ def get_calendar_events():
             logger.warning("Could not discover available tools, using default tool name")
             list_events_tool = "google_calendar-list-events"
         
-        logger.info(f"Using calendar tool: {list_events_tool}")
+        # logger.info(f"Using calendar tool: {list_events_tool}")
         
         # Prepare tool arguments - try different parameter combinations
         tool_args_variations = [
@@ -364,7 +364,7 @@ def get_calendar_events():
         result = None
         for i, tool_args in enumerate(tool_args_variations):
             try:
-                logger.info(f"Trying calendar tool with args variation {i+1}: {tool_args}")
+                # logger.info(f"Trying calendar tool with args variation {i+1}: {tool_args}")
                 result = pipedream_tool_service.execute_tool(
                     external_user_id=external_user_id,
                     app_slug=app_slug,
@@ -373,7 +373,7 @@ def get_calendar_events():
                 )
                 
                 if result and 'error' not in result:
-                    logger.info(f"Calendar tool succeeded with variation {i+1}")
+                    # logger.info(f"Calendar tool succeeded with variation {i+1}")
                     break
                 elif result and 'error' in result:
                     logger.warning(f"Calendar tool error with variation {i+1}: {result['error']}")
@@ -387,8 +387,7 @@ def get_calendar_events():
             logger.error(f"All calendar tool variations failed. Last error: {error_msg}")
             return jsonify({'error': f'Calendar access failed: {error_msg}'}), 500
         
-        # Log the raw result for debugging
-        logger.info(f"Calendar tool raw result: {result}")
+        # logger.info(f"Calendar tool raw result: {result}")
         
         # Parse the calendar events from the result
         events = []
@@ -426,7 +425,7 @@ def get_calendar_events():
                 items = result['ret']
         
         if items:
-            logger.info(f"Found {len(items)} calendar events")
+            # logger.info(f"Found {len(items)} calendar events")
             for item in items:
                 # Handle different event structures
                 if isinstance(item, dict):
@@ -451,7 +450,7 @@ def get_calendar_events():
                         # Check if the event is today
                         event_date = start_local.date()
                         if event_date != today:
-                            logger.info(f"Skipping event '{item.get('summary', 'No Title')}' - date {event_date} is not today {today}")
+                            # logger.info(f"Skipping event '{item.get('summary', 'No Title')}' - date {event_date} is not today {today}")
                             continue
                         
                         event = {
@@ -466,7 +465,7 @@ def get_calendar_events():
                             'type': 'meeting' if 'meeting' in str(item.get('summary', '')).lower() else 'event'
                         }
                         events.append(event)
-                        logger.info(f"Added event: {event['title']} at {start_local.strftime('%H:%M')}")
+                        # logger.info(f"Added event: {event['title']} at {start_local.strftime('%H:%M')}")
                         
                     except (ValueError, TypeError) as e:
                         logger.warning(f"Failed to parse event time for '{item.get('summary', 'No Title')}': {e}")
@@ -474,7 +473,7 @@ def get_calendar_events():
         else:
             logger.warning(f"No events found in calendar response. Result structure: {list(result.keys()) if isinstance(result, dict) else type(result)}")
         
-        logger.info(f"Returning {len(events)} parsed events")
+        # logger.info(f"Returning {len(events)} parsed events")
         return jsonify({'events': events}), 200
         
     except Exception as e:

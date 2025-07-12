@@ -57,24 +57,31 @@ class OAuthCredentials(db.Model):
         return creds is not None and creds.status == 1
 
     @classmethod
-    def remove_credentials(cls, user_id, service):
-        """Remove OAuth credentials (set status to NULL)"""
-        print(
-            f"[DEBUG] Attempting to remove credentials for user_id={user_id}, service={service}"
-        )
-        creds = cls.get_credentials(user_id, service)
-        print(f"[DEBUG] Found creds: {creds}")
-        if creds:
-            creds.status = None  # Set as disconnected
-            creds.updated_at = datetime.utcnow()
-            try:
-                db.session.commit()
-                print("[DEBUG] Commit successful")
-            except Exception as e:
-                print(f"[DEBUG] Commit failed: {e}")
-            return True
-        print("[DEBUG] No credentials found to delete.")
-        return False
+    def remove_credentials(cls, user_id: int, service: str) -> bool:
+        """Remove OAuth credentials for a user and service"""
+        try:
+            # print(
+            #     f"Removing OAuth credentials for user {user_id}, service {service}"
+            # )
+
+            creds = cls.query.filter_by(user_id=user_id, service=service).first()
+            if creds:
+                # print(f"[DEBUG] Found creds: {creds}")
+                db.session.delete(creds)
+                try:
+                    db.session.commit()
+                    # print("[DEBUG] Commit successful")
+                    return True
+                except Exception as e:
+                    # print(f"[DEBUG] Commit failed: {e}")
+                    db.session.rollback()
+                    return False
+            else:
+                # print("[DEBUG] No credentials found to delete.")
+                return False
+        except Exception as e:
+            db.session.rollback()
+            return False
 
     def to_dict(self):
         return {
