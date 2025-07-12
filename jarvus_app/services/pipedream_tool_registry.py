@@ -345,7 +345,7 @@ class PipedreamToolService:
         """
         return self.tools_registry
     
-    def get_all_sdk_tools(self, session_data=None) -> List[ChatCompletionsToolDefinition]:
+    def get_all_sdk_tools(self) -> List[ChatCompletionsToolDefinition]:
         """
         Get all discovered tools as Azure SDK definitions.
         Uses session registry if available, otherwise falls back to global registry.
@@ -354,13 +354,6 @@ class PipedreamToolService:
             List[ChatCompletionsToolDefinition]: All tools ready for LLM
         """
         # Try to use session registry first
-        if session_data:
-            session_registry = get_session_tool_registry(session_data)
-            if session_registry:
-                logger.debug("Using session-based tool registry")
-                return session_registry.get_all_sdk_tools()
-        
-        # Fall back to global registry
         if not self.tools_registry.is_fresh():
             logger.warning("Tools registry is stale, tools need to be rediscovered")
             return []
@@ -487,26 +480,16 @@ class PipedreamToolService:
             sdk_tools.extend(self.tools_registry.get_tools_by_app(app_slug))
         return sdk_tools
 
-    def get_tool_to_app_mapping(self, session_data=None) -> Dict[str, str]:
+    def get_tool_to_app_mapping(self) -> Dict[str, str]:
         """
         Get a mapping of tool names to their app slugs.
-        Uses session registry if available, otherwise falls back to global registry.
-        
+        Only uses in-memory or DB cache. Session is not used for tool registry anymore.
         Returns:
             Dict[str, str]: Mapping of tool names to app slugs
         """
-        # Try to use session registry first
-        if session_data:
-            session_registry = get_session_tool_registry(session_data)
-            if session_registry:
-                logger.debug("Using session-based tool registry for mapping")
-                return session_registry.get_tool_to_app_mapping()
-        
-        # Fall back to global registry
         if not self.tools_registry.is_fresh():
             logger.warning("Tools registry is stale, tools need to be rediscovered")
             return {}
-        
         return self.tools_registry.get_tool_to_app_mapping()
 
 
@@ -516,31 +499,16 @@ pipedream_tool_service = PipedreamToolService()
 def ensure_tools_discovered(user_id, session_data=None):
     """
     Ensure tools are discovered for the user if the registry is not fresh.
-    Store the registry in session data for persistence across requests.
+    Use only the DB cache or in-memory registry. Do NOT store the registry in the session.
     Call this from login or before agent requests.
     """
     from jarvus_app.services.pipedream_tool_registry import pipedream_tool_service
     
-    # Check if we have a session-based registry
-    if session_data and 'tool_registry' in session_data:
-        # Use session-stored registry
-        registry_data = session_data['tool_registry']
-        if registry_data.get('is_fresh', False):
-            logger.debug(f"Using session-stored tool registry for user {user_id}")
-            return
-    
-    # Discover tools and store in session
+    # No longer use session_data for tool registry storage
+    # Always use DB cache or in-memory registry
     logger.info(f"Discovering tools for user {user_id}")
-    tools_registry = pipedream_tool_service.discover_all_tools(user_id)
-    
-    # Store in session if session_data is provided
-    if session_data:
-        session_data['tool_registry'] = {
-            'apps': tools_registry._apps,
-            'discovered_at': tools_registry._discovered_at,
-            'is_fresh': True
-        }
-        logger.info(f"Stored tool registry in session for user {user_id}")
+    pipedream_tool_service.discover_all_tools(user_id)
+    # No session storage here
 
 
 def get_session_tool_registry(session_data):

@@ -105,8 +105,7 @@ class AgentService:
         thread_id=None,
         tool_choice="auto",
         web_search_enabled=True,
-        logger=None,
-        session_data=None
+        logger=None
     ):
         """Process a message with full memory context and tool orchestration, using plan-then-act."""
         if logger is None:
@@ -153,8 +152,7 @@ class AgentService:
             allowed_tools=filtered_tools,
             messages=orchestration_messages,
             tool_choice=tool_choice,
-            logger=logger,
-            session_data=session_data
+            logger=logger
         )
         # Save updated messages to DB (as dicts)
         agent.messages = []
@@ -432,16 +430,16 @@ class AgentService:
         # For any other type, convert to string
         return str(tool_result)
 
-    def _orchestrate_tool_calls(self, user_id, allowed_tools, messages, tool_choice, logger, session_data=None):
+    def _orchestrate_tool_calls(self, user_id, allowed_tools, messages, tool_choice, logger):
         """Orchestrate tool calling logic for both legacy and enhanced chat handlers, with plan adherence."""
         from jarvus_app.utils.token_utils import get_valid_jwt_token
         jarvus_ai = self.llm_client
         # Ensure tools are discovered if needed
-        ensure_tools_discovered(user_id, session_data)
+        # No longer pass session_data; tool discovery uses DB cache or in-memory registry only
+        ensure_tools_discovered(user_id)
         # Only include SDK tools that are in allowed_tools
-        tool_to_app_mapping = pipedream_tool_service.get_tool_to_app_mapping(session_data)
-        
-        all_sdk_tools = pipedream_tool_service.get_all_sdk_tools(session_data)
+        tool_to_app_mapping = pipedream_tool_service.get_tool_to_app_mapping()
+        all_sdk_tools = pipedream_tool_service.get_all_sdk_tools()
         sdk_tools = [
             tool for tool in all_sdk_tools
             if tool_to_app_mapping.get(tool.function.name) in allowed_tools
