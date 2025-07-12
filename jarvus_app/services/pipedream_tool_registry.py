@@ -127,7 +127,7 @@ class PipedreamToolsRegistry:
         )
         
         self._apps[app_slug] = app_tools
-        logger.info(f"Registered {len(tools)} tools for app {app_slug}")
+        # logger.info(f"Registered {len(tools)} tools for app {app_slug}")
     
     def get_all_sdk_tools(self) -> List[ChatCompletionsToolDefinition]:
         """Get all tools as Azure SDK definitions."""
@@ -279,7 +279,7 @@ class PipedreamToolService:
             print("PIPEDREAM_PROJECT_ID not configured")
             return None
         try:
-            print(f"Getting tools for app: {app_slug}")
+            # print(f"Getting tools for app: {app_slug}")
             headers = pipedream_auth_service.get_mcp_auth_headers(external_user_id, app_slug, oauth_app_id)
             if not headers:
                 print("No headers")
@@ -362,7 +362,7 @@ class PipedreamToolService:
             app_slug = app["slug"]
             app_name = app["name"]
             
-            print(f"Fetching tools for app: {app_slug}")
+            # print(f"Fetching tools for app: {app_slug}")
             tools_data = self.get_tools_for_app(user_id, app_slug)
             # print(f"Tools data: {tools_data}")
             
