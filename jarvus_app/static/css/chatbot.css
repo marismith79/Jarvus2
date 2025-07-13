@@ -963,3 +963,33 @@
         width: 100%;
     }
 }
+
+/* --- NEW: @ Mention Autocomplete Styling --- */
+.autocomplete-suggestion {
+    position: absolute;
+    background: transparent;
+    color: #aa0c0c;
+    font-size: 14px;
+    pointer-events: none;
+    z-index: 1000;
+    font-family: inherit;
+    line-height: inherit;
+    white-space: nowrap;
+}
+
+.suggestion-text {
+    color: #999;
+    font-weight: normal;
+}
+
+.tool-name {
+    color: #666;
+    font-size: 12px;
+    margin-left: 8px;
+    font-style: italic;
+}
+
+/* Make sure the chat input container is positioned relatively */
+.chat-input-bar {
+    position: relative;
+}

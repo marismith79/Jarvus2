@@ -113,11 +113,13 @@ class AgentService:
         tool_choice="auto",
         web_search_enabled=True,
         current_task=None,
-        logger=None
+        logger=None,
+        mentions=None  # Add mentions parameter
     ):
-        """Process a message with full memory context and tool orchestration, using plan-then-act."""
+        """Process a message with full memory context and tool orchestration."""
         if logger is None:
             logger = logging.getLogger(__name__)
+        
         # Smart thread ID management
         thread_id = self._get_or_create_thread_id(agent_id, user_id, user_message, thread_id)
         logger.info(f"Using thread_id: {thread_id} for agent {agent_id}, user {user_id}")
@@ -139,17 +141,21 @@ class AgentService:
         agent, allowed_tools, memory_info, messages, current_state = self._get_context_for_message(
             agent_id, user_id, user_message, thread_id, web_search_enabled, current_task #, screenshot_data
         )
-        # Step 2: Tool selection
-        # Extract conversation context from messages for tool selection
-        conversation_context = []
-        for msg in messages:
-            if msg.get('role') in ['user', 'assistant'] and msg.get('content'):
-                conversation_context.append({
-                    'role': msg['role'],
-                    'content': msg['content']
-                })
         
-        filtered_tools = self._select_tools_with_llm(user_message, allowed_tools, conversation_context)
+        # Step 2: If mentions are present, add them as hints to the user message
+        if mentions:
+            mention_hints = self._create_mention_hints(mentions, allowed_tools)
+            if mention_hints:
+                # Find the user message (should be the last message) and append the hint
+                for i, msg in enumerate(messages):
+                    if msg.get('role') == 'user' and msg.get('content') == user_message:
+                        messages[i]['content'] = f"{user_message}\n\n{mention_hints}"
+                        logger.info(f"Added mention hints to user message: {mention_hints}")
+                        break
+        
+        # Use all allowed tools (mentions are just hints, not restrictions)
+        filtered_tools = allowed_tools
+        
         # print("[DEBUG] allowed_tools", allowed_tools)
         # print("[DEBUG] conversation_context_length", len(conversation_context))
         # print("[DEBUG] conversation_context", conversation_context[-2:] if len(conversation_context) >= 2 else conversation_context)
@@ -500,6 +506,27 @@ Respond with ONLY "NEW" or "CONTINUE".
             thread_id = f"thread_{agent_id}_{user_id}"
             # logger.info(f"Continuing existing conversation with thread_id: {thread_id}")
             return thread_id
+
+    def _create_mention_hints(self, mentions, allowed_tools):
+        """Create user message hints based on @ mentions."""
+        from jarvus_app.config import ALL_PIPEDREAM_APPS
+        
+        # Create mention-to-slug mapping from config
+        mention_to_slug_mapping = {}
+        for app in ALL_PIPEDREAM_APPS:
+            if 'mention' in app:
+                mention_to_slug_mapping[app['mention']] = app['slug']
+        
+        hint_tools = []
+        for mention in mentions:
+            tool_slug = mention_to_slug_mapping.get(mention.lower())
+            if tool_slug and tool_slug in allowed_tools:
+                hint_tools.append(tool_slug)
+        
+        if hint_tools:
+            return f"TOOL HINT: Consider using these tools for this request: {', '.join(hint_tools)}"
+        
+        return ""
 
     def _select_tools_with_llm(self, user_message, allowed_tools, conversation_context=None):
         jarvus_ai = self.llm_client
