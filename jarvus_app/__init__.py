@@ -16,6 +16,7 @@ from jarvus_app.routes.oauth import oauth_bp
 from jarvus_app.routes.profile import profile_bp
 from jarvus_app.routes.web_pages import web
 from jarvus_app.routes.memory import memory_bp
+from jarvus_app.routes.workflow import workflow_bp
 
 from .db import db  # Use the shared db instance
 from .models.user import User
@@ -91,6 +92,7 @@ def create_app():
     app.register_blueprint(api)
     app.register_blueprint(chatbot_bp, url_prefix="/chatbot")
     app.register_blueprint(memory_bp, url_prefix="/memory")
+    app.register_blueprint(workflow_bp, url_prefix="/api")
     app.register_blueprint(oauth_bp)
     app.register_blueprint(profile_bp)
 

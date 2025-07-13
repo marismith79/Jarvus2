@@ -34,6 +34,10 @@ def chatbot():
     agents = History.query.filter_by(user_id=current_user.id).order_by(History.created_at.desc()).all()
     most_recent_agent = agents[0] if agents else None
 
+    # Import and fetch workflows
+    from ..models.workflow import Workflow
+    workflows = Workflow.get_user_workflows(current_user.id)
+
     # Build tool_list with a 'connected' property for each tool
     tool_list = []
     for app in ALL_PIPEDREAM_APPS:
@@ -47,7 +51,8 @@ def chatbot():
         tool_list=tool_list,
         tool_slugs=tool_slugs,
         agents=agents,
-        most_recent_agent=most_recent_agent
+        most_recent_agent=most_recent_agent,
+        workflows=workflows
     )
 
 @web.route("/chatbot/send", methods=["POST"])

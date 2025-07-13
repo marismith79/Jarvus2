@@ -36,45 +36,35 @@
             
             <!-- Workflows Section -->
             <div class="sidebar-section">
-                <h3 class="section-title">Workflows</h3>
+                <div class="section-header">
+                    <h3 class="section-title">Workflows</h3>
+                    <button class="add-workflow-btn" onclick="showWorkflowCreation()" title="Add new workflow">+</button>
+                </div>
                 <div class="workflow-tabs">
-                    <button class="workflow-tab active" data-tab="scheduled">Scheduled</button>
+                    <button class="workflow-tab active" data-tab="all-workflows">All Workflows</button>
                     <button class="workflow-tab" data-tab="running">Running</button>
-                    <button class="workflow-tab" data-tab="suggested">Suggested</button>
+                    <button class="workflow-tab" data-tab="requires-review">Requires Review</button>
+                    <button class="workflow-tab" data-tab="recently-ran">Recently Ran</button>
                 </div>
                 <div class="workflow-content">
-                    <div class="workflow-section active" id="scheduled-workflows">
-                        <div class="workflow-item">
-                            <div class="workflow-icon">📅</div>
-                            <div class="workflow-details">
-                                <div class="workflow-name">Morning Email Review</div>
-                                <div class="workflow-time">Daily at 9:00 AM</div>
-                            </div>
-                        </div>
-                        <div class="workflow-item">
-                            <div class="workflow-icon">📊</div>
-                            <div class="workflow-details">
-                                <div class="workflow-name">Weekly Report</div>
-                                <div class="workflow-time">Every Monday at 8:00 AM</div>
-                            </div>
+                    <div class="workflow-section active" id="all-workflows">
+                        <div id="workflow-list">
+                            <!-- Workflows will be loaded dynamically -->
                         </div>
                     </div>
                     <div class="workflow-section" id="running-workflows">
-                        <div class="workflow-item running">
-                            <div class="workflow-icon">🔄</div>
-                            <div class="workflow-details">
-                                <div class="workflow-name">Email Processing</div>
-                                <div class="workflow-status">Running...</div>
-                            </div>
+                        <div id="running-workflow-list">
+                            <!-- Running workflows will be loaded dynamically -->
                         </div>
                     </div>
-                    <div class="workflow-section" id="suggested-workflows">
-                        <div class="workflow-item">
-                            <div class="workflow-icon">💡</div>
-                            <div class="workflow-details">
-                                <div class="workflow-name">Calendar Optimization</div>
-                                <div class="workflow-desc">Based on your schedule patterns</div>
-                            </div>
+                    <div class="workflow-section" id="requires-review-workflows">
+                        <div id="review-workflow-list">
+                            <!-- Workflows requiring review will be loaded dynamically -->
+                        </div>
+                    </div>
+                    <div class="workflow-section" id="recently-ran-workflows">
+                        <div id="recent-workflow-list">
+                            <!-- Recently executed workflows will be loaded dynamically -->
                         </div>
                     </div>
                 </div>
@@ -184,6 +174,72 @@
             <button id="finish-creation-btn">Create Agent</button>
         </div>
     </section>
+
+    <!-- Workflow Creation View -->
+    <section id="workflow-creation-view" style="display: none;">
+        <div class="workflow-creation-container">
+            <div class="workflow-creation-header">
+                <h2 id="workflow-creation-title">Create New Workflow</h2>
+                <button class="close-workflow-btn" onclick="hideWorkflowCreation()">×</button>
+            </div>
+            
+            <form id="workflow-form" class="workflow-form">
+                <div class="form-group">
+                    <label for="workflow-name">Workflow Name *</label>
+                    <input type="text" id="workflow-name" name="name" required placeholder="e.g., YC Company Scraper">
+                </div>
+                
+                <div class="form-group">
+                    <label for="workflow-description">Description (optional)</label>
+                    <input type="text" id="workflow-description" name="description" placeholder="Brief description of what this workflow does">
+                </div>
+                
+                <div class="form-group">
+                    <label for="workflow-goal">Goal *</label>
+                    <textarea id="workflow-goal" name="goal" required placeholder="What is the main objective of this workflow?&#10;e.g., Scrape companies from the most recent Y Combinator batch and compile them with contact details into a spreadsheet."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="workflow-instructions">Instructions *</label>
+                    <textarea id="workflow-instructions" name="instructions" required placeholder="Step-by-step instructions for the AI agent to execute this workflow.&#10;&#10;1. First step...&#10;2. Second step...&#10;3. Continue with detailed steps..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="workflow-notes">Notes (optional)</label>
+                    <textarea id="workflow-notes" name="notes" placeholder="Additional context, limitations, or special considerations for this workflow"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>Required Tools *</label>
+                    <div class="tool-selection-grid" id="tool-selection-grid">
+                        <!-- Tools will be populated by JavaScript -->
+                    </div>
+                    <small class="form-help">Select the tools this workflow needs to execute successfully</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="workflow-trigger">Trigger Type *</label>
+                    <select id="workflow-trigger" name="trigger_type" required>
+                        <option value="manual">Manual - Run when you click execute</option>
+                        <option value="scheduled">Scheduled - Run automatically at specified times</option>
+                        <option value="event">Event-based - Run when specific events occur</option>
+                    </select>
+                </div>
+                
+                <div class="form-group" id="trigger-config-group" style="display: none;">
+                    <label for="workflow-trigger-config">Trigger Configuration</label>
+                    <div id="trigger-config-content">
+                        <!-- Dynamic trigger configuration will be shown here -->
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" onclick="hideWorkflowCreation()">Cancel</button>
+                    <button type="submit" class="btn-primary" id="save-workflow-btn">Save Workflow</button>
+                </div>
+            </form>
+        </div>
+    </section>
 </div>
 {% endblock %}
 
@@ -200,4 +256,358 @@
 <script src="{{ url_for('static', filename='js/marked.min.js') }}"></script>
 <script src="{{ url_for('static', filename='js/chatbot.js') }}?v=4"></script>
 {% endblock %}
+
+    <!-- Workflow Execution Details Modal -->
+    <div id="workflow-execution-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="execution-modal-title">Workflow Execution Details</h2>
+                <button class="close-modal-btn" onclick="closeExecutionModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div id="execution-details">
+                    <!-- Execution details will be loaded here -->
+                </div>
+                
+                <!-- Progress Steps Section -->
+                <div id="progress-steps-section" style="display: none;">
+                    <h3>Execution Progress</h3>
+                    <div id="progress-steps-list">
+                        <!-- Progress steps will be loaded here -->
+                    </div>
+                </div>
+                
+                <!-- Feedback Section -->
+                <div id="feedback-section" style="display: none;">
+                    <h3>Feedback</h3>
+                    <div id="current-feedback">
+                        <!-- Current feedback will be shown here -->
+                    </div>
+                    <div id="feedback-form">
+                        <div class="form-group">
+                            <label for="feedback-text">Your Feedback:</label>
+                            <textarea id="feedback-text" placeholder="Provide feedback about this execution..."></textarea>
+                        </div>
+                        <div class="feedback-actions">
+                            <button class="btn btn-success" onclick="submitFeedback('accepted')">Accept</button>
+                            <button class="btn btn-warning" onclick="submitFeedback('rejected')">Reject</button>
+                            <button class="btn btn-secondary" onclick="submitFeedback('pending')">Mark for Review</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Styles -->
+    <style>
+        .modal {
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background-color: white;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.5rem;
+            color: #1f2937;
+        }
+        
+        .close-modal-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #6b7280;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+        }
+        
+        .close-modal-btn:hover {
+            background-color: #f3f4f6;
+            color: #374151;
+        }
+        
+        .modal-body {
+            padding: 20px;
+        }
+        
+        .execution-status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 16px;
+        }
+        
+        .execution-status.running {
+            background-color: #dbeafe;
+            color: #1d4ed8;
+        }
+        
+        .execution-status.completed {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        
+        .execution-status.failed {
+            background-color: #fee2e2;
+            color: #dc2626;
+        }
+        
+        .execution-status.cancelled {
+            background-color: #f3f4f6;
+            color: #6b7280;
+        }
+        
+        .execution-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .execution-info-item {
+            padding: 12px;
+            background-color: #f9fafb;
+            border-radius: 6px;
+        }
+        
+        .execution-info-label {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+        
+        .execution-info-value {
+            font-weight: 500;
+            color: #1f2937;
+        }
+        
+        .progress-step {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            overflow: hidden;
+        }
+        
+        .progress-step-header {
+            background-color: #f9fafb;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .progress-step-number {
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        .progress-step-action {
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+        
+        .progress-step-status {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .progress-step-status.success {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        
+        .progress-step-status.error {
+            background-color: #fee2e2;
+            color: #dc2626;
+        }
+        
+        .progress-step-content {
+            padding: 16px;
+        }
+        
+        .progress-step-input,
+        .progress-step-output {
+            margin-bottom: 12px;
+        }
+        
+        .progress-step-label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 4px;
+        }
+        
+        .progress-step-text {
+            background-color: #f9fafb;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .feedback-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+        
+        .btn-success {
+            background-color: #10b981;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background-color: #059669;
+        }
+        
+        .btn-warning {
+            background-color: #f59e0b;
+            color: white;
+        }
+        
+        .btn-warning:hover {
+            background-color: #d97706;
+        }
+        
+        .btn-secondary {
+            background-color: #6b7280;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #4b5563;
+        }
+        
+        .current-feedback {
+            background-color: #f9fafb;
+            padding: 16px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+        }
+        
+        .feedback-status {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+        
+        .feedback-status.accepted {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        
+        .feedback-status.rejected {
+            background-color: #fee2e2;
+            color: #dc2626;
+        }
+        
+        .feedback-status.pending {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+        
+        .execution-item {
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .execution-item:hover {
+            background-color: #f9fafb;
+        }
+        
+        .execution-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+        }
+        
+        .execution-item-title {
+            font-weight: 500;
+            color: #374151;
+        }
+        
+        .execution-item-status {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .execution-item-status.running {
+            background-color: #dbeafe;
+            color: #1d4ed8;
+        }
+        
+        .execution-item-status.completed {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        
+        .execution-item-status.failed {
+            background-color: #fee2e2;
+            color: #dc2626;
+        }
+        
+        .execution-item-time {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+    </style>
 

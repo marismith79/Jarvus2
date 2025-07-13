@@ -332,9 +332,393 @@ function initWorkflowTabs() {
             // Add active class to clicked tab and corresponding section
             tab.classList.add('active');
             document.getElementById(`${targetTab}-workflows`).classList.add('active');
+            
+            // Load appropriate workflows for the selected tab
+            loadWorkflowsForTab(targetTab);
         });
     });
 }
+
+// Load workflows for specific tab
+async function loadWorkflowsForTab(tabName) {
+    try {
+        const response = await fetch('/api/workflows/status-summary');
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        if (!data.success) {
+            throw new Error(data.error || 'Failed to load workflow summary');
+        }
+        
+        const summary = data.summary;
+        let workflows = [];
+        
+        switch (tabName) {
+            case 'all-workflows':
+                workflows = summary.all_workflows;
+                break;
+            case 'running':
+                workflows = summary.running_workflows;
+                break;
+            case 'requires-review':
+                workflows = summary.requires_review_workflows;
+                break;
+            case 'recently-ran':
+                workflows = summary.recently_ran_workflows;
+                break;
+            default:
+                workflows = summary.all_workflows;
+        }
+        
+        // Display workflows in the appropriate container
+        const containerId = tabName + '-workflow-list';
+        const container = document.getElementById(containerId);
+        if (container) {
+            displayWorkflowsInContainer(workflows, container, tabName);
+        }
+        
+    } catch (error) {
+        safeError('Failed to load workflows for tab:', error);
+        // Show error message in the container
+        const containerId = tabName + '-workflow-list';
+        const container = document.getElementById(containerId);
+        if (container) {
+            container.innerHTML = '<div class="workflow-item"><div class="workflow-details"><div class="workflow-name">Error loading workflows</div><div class="workflow-desc">Please try again</div></div></div>';
+        }
+    }
+}
+
+// Display workflows in a specific container
+function displayWorkflowsInContainer(workflows, container, tabName) {
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    if (workflows.length === 0) {
+        let emptyMessage = '';
+        switch (tabName) {
+            case 'all-workflows':
+                emptyMessage = 'No workflows yet';
+                break;
+            case 'running':
+                emptyMessage = 'No workflows running';
+                break;
+            case 'requires-review':
+                emptyMessage = 'No workflows require review';
+                break;
+            case 'recently-ran':
+                emptyMessage = 'No recent workflow executions';
+                break;
+            default:
+                emptyMessage = 'No workflows found';
+        }
+        
+        container.innerHTML = `<div class="workflow-item"><div class="workflow-details"><div class="workflow-name">${emptyMessage}</div><div class="workflow-desc">Create your first workflow</div></div></div>`;
+        return;
+    }
+    
+    workflows.forEach(workflow => {
+        const workflowItem = document.createElement('div');
+        workflowItem.classList.add('workflow-item');
+        workflowItem.dataset.workflowId = workflow.id;
+        
+        // Add status-specific styling
+        if (tabName === 'running') {
+            workflowItem.classList.add('running');
+        } else if (tabName === 'requires-review') {
+            workflowItem.classList.add('requires-review');
+        }
+        
+        // Get tool icons for display
+        const toolIcons = (workflow.required_tools || []).map(toolId => {
+            const tool = AVAILABLE_TOOLS.find(t => t.id === toolId);
+            return tool ? tool.icon : '🔧';
+        }).join(' ');
+        
+        // Get trigger display text
+        const triggerText = getTriggerDisplayText(workflow.trigger_type, workflow.trigger_config);
+        
+        // Add status indicator for running and review workflows
+        let statusIndicator = '';
+        if (tabName === 'running') {
+            statusIndicator = '<div class="workflow-status">🔄 Running...</div>';
+        } else if (tabName === 'requires-review') {
+            statusIndicator = '<div class="workflow-status">⚠️ Requires Review</div>';
+        }
+        
+        // Add click handler for viewing execution details
+        workflowItem.addEventListener('click', (e) => {
+            // Don't trigger if clicking on action buttons
+            if (e.target.closest('.workflow-actions')) {
+                return;
+            }
+            viewWorkflowExecutions(workflow.id, workflow.name);
+        });
+        
+        workflowItem.innerHTML = `
+            <div class="workflow-icon">⚙️</div>
+            <div class="workflow-details">
+                <div class="workflow-name">${workflow.name}</div>
+                <div class="workflow-desc">${workflow.description || 'No description'}</div>
+                <div class="workflow-meta">
+                    <span class="workflow-tools">${toolIcons}</span>
+                    <span class="workflow-trigger">${triggerText}</span>
+                </div>
+                ${statusIndicator}
+            </div>
+            <div class="workflow-actions">
+                <button class="workflow-action-btn execute" onclick="executeWorkflow(${workflow.id})" title="Execute workflow">▶️</button>
+                <button class="workflow-action-btn edit" onclick="editWorkflow(${workflow.id})" title="Edit workflow">✏️</button>
+                <button class="workflow-action-btn delete" onclick="deleteWorkflow(${workflow.id})" title="Delete workflow">🗑️</button>
+            </div>
+        `;
+        
+        container.appendChild(workflowItem);
+    });
+}
+
+// View workflow executions
+async function viewWorkflowExecutions(workflowId, workflowName) {
+    try {
+        const response = await fetch(`/api/workflows/${workflowId}/executions`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        if (!data.success) {
+            throw new Error(data.error || 'Failed to load workflow executions');
+        }
+        
+        showExecutionModal(workflowName, data.executions);
+        
+    } catch (error) {
+        safeError('Failed to load workflow executions:', error);
+        alert(`Error loading workflow executions: ${error.message}`);
+    }
+}
+
+// Show execution details modal
+function showExecutionModal(workflowName, executions) {
+    const modal = document.getElementById('workflow-execution-modal');
+    const title = document.getElementById('execution-modal-title');
+    const detailsContainer = document.getElementById('execution-details');
+    
+    title.textContent = `Workflow Executions: ${workflowName}`;
+    
+    if (executions.length === 0) {
+        detailsContainer.innerHTML = '<p>No executions found for this workflow.</p>';
+    } else {
+        // Show the most recent execution by default
+        const latestExecution = executions[0];
+        displayExecutionDetails(latestExecution);
+        
+        // If there are multiple executions, show a list
+        if (executions.length > 1) {
+            const executionList = document.createElement('div');
+            executionList.innerHTML = '<h3>All Executions</h3>';
+            
+            executions.forEach((execution, index) => {
+                const executionItem = document.createElement('div');
+                executionItem.className = 'execution-item';
+                executionItem.innerHTML = `
+                    <div class="execution-item-header">
+                        <span class="execution-item-title">Execution ${index + 1}</span>
+                        <span class="execution-item-status ${execution.status}">${execution.status}</span>
+                        <span class="execution-item-time">${formatExecutionTime(execution.start_time)}</span>
+                    </div>
+                `;
+                executionItem.addEventListener('click', () => displayExecutionDetails(execution));
+                executionList.appendChild(executionItem);
+            });
+            
+            detailsContainer.appendChild(executionList);
+        }
+    }
+    
+    modal.style.display = 'flex';
+}
+
+// Display execution details
+function displayExecutionDetails(execution) {
+    const detailsContainer = document.getElementById('execution-details');
+    const progressSection = document.getElementById('progress-steps-section');
+    const feedbackSection = document.getElementById('feedback-section');
+    
+    // Set current execution ID for feedback
+    currentExecutionId = execution.execution_id;
+    
+    // Clear previous content
+    detailsContainer.innerHTML = '';
+    
+    // Create execution details
+    const detailsHtml = `
+        <div class="execution-status ${execution.status}">${execution.status.toUpperCase()}</div>
+        <div class="execution-info">
+            <div class="execution-info-item">
+                <div class="execution-info-label">Execution ID</div>
+                <div class="execution-info-value">${execution.execution_id}</div>
+            </div>
+            <div class="execution-info-item">
+                <div class="execution-info-label">Start Time</div>
+                <div class="execution-info-value">${formatExecutionTime(execution.start_time)}</div>
+            </div>
+            <div class="execution-info-item">
+                <div class="execution-info-label">End Time</div>
+                <div class="execution-info-value">${execution.end_time ? formatExecutionTime(execution.end_time) : 'N/A'}</div>
+            </div>
+            <div class="execution-info-item">
+                <div class="execution-info-label">Duration</div>
+                <div class="execution-info-value">${calculateDuration(execution.start_time, execution.end_time)}</div>
+            </div>
+        </div>
+    `;
+    
+    detailsContainer.innerHTML = detailsHtml;
+    
+    // Show progress steps if available
+    if (execution.progress_steps && execution.progress_steps.length > 0) {
+        displayProgressSteps(execution.progress_steps);
+        progressSection.style.display = 'block';
+    } else {
+        progressSection.style.display = 'none';
+    }
+    
+    // Show feedback section for completed executions
+    if (execution.status === 'completed' || execution.status === 'failed') {
+        displayFeedbackSection(execution);
+        feedbackSection.style.display = 'block';
+    } else {
+        feedbackSection.style.display = 'none';
+    }
+}
+
+// Display progress steps
+function displayProgressSteps(progressSteps) {
+    const progressList = document.getElementById('progress-steps-list');
+    
+    progressList.innerHTML = '';
+    
+    progressSteps.forEach((step, index) => {
+        const stepElement = document.createElement('div');
+        stepElement.className = 'progress-step';
+        stepElement.innerHTML = `
+            <div class="progress-step-header">
+                <span class="progress-step-number">Step ${step.step_number}</span>
+                <span class="progress-step-action">${step.action}</span>
+                <span class="progress-step-status ${step.status}">${step.status}</span>
+            </div>
+            <div class="progress-step-content">
+                <div class="progress-step-input">
+                    <div class="progress-step-label">Input:</div>
+                    <div class="progress-step-text">${step.input}</div>
+                </div>
+                <div class="progress-step-output">
+                    <div class="progress-step-label">Output:</div>
+                    <div class="progress-step-text">${step.output}</div>
+                </div>
+            </div>
+        `;
+        progressList.appendChild(stepElement);
+    });
+}
+
+// Display feedback section
+function displayFeedbackSection(execution) {
+    const currentFeedback = document.getElementById('current-feedback');
+    const feedbackForm = document.getElementById('feedback-form');
+    
+    if (execution.user_feedback) {
+        // Show existing feedback
+        currentFeedback.innerHTML = `
+            <div class="current-feedback">
+                <div class="feedback-status ${execution.feedback_status}">${execution.feedback_status}</div>
+                <div class="feedback-text">${execution.user_feedback}</div>
+                <div class="feedback-time">${formatExecutionTime(execution.feedback_timestamp)}</div>
+            </div>
+        `;
+        feedbackForm.style.display = 'none';
+    } else {
+        // Show feedback form
+        currentFeedback.innerHTML = '';
+        feedbackForm.style.display = 'block';
+    }
+}
+
+// Submit feedback
+async function submitFeedback(status) {
+    const feedbackText = document.getElementById('feedback-text').value.trim();
+    const executionId = currentExecutionId; // This will be set when viewing execution details
+    
+    if (!feedbackText) {
+        alert('Please provide feedback before submitting.');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/executions/${executionId}/feedback`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                feedback: feedbackText,
+                status: status
+            })
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        if (data.success) {
+            alert('Feedback submitted successfully!');
+            closeExecutionModal();
+            // Refresh the current tab
+            const activeTab = document.querySelector('.workflow-tab.active');
+            if (activeTab) {
+                await loadWorkflowsForTab(activeTab.dataset.tab);
+            }
+        }
+        
+    } catch (error) {
+        safeError('Failed to submit feedback:', error);
+        alert(`Error submitting feedback: ${error.message}`);
+    }
+}
+
+// Close execution modal
+function closeExecutionModal() {
+    const modal = document.getElementById('workflow-execution-modal');
+    modal.style.display = 'none';
+}
+
+// Utility functions
+function formatExecutionTime(timestamp) {
+    if (!timestamp) return 'N/A';
+    return new Date(timestamp).toLocaleString();
+}
+
+function calculateDuration(startTime, endTime) {
+    if (!startTime) return 'N/A';
+    if (!endTime) return 'Running...';
+    
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+    const duration = end - start;
+    
+    const minutes = Math.floor(duration / 60000);
+    const seconds = Math.floor((duration % 60000) / 1000);
+    
+    return `${minutes}m ${seconds}s`;
+}
+
+// Global variable to track current execution ID
+let currentExecutionId = null;
 
 // --- NEW: Todo List Management ---
 async function addTodoItem() {
@@ -1035,3 +1419,616 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
+//─────────────────────────────────────────────────────────────────────────────
+// Workflow Management Functions
+//─────────────────────────────────────────────────────────────────────────────
+
+let currentWorkflowId = null;
+
+// Show workflow creation interface
+function showWorkflowCreation(workflowId = null) {
+    const workflowView = document.getElementById('workflow-creation-view');
+    const title = document.getElementById('workflow-creation-title');
+    const form = document.getElementById('workflow-form');
+    
+    currentWorkflowId = workflowId;
+    
+    if (workflowId) {
+        // Edit mode
+        title.textContent = 'Edit Workflow';
+        loadWorkflowForEditing(workflowId);
+    } else {
+        // Create mode
+        title.textContent = 'Create New Workflow';
+        form.reset();
+    }
+    
+    workflowView.style.display = 'flex';
+    
+    // Hide main chat area and right sidebar
+    const mainChatArea = document.getElementById('main-chat-area');
+    const rightSidebar = document.querySelector('.right-sidebar');
+    if (mainChatArea) mainChatArea.style.display = 'none';
+    if (rightSidebar) rightSidebar.style.display = 'none';
+}
+
+// Hide workflow creation interface
+function hideWorkflowCreation() {
+    const workflowView = document.getElementById('workflow-creation-view');
+    workflowView.style.display = 'none';
+    
+    // Show main chat area and right sidebar
+    const mainChatArea = document.getElementById('main-chat-area');
+    const rightSidebar = document.querySelector('.right-sidebar');
+    if (mainChatArea) mainChatArea.style.display = 'flex';
+    if (rightSidebar) rightSidebar.style.display = 'flex';
+    
+    currentWorkflowId = null;
+}
+
+// Load workflow data for editing
+async function loadWorkflowForEditing(workflowId) {
+    try {
+        const response = await fetch(`/api/workflows/${workflowId}`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        const workflow = data.workflow;
+        
+        // Populate form fields
+        document.getElementById('workflow-name').value = workflow.name || '';
+        document.getElementById('workflow-description').value = workflow.description || '';
+        document.getElementById('workflow-goal').value = workflow.goal || '';
+        document.getElementById('workflow-instructions').value = workflow.instructions || '';
+        document.getElementById('workflow-notes').value = workflow.notes || '';
+        
+        // Populate tool selection
+        populateToolSelection(workflow.required_tools || []);
+        
+        // Populate trigger configuration
+        document.getElementById('workflow-trigger').value = workflow.trigger_type || 'manual';
+        updateTriggerConfig(workflow.trigger_type || 'manual', workflow.trigger_config || {});
+        
+    } catch (error) {
+        safeError('Failed to load workflow for editing:', error);
+        alert('Error loading workflow. Please try again.');
+        hideWorkflowCreation();
+    }
+}
+
+// Save workflow (create or update)
+async function saveWorkflow(formData) {
+    try {
+        const url = currentWorkflowId 
+            ? `/api/workflows/${currentWorkflowId}`
+            : '/api/workflows';
+        
+        const method = currentWorkflowId ? 'PUT' : 'POST';
+        
+        const response = await fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        safeLog('Workflow saved successfully:', data);
+        
+        // Reload the current active tab
+        const activeTab = document.querySelector('.workflow-tab.active');
+        if (activeTab) {
+            await loadWorkflowsForTab(activeTab.dataset.tab);
+        } else {
+            await loadWorkflowsForTab('all-workflows');
+        }
+        
+        // Hide creation view
+        hideWorkflowCreation();
+        
+        // Show success message
+        alert(currentWorkflowId ? 'Workflow updated successfully!' : 'Workflow created successfully!');
+        
+    } catch (error) {
+        safeError('Failed to save workflow:', error);
+        alert(`Error saving workflow: ${error.message}`);
+    }
+}
+
+// Load workflows from the server
+async function loadWorkflows() {
+    try {
+        // Load the initial "All Workflows" tab
+        await loadWorkflowsForTab('all-workflows');
+        
+    } catch (error) {
+        safeError('Failed to load workflows:', error);
+        const container = document.getElementById('all-workflow-list');
+        if (container) {
+            container.innerHTML = '<div class="workflow-item"><div class="workflow-details"><div class="workflow-name">Error loading workflows</div><div class="workflow-desc">Please try again</div></div></div>';
+        }
+    }
+}
+
+// Display workflows in the sidebar
+function displayWorkflows(workflows) {
+    const workflowList = document.getElementById('workflow-list');
+    if (!workflowList) return;
+    
+    workflowList.innerHTML = '';
+    
+    if (workflows.length === 0) {
+        workflowList.innerHTML = '<div class="workflow-item"><div class="workflow-details"><div class="workflow-name">No workflows yet</div><div class="workflow-desc">Create your first workflow</div></div></div>';
+        return;
+    }
+    
+    workflows.forEach(workflow => {
+        const workflowItem = document.createElement('div');
+        workflowItem.classList.add('workflow-item');
+        workflowItem.dataset.workflowId = workflow.id;
+        
+        // Get tool icons for display
+        const toolIcons = (workflow.required_tools || []).map(toolId => {
+            const tool = AVAILABLE_TOOLS.find(t => t.id === toolId);
+            return tool ? tool.icon : '🔧';
+        }).join(' ');
+        
+        // Get trigger display text
+        const triggerText = getTriggerDisplayText(workflow.trigger_type, workflow.trigger_config);
+        
+        workflowItem.innerHTML = `
+            <div class="workflow-icon">⚙️</div>
+            <div class="workflow-details">
+                <div class="workflow-name">${workflow.name}</div>
+                <div class="workflow-desc">${workflow.description || 'No description'}</div>
+                <div class="workflow-meta">
+                    <span class="workflow-tools">${toolIcons}</span>
+                    <span class="workflow-trigger">${triggerText}</span>
+                </div>
+            </div>
+            <div class="workflow-actions">
+                <button class="workflow-action-btn execute" onclick="executeWorkflow(${workflow.id})" title="Execute workflow">▶️</button>
+                <button class="workflow-action-btn edit" onclick="editWorkflow(${workflow.id})" title="Edit workflow">✏️</button>
+                <button class="workflow-action-btn delete" onclick="deleteWorkflow(${workflow.id})" title="Delete workflow">🗑️</button>
+            </div>
+        `;
+        
+        workflowList.appendChild(workflowItem);
+    });
+}
+
+// Edit workflow
+function editWorkflow(workflowId) {
+    showWorkflowCreation(workflowId);
+}
+
+// Execute workflow
+async function executeWorkflow(workflowId) {
+    if (!confirm('Execute this workflow? This will use the current agent to run the workflow steps.')) {
+        return;
+    }
+    
+    try {
+        // Show execution status
+        const workflowList = document.getElementById('workflow-list');
+        const workflowItem = workflowList.querySelector(`[data-workflow-id="${workflowId}"]`);
+        if (workflowItem) {
+            const originalContent = workflowItem.innerHTML;
+            workflowItem.innerHTML = `
+                <div class="workflow-icon">🔄</div>
+                <div class="workflow-details">
+                    <div class="workflow-name">Executing workflow...</div>
+                    <div class="workflow-desc">Please wait</div>
+                </div>
+            `;
+            
+            // Execute the workflow
+            const response = await fetch(`/api/workflows/${workflowId}/execute`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    agent_id: currentAgentId  // Use current agent if available
+                })
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            safeLog('Workflow execution started:', data);
+            
+            // Show success message
+            alert('Workflow execution started! Check the chat for progress updates.');
+            
+            // Switch to chat view to see the execution
+            const mainChatArea = document.getElementById('main-chat-area');
+            const rightSidebar = document.querySelector('.right-sidebar');
+            if (mainChatArea) mainChatArea.style.display = 'flex';
+            if (rightSidebar) rightSidebar.style.display = 'flex';
+            
+            // Hide workflow creation view if it's open
+            const workflowView = document.getElementById('workflow-creation-view');
+            if (workflowView) workflowView.style.display = 'none';
+            
+            // Add a message to the chat showing the workflow execution
+            const execution = data.execution;
+            const workflowName = execution.workflow_name;
+            
+            // Add user message showing workflow execution
+            appendMessage('user', `Execute workflow: ${workflowName}`);
+            
+            // Add system message showing execution started
+            appendMessage('bot', `🚀 **Workflow Execution Started**\n\n**Workflow:** ${workflowName}\n**Execution ID:** ${execution.execution_id}\n**Status:** ${execution.status}\n\nI'm now executing the workflow steps. You'll see the progress in the chat as I work through each step.`);
+            
+        } else {
+            throw new Error('Workflow item not found');
+        }
+        
+    } catch (error) {
+        safeError('Failed to execute workflow:', error);
+        alert(`Error executing workflow: ${error.message}`);
+        
+        // Restore original content on error
+        if (workflowItem) {
+            workflowItem.innerHTML = originalContent;
+        }
+    }
+}
+
+// Delete workflow
+async function deleteWorkflow(workflowId) {
+    if (!confirm('Are you sure you want to delete this workflow?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/workflows/${workflowId}`, {
+            method: 'DELETE'
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        safeLog('Workflow deleted successfully');
+        
+        // Reload the current active tab
+        const activeTab = document.querySelector('.workflow-tab.active');
+        if (activeTab) {
+            await loadWorkflowsForTab(activeTab.dataset.tab);
+        } else {
+            await loadWorkflowsForTab('all-workflows');
+        }
+        
+        // Show success message
+        alert('Workflow deleted successfully!');
+        
+    } catch (error) {
+        safeError('Failed to delete workflow:', error);
+        alert(`Error deleting workflow: ${error.message}`);
+    }
+}
+
+// Handle workflow form submission
+document.addEventListener('DOMContentLoaded', () => {
+    const workflowForm = document.getElementById('workflow-form');
+    if (workflowForm) {
+        workflowForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = {
+                name: document.getElementById('workflow-name').value.trim(),
+                description: document.getElementById('workflow-description').value.trim(),
+                goal: document.getElementById('workflow-goal').value.trim(),
+                instructions: document.getElementById('workflow-instructions').value.trim(),
+                notes: document.getElementById('workflow-notes').value.trim(),
+                required_tools: getSelectedTools(),
+                trigger_type: document.getElementById('workflow-trigger').value,
+                trigger_config: getTriggerConfig()
+            };
+            
+            // Validate required fields
+            if (!formData.name || !formData.goal || !formData.instructions) {
+                alert('Please fill in all required fields (Name, Goal, and Instructions).');
+                return;
+            }
+            
+            // Validate tool selection
+            if (formData.required_tools.length === 0) {
+                alert('Please select at least one tool for this workflow.');
+                return;
+            }
+            
+            await saveWorkflow(formData);
+        });
+    }
+    
+    // Initialize tool selection and trigger configuration
+    initializeWorkflowForm();
+    
+    // Load workflows on page load
+    loadWorkflows();
+});
+
+//─────────────────────────────────────────────────────────────────────────────
+// Tool Selection and Trigger Configuration Functions
+//─────────────────────────────────────────────────────────────────────────────
+
+// Available tools configuration - will be populated from API
+let AVAILABLE_TOOLS = [];
+
+// Tool icons mapping
+const TOOL_ICONS = {
+    'web': '🌐',
+    'gmail': '📧',
+    'google_calendar': '📅',
+    'google_docs': '📄',
+    'google_sheets': '📊',
+    'google_drive': '📁',
+    'slack': '💬',
+    'notion': '📝',
+    'zoom': '📹',
+    'google_slides': '📽️'
+};
+
+// Fetch available tools from API
+async function fetchAvailableTools() {
+    try {
+        const response = await fetch('/workflows/available-tools');
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.available_apps) {
+                // Transform the API response to match our expected format
+                AVAILABLE_TOOLS = data.available_apps.map(app => ({
+                    id: app.id,
+                    name: app.name,
+                    icon: TOOL_ICONS[app.id] || '🔧',
+                    description: `${app.name} tools`,
+                    tools: app.tools
+                }));
+                return true;
+            }
+        }
+        console.error('Failed to fetch available tools');
+        return false;
+    } catch (error) {
+        console.error('Error fetching available tools:', error);
+        return false;
+    }
+}
+
+// Initialize workflow form
+async function initializeWorkflowForm() {
+    // Fetch available tools first
+    await fetchAvailableTools();
+    populateToolSelection();
+    setupTriggerConfiguration();
+}
+
+// Populate tool selection grid
+function populateToolSelection(selectedTools = []) {
+    const toolGrid = document.getElementById('tool-selection-grid');
+    if (!toolGrid) return;
+    
+    toolGrid.innerHTML = '';
+    
+    AVAILABLE_TOOLS.forEach(tool => {
+        const toolItem = document.createElement('div');
+        toolItem.classList.add('tool-selection-item');
+        if (selectedTools.includes(tool.id)) {
+            toolItem.classList.add('selected');
+        }
+        
+        // Create tool details with available tools count
+        const toolsCount = tool.tools ? tool.tools.length : 0;
+        const toolsText = toolsCount > 0 ? ` (${toolsCount} tools available)` : '';
+        
+        toolItem.innerHTML = `
+            <input type="checkbox" id="tool-${tool.id}" value="${tool.id}" 
+                   ${selectedTools.includes(tool.id) ? 'checked' : ''}>
+            <div class="tool-icon">${tool.icon}</div>
+            <div>
+                <div class="tool-name">${tool.name}</div>
+                <div class="tool-description">${tool.description}${toolsText}</div>
+            </div>
+        `;
+        
+        // Add click handler for the entire item
+        toolItem.addEventListener('click', (e) => {
+            if (e.target.type !== 'checkbox') {
+                const checkbox = toolItem.querySelector('input[type="checkbox"]');
+                checkbox.checked = !checkbox.checked;
+                toolItem.classList.toggle('selected', checkbox.checked);
+            } else {
+                toolItem.classList.toggle('selected', e.target.checked);
+            }
+        });
+        
+        toolGrid.appendChild(toolItem);
+    });
+}
+
+// Get selected tools
+function getSelectedTools() {
+    const checkboxes = document.querySelectorAll('#tool-selection-grid input[type="checkbox"]:checked');
+    return Array.from(checkboxes).map(cb => cb.value);
+}
+
+// Setup trigger configuration
+function setupTriggerConfiguration() {
+    const triggerSelect = document.getElementById('workflow-trigger');
+    if (!triggerSelect) return;
+    
+    triggerSelect.addEventListener('change', (e) => {
+        updateTriggerConfig(e.target.value);
+    });
+    
+    // Initialize with manual trigger
+    updateTriggerConfig('manual');
+}
+
+// Update trigger configuration based on type
+function updateTriggerConfig(triggerType, existingConfig = {}) {
+    const configGroup = document.getElementById('trigger-config-group');
+    const configContent = document.getElementById('trigger-config-content');
+    
+    if (!configGroup || !configContent) return;
+    
+    let configHtml = '';
+    
+    switch (triggerType) {
+        case 'scheduled':
+            configHtml = `
+                <div class="trigger-config-section">
+                    <h4>Schedule Configuration</h4>
+                    <div class="form-group">
+                        <label for="schedule-frequency">Frequency</label>
+                        <select id="schedule-frequency" name="frequency">
+                            <option value="daily" ${existingConfig.frequency === 'daily' ? 'selected' : ''}>Daily</option>
+                            <option value="weekly" ${existingConfig.frequency === 'weekly' ? 'selected' : ''}>Weekly</option>
+                            <option value="monthly" ${existingConfig.frequency === 'monthly' ? 'selected' : ''}>Monthly</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="schedule-time">Time</label>
+                        <input type="time" id="schedule-time" name="time" 
+                               value="${existingConfig.time || '09:00'}">
+                    </div>
+                    <div class="form-group" id="weekly-day-group" style="display: none;">
+                        <label for="schedule-day">Day of Week</label>
+                        <select id="schedule-day" name="day">
+                            <option value="monday" ${existingConfig.day === 'monday' ? 'selected' : ''}>Monday</option>
+                            <option value="tuesday" ${existingConfig.day === 'tuesday' ? 'selected' : ''}>Tuesday</option>
+                            <option value="wednesday" ${existingConfig.day === 'wednesday' ? 'selected' : ''}>Wednesday</option>
+                            <option value="thursday" ${existingConfig.day === 'thursday' ? 'selected' : ''}>Thursday</option>
+                            <option value="friday" ${existingConfig.day === 'friday' ? 'selected' : ''}>Friday</option>
+                            <option value="saturday" ${existingConfig.day === 'saturday' ? 'selected' : ''}>Saturday</option>
+                            <option value="sunday" ${existingConfig.day === 'sunday' ? 'selected' : ''}>Sunday</option>
+                        </select>
+                    </div>
+                </div>
+            `;
+            break;
+            
+        case 'event':
+            configHtml = `
+                <div class="trigger-config-section">
+                    <h4>Event Configuration</h4>
+                    <div class="form-group">
+                        <label for="event-type">Event Type</label>
+                        <select id="event-type" name="event_type">
+                            <option value="email_received" ${existingConfig.event_type === 'email_received' ? 'selected' : ''}>Email Received</option>
+                            <option value="calendar_event" ${existingConfig.event_type === 'calendar_event' ? 'selected' : ''}>Calendar Event</option>
+                            <option value="file_uploaded" ${existingConfig.event_type === 'file_uploaded' ? 'selected' : ''}>File Uploaded</option>
+                            <option value="webhook" ${existingConfig.event_type === 'webhook' ? 'selected' : ''}>Webhook</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="event-filter">Event Filter (optional)</label>
+                        <input type="text" id="event-filter" name="event_filter" 
+                               placeholder="e.g., from:specific@email.com" 
+                               value="${existingConfig.event_filter || ''}">
+                    </div>
+                </div>
+            `;
+            break;
+            
+        default: // manual
+            configHtml = `
+                <div class="trigger-config-section">
+                    <h4>Manual Trigger</h4>
+                    <p>This workflow will only run when you manually execute it.</p>
+                </div>
+            `;
+    }
+    
+    configContent.innerHTML = configHtml;
+    configGroup.style.display = 'block';
+    
+    // Setup additional event listeners for dynamic fields
+    setupDynamicTriggerFields(triggerType);
+}
+
+// Setup dynamic trigger fields
+function setupDynamicTriggerFields(triggerType) {
+    if (triggerType === 'scheduled') {
+        const frequencySelect = document.getElementById('schedule-frequency');
+        const weeklyDayGroup = document.getElementById('weekly-day-group');
+        
+        if (frequencySelect && weeklyDayGroup) {
+            frequencySelect.addEventListener('change', (e) => {
+                weeklyDayGroup.style.display = e.target.value === 'weekly' ? 'block' : 'none';
+            });
+            
+            // Initialize visibility
+            weeklyDayGroup.style.display = frequencySelect.value === 'weekly' ? 'block' : 'none';
+        }
+    }
+}
+
+// Get trigger configuration
+function getTriggerConfig() {
+    const triggerType = document.getElementById('workflow-trigger').value;
+    const config = {};
+    
+    switch (triggerType) {
+        case 'scheduled':
+            config.frequency = document.getElementById('schedule-frequency')?.value || 'daily';
+            config.time = document.getElementById('schedule-time')?.value || '09:00';
+            if (config.frequency === 'weekly') {
+                config.day = document.getElementById('schedule-day')?.value || 'monday';
+            }
+            break;
+            
+        case 'event':
+            config.event_type = document.getElementById('event-type')?.value || 'email_received';
+            config.event_filter = document.getElementById('event-filter')?.value || '';
+            break;
+            
+        default:
+            // Manual trigger - no additional config needed
+            break;
+    }
+    
+    return config;
+}
+
+// Get trigger display text
+function getTriggerDisplayText(triggerType, triggerConfig) {
+    switch (triggerType) {
+        case 'scheduled':
+            const frequency = triggerConfig.frequency || 'daily';
+            const time = triggerConfig.time || '09:00';
+            if (frequency === 'weekly') {
+                const day = triggerConfig.day || 'monday';
+                return `📅 ${day} at ${time}`;
+            }
+            return `📅 ${frequency} at ${time}`;
+            
+        case 'event':
+            const eventType = triggerConfig.event_type || 'email_received';
+            const eventLabels = {
+                'email_received': '📧 Email',
+                'calendar_event': '📅 Calendar',
+                'file_uploaded': '📁 File',
+                'webhook': '🔗 Webhook'
+            };
+            return eventLabels[eventType] || '🔗 Event';
+            
+        default:
+            return '👆 Manual';
+    }
+}
