@@ -153,7 +153,7 @@ make migrations
 ## Azure Deployment Pipeline
 
 Deployment is fully automated via GitHub Actions (see `.github/workflows/main_jarvus.yml`).
-A push to `main` will:
+A push to `Production` will:
 
 1. Build the project with Python 3.11
 2. Install dependencies (incl. beta `azure-ai-inference`)
