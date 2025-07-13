@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Jarvus{% endblock %}</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
     {% block extra_css %}{% endblock %}
 </head>
@@ -12,17 +13,18 @@
     <header>
         <div class="container">
             <div class="logo">
-                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Jarvus Logo" class="logo-image">
-                <span>Jarvus</span>
+                <a href="{{ url_for('web.landing') }}" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 0.5rem;">
+                    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Jarvus Logo" class="logo-image">
+                    <span>Jarvus</span>
+                </a>
             </div>
             <nav>
-                <a href="{{ url_for('web.landing') }}" {% if request.endpoint == 'web.landing' %}class="active"{% endif %}>Home</a>
                 {% if current_user.is_authenticated %}
                     <a href="{{ url_for('web.chatbot') }}" {% if request.endpoint == 'web.chatbot' %}class="active"{% endif %}>Chat</a>
                     <a href="{{ url_for('profile.profile') }}" {% if request.endpoint == 'profile.profile' %}class="active"{% endif %}>Profile</a>
                     <a href="{{ url_for('auth.logout') }}" class="cta-button">Log Out</a>
                 {% else %}
-                    <a href="/signin" class="cta-button">Sign In</a>
+                    <a href="https://calendar.notion.so/meet/shomarismith/jarvus-qa-demo" class="cta-button" target="_blank">Talk to a founder</a>
                 {% endif %}
             </nav>
         </div>
