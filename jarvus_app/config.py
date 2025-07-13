@@ -53,9 +53,9 @@ class Config:
     CHATBOT_SYSTEM_PROMPT = """
     You are a AI agent with access to multiple tools via MCP servers. 
     Your job is to complete the task that the user requests to the best of your ability.
-    
+    When the user uses @ mentions (like @web, @gmail, @cal), consider these as helpful hints about which tools might be most appropriate for their request. You can still use other tools if needed.
     You must always create a plan in the beginning, and then execute the plan step by step.
-    If there are multiple steps that need to be taken, only call the tools is needed in the immediate next step, and wait for the tool response to call the next.
+    If there are multiple steps that need to be taken, only call the tools needed in the immediate next step, and wait for the tool response to call the next.
     If all tool calls are done and you have all the necessary tool responses to fulfill the user's request, return the final result.
     
     MINIMIZE YOUR CALLS TO TOOLS AND ONLY DO SO WHEN ABSOLUTELY NECESSARY.
@@ -72,14 +72,15 @@ class Config:
 
 # Centralized list of all Pipedream MCP tool apps
 ALL_PIPEDREAM_APPS = [
-    {"slug": "google_docs", "name": "Google Docs"},
-    {"slug": "gmail", "name": "Gmail"},
-    {"slug": "google_calendar", "name": "Google Calendar"},
-    {"slug": "google_sheets", "name": "Google Sheets"},
-    {"slug": "google_slides", "name": "Google Slides"},
-    {"slug": "google_drive", "name": "Google Drive"},
-    {"slug": "zoom", "name": "Zoom"},
-    {"slug": "slack", "name": "Slack"},
-    {"slug": "notion", "name": "Notion"},
+    {"slug": "google_docs", "name": "Google Docs", "mention": "docs"},
+    {"slug": "gmail", "name": "Gmail", "mention": "gmail"},
+    {"slug": "google_calendar", "name": "Google Calendar", "mention": "gcal"},
+    {"slug": "google_sheets", "name": "Google Sheets", "mention": "sheets"},
+    {"slug": "google_slides", "name": "Google Slides", "mention": "slides"},
+    {"slug": "google_drive", "name": "Google Drive", "mention": "drive"},
+    {"slug": "zoom", "name": "Zoom", "mention": "zoom"},
+    {"slug": "slack", "name": "Slack", "mention": "slack"},
+    {"slug": "notion", "name": "Notion", "mention": "notion"},
+    {"slug": "scrapingant", "name": "ScrapingAnt", "mention": "web"},
     # Add more as needed
 ]

@@ -656,3 +656,26 @@ Please respond with just a simple list of tasks, one per line, without explanati
     except Exception as e:
         logger.error(f"Error generating morning todos: {str(e)}", exc_info=True)
         return jsonify({'error': str(e)}), 500
+
+@chatbot_bp.route('/tools/config', methods=['GET'])
+@login_required
+def get_tools_config():
+    """Return tool configuration with mention mappings."""
+    from jarvus_app.config import ALL_PIPEDREAM_APPS
+    
+    # Get user's selected tools from session
+    selected_tools = session.get('selected_tools', [])
+    
+    available_tools = []
+    for app in ALL_PIPEDREAM_APPS:
+        # If no tools selected, show all; otherwise filter by selected tools
+        if not selected_tools or app['slug'] in selected_tools:
+            tool_info = {
+                'name': app['name'],
+                'slug': app['slug'],
+                'mention': app.get('mention', app['slug']),
+                'description': f"Access {app['name']} functionality"
+            }
+            available_tools.append(tool_info)
+    
+    return jsonify(available_tools), 200

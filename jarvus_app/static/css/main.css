@@ -2457,3 +2457,8 @@ main {
     margin-top: 0.25rem;
     font-weight: 500;
 }
+
+.suggestion-text {
+    color: #999 !important;
+    font-weight: normal;
+}
