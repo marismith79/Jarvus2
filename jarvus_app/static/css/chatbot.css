@@ -977,11 +977,6 @@
     white-space: nowrap;
 }
 
-.suggestion-text {
-    color: #999;
-    font-weight: normal;
-}
-
 .tool-name {
     color: #666;
     font-size: 12px;

@@ -1451,7 +1451,6 @@ function showSuggestion(inputEl, remainingText, toolName) {
 
     suggestionEl.innerHTML = `
         <span class="suggestion-text">${remainingText}</span>
-        <span class="tool-name">${toolName}</span>
     `;
 
     suggestionEl.style.position = 'absolute';
@@ -1467,17 +1466,18 @@ function showSuggestion(inputEl, remainingText, toolName) {
 
 function completeSuggestion(inputEl) {
     if (!currentSuggestion) return;
-    
     const cursorPosition = inputEl.selectionStart;
     const textBeforeCursor = inputEl.value.substring(0, cursorPosition);
     const lastAtSymbol = textBeforeCursor.lastIndexOf('@');
-    
-    const beforeAt = inputEl.value.substring(0, lastAtSymbol + 1);
+    const query = textBeforeCursor.substring(lastAtSymbol + 1);
+    // The full suggestion (including @)
+    const fullSuggestion = '@' + availableTools.find(tool => tool.mention.startsWith(query))?.mention;
+    // Only append the missing part after what the user typed
+    const missingPart = fullSuggestion ? fullSuggestion.substring(1 + query.length) : currentSuggestion;
+    const beforeAt = inputEl.value.substring(0, cursorPosition);
     const afterCursor = inputEl.value.substring(cursorPosition);
-    
-    inputEl.value = beforeAt + currentSuggestion + ' ' + afterCursor;
-    inputEl.setSelectionRange(lastAtSymbol + 1 + currentSuggestion.length + 1, lastAtSymbol + 1 + currentSuggestion.length + 1);
-    
+    inputEl.value = beforeAt + missingPart + ' ' + afterCursor;
+    inputEl.setSelectionRange(cursorPosition + missingPart.length + 1, cursorPosition + missingPart.length + 1);
     hideSuggestion();
     inputEl.focus();
 }
