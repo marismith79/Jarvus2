@@ -16,38 +16,39 @@ logger = logging.getLogger(__name__)
 @workflow_bp.route('/workflows/available-tools', methods=['GET'])
 @login_required
 def get_available_tools():
-    """Get available tools for workflow creation"""
+    """Get available tools for workflow creation (only those the user has connected to, plus Web Browser as default)"""
     try:
-        # Ensure tools are discovered for the current user
+        from ..utils.tool_permissions import get_connected_services
         pipedream_tool_service.ensure_initialized(str(current_user.id))
-        
-        # Get all available apps from config
+        connected_services = get_connected_services(current_user.id)
+        logger.info(f"[DEBUG] Connected services for user {current_user.id}: {connected_services}")
         available_apps = []
+        
+        # Add Web Browser (scrapingant) as a special case
+        if 'scrapingant' in connected_services:
+            available_apps.append({
+                "id": "web_browser",
+                "name": "Web Browser",
+                "connected": True
+            })
+
+        # Add all other apps
         for app in ALL_PIPEDREAM_APPS:
             app_slug = app["slug"]
             app_name = app["name"]
-            
-            # Get tools for this app
-            app_tools = pipedream_tool_service.get_tools_by_app(app_slug)
-            
-            if app_tools:  # Only include apps that have tools
-                available_apps.append({
-                    "id": app_slug,
-                    "name": app_name,
-                    "tools": [
-                        {
-                            "name": tool.function.name,
-                            "description": tool.function.description
-                        }
-                        for tool in app_tools
-                    ]
-                })
-        
+            if app_slug == 'scrapingant':
+                continue  # already handled above
+            available_apps.append({
+                "id": app_slug,
+                "name": app_name,
+                "connected": connected_services.get(app_slug, False)
+            })
+
+        logger.info(f"[DEBUG] Available apps for user {current_user.id}: {available_apps}")
         return jsonify({
             'success': True,
             'available_apps': available_apps
         }), 200
-        
     except Exception as e:
         logger.error(f"Error getting available tools: {str(e)}", exc_info=True)
         return jsonify({'error': 'Failed to get available tools'}), 500
@@ -172,14 +173,18 @@ def delete_workflow(workflow_id):
 def execute_workflow(workflow_id):
     """Execute a workflow"""
     try:
+        logger.info(f"===============User {current_user.id} requested execution of workflow {workflow_id}====================")
         data = request.get_json() or {}
         agent_id = data.get('agent_id')  # Optional: use specific agent
         thread_id = data.get('thread_id')  # Optional: use specific thread
-        
+
+        # Only allow integer user IDs
+        user_id = current_user.id
+
         # Execute the workflow
         execution_result = workflow_execution_service.execute_workflow(
             workflow_id=workflow_id,
-            user_id=current_user.id,
+            user_id=user_id,
             agent_id=agent_id,
             thread_id=thread_id
         )

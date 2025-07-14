@@ -48,7 +48,7 @@ class AgentService:
     def __init__(self):
         self.llm_client = JarvusAIClient()
     
-    def get_agent(self, agent_id: int, user_id: int) -> History:
+    def get_agent(self, agent_id: int, user_id: str) -> History:
         """Get an agent with memory context"""
         agent = History.query.filter_by(id=agent_id, user_id=user_id).first_or_404()
         try:
@@ -61,7 +61,7 @@ class AgentService:
         """Get tools for an agent"""
         return agent.tools or []
 
-    def create_agent(self, user_id: int, name: str, tools: Optional[List[str]] = None, description: str = None) -> History:
+    def create_agent(self, user_id: str, name: str, tools: Optional[List[str]] = None, description: str = None) -> History:
         """Create a new agent with memory initialization"""
         if not name:
             abort(400, 'Agent name is required.')
@@ -91,7 +91,7 @@ class AgentService:
         logger.info(f"Created new agent {new_agent.id} with memory initialization")
         return new_agent
     
-    def delete_agent(self, agent_id: int, user_id: int) -> bool:
+    def delete_agent(self, agent_id: int, user_id: str) -> bool:
         """Delete an agent and all its associated data from the database."""
         agent = self.get_agent(agent_id, user_id)  # This will 404 if agent doesn't exist or doesn't belong to user
         try:
@@ -220,6 +220,361 @@ class AgentService:
         agent = self.get_agent(agent_id, user_id)  # Re-fetch from DB
         return final_assistant_message, memory_info
     
+    def execute_workflow(self, workflow, user_id: str, logger=None):
+        """
+        Execute a workflow definition step-by-step using agentic orchestration.
+        Args:
+            workflow: Workflow model instance (with goal, instructions, required_tools, etc.)
+            user_id: The user executing the workflow
+            logger: Optional logger
+        Returns:
+            dict: Workflow execution result, including status, outputs, and logs
+        """
+        if logger is None:
+            logger = logging.getLogger(__name__)
+        
+        # 1. Parse workflow definition
+        goal = workflow.goal
+        instructions = workflow.instructions
+        notes = workflow.notes
+        required_tools = workflow.required_tools or []
+        trigger_type = workflow.trigger_type or 'manual'
+        trigger_config = workflow.trigger_config or {}
+        
+        # 2. Decompose instructions into steps (use LLM or fallback to splitting by lines)
+        plan_steps = self._plan_task_with_llm(instructions, required_tools)
+        if not plan_steps:
+            # Fallback: treat each instruction line as a step with tool 'auto'
+            plan_steps = [
+                {'tool': 'auto', 'parameters': {'instruction': line.strip()}}
+                for line in instructions.split('\n') if line.strip()
+            ]
+        
+        logger.info(f"[Workflow] Decomposed into {len(plan_steps)} steps.")
+        
+        # 3. Execute each step, track state, handle retries/reflection
+        step_results = []
+        workflow_state = {}
+        for idx, step in enumerate(plan_steps):
+            tool_name = step.get('tool', 'auto')
+            parameters = step.get('parameters', {})
+            retries = 0
+            max_retries = 3
+            step_success = False
+            last_error = None
+            while retries < max_retries and not step_success:
+                try:
+                    logger.info(f"[Workflow] Step {idx+1}/{len(plan_steps)}: Executing tool '{tool_name}' with parameters {parameters}")
+                    # Use tool registry to execute the tool
+                    # (If tool_name is 'auto', use LLM to select tool)
+                    if tool_name == 'auto':
+                        # Use LLM to select tool based on instruction
+                        allowed_tools = required_tools
+                        selected_tools = self._select_tools_with_llm(parameters.get('instruction', ''), allowed_tools)
+                        tool_name = selected_tools[0] if selected_tools else None
+                        if not tool_name:
+                            raise Exception("No suitable tool found for step.")
+                    # Get tool metadata
+                    tool_meta = tool_registry.get_tool(tool_name)
+                    if not tool_meta:
+                        raise Exception(f"Tool '{tool_name}' not found in registry.")
+                    # Execute tool
+                    jwt_token = None  # Add JWT if needed for auth
+                    result = tool_registry.execute_tool(tool_name, parameters, jwt_token)
+                    step_results.append({
+                        'step': idx+1,
+                        'tool': tool_name,
+                        'parameters': parameters,
+                        'result': result,
+                        'success': True
+                    })
+                    workflow_state[f'step_{idx+1}'] = result
+                    step_success = True
+                except Exception as e:
+                    last_error = str(e)
+                    logger.error(f"[Workflow] Step {idx+1} failed: {last_error}")
+                    retries += 1
+                    if retries >= max_retries:
+                        step_results.append({
+                            'step': idx+1,
+                            'tool': tool_name,
+                            'parameters': parameters,
+                            'result': last_error,
+                            'success': False
+                        })
+        
+        # 4. Reflection: Optionally review results and retry failed steps (future extension)
+        # (For now, just log failures)
+        failed_steps = [r for r in step_results if not r['success']]
+        if failed_steps:
+            logger.warning(f"[Workflow] {len(failed_steps)} steps failed. See step_results for details.")
+        
+        # 5. Output results (e.g., return, write to sheet, send message)
+        # (For now, just return the results)
+        return {
+            'workflow_id': workflow.id,
+            'status': 'completed' if not failed_steps else 'partial_failure',
+            'step_results': step_results,
+            'final_state': workflow_state,
+            'failed_steps': failed_steps
+        }
+
+    def execute_comprehensive_workflow(self, workflow, user_id: str, logger=None, context_memory_id: str = None):
+        """
+        Execute a workflow using a comprehensive agentic architecture with full memory integration.
+        Args:
+            workflow: Workflow model instance
+            user_id: The user executing the workflow
+            logger: Optional logger
+            context_memory_id: Optional hierarchical memory context
+        Returns:
+            dict: Comprehensive workflow execution report
+        """
+        import networkx as nx
+        if logger is None:
+            logger = logging.getLogger(__name__)
+        
+        # 1. Retrieve relevant long-term memories for context
+        ltm_context = memory_service.get_context_for_conversation(
+            user_id=user_id,
+            current_message=workflow.goal + "\n" + workflow.instructions,
+            as_sections=True
+        )
+        logger.info(f"[Memory] Retrieved LTM context for workflow: {ltm_context}")
+        
+        # 2. Optionally retrieve hierarchical/contextual memory
+        hierarchical_context = None
+        if context_memory_id:
+            hierarchical_context = memory_service.get_context_influence(context_memory_id, user_id)
+            logger.info(f"[Memory] Retrieved hierarchical context: {hierarchical_context}")
+        
+        # 3. Parse workflow into DAG of steps (LLM-driven)
+        dag_steps = self._parse_workflow_to_dag(
+            workflow.instructions,
+            workflow.required_tools or [],
+            ltm_context=ltm_context,
+            hierarchical_context=hierarchical_context
+        )
+        if not dag_steps:
+            dag_steps = [
+                {'id': f'step_{i+1}', 'tool': 'auto', 'parameters': {'instruction': line.strip()}, 'deps': []}
+                for i, line in enumerate(workflow.instructions.split('\n')) if line.strip()
+            ]
+        
+        # Build DAG
+        G = nx.DiGraph()
+        for step in dag_steps:
+            G.add_node(step['id'], **step)
+            for dep in step.get('deps', []):
+                G.add_edge(dep, step['id'])
+        
+        # 4. Initialize memory and logs
+        workflow_memory = {}
+        step_results = {}
+        logs = []
+        failed_steps = []
+        thread_id = f"workflow_{workflow.id}_{user_id}_{int(datetime.utcnow().timestamp())}"
+        agent_id = None  # Optionally associate with an agent
+        
+        # 5. Execute steps in topological order
+        for step_id in nx.topological_sort(G):
+            step = G.nodes[step_id]
+            tool_name = step.get('tool', 'auto')
+            parameters = step.get('parameters', {}).copy()
+            # Inject outputs from dependencies if needed
+            for dep in step.get('deps', []):
+                dep_result = step_results.get(dep, {})
+                parameters[f'dep_{dep}'] = dep_result
+            retries = 0
+            max_retries = 3
+            step_success = False
+            last_error = None
+            while retries < max_retries and not step_success:
+                try:
+                    logs.append(f"[Workflow] Step {step_id}: Executing tool '{tool_name}' with parameters {parameters}")
+                    if tool_name == 'auto':
+                        allowed_tools = workflow.required_tools or []
+                        selected_tools = self._select_tools_with_llm(parameters.get('instruction', ''), allowed_tools)
+                        tool_name = selected_tools[0] if selected_tools else None
+                        if not tool_name:
+                            raise Exception("No suitable tool found for step.")
+                    tool_meta = tool_registry.get_tool(tool_name)
+                    if not tool_meta:
+                        raise Exception(f"Tool '{tool_name}' not found in registry.")
+                    jwt_token = None
+                    result = tool_registry.execute_tool(tool_name, parameters, jwt_token)
+                    # Reflection: Use LLM to review result
+                    reflection = self._reflect_on_step(step, result, workflow_memory, logger, ltm_context=ltm_context)
+                    logs.append(f"[Workflow] Step {step_id} reflection: {reflection}")
+                    if reflection.get('retry'):
+                        retries += 1
+                        logs.append(f"[Workflow] Step {step_id} reflection requested retry ({retries}/{max_retries})")
+                        continue
+                    step_results[step_id] = result
+                    workflow_memory[step_id] = result
+                    step_success = True
+                    # --- Short-term memory: checkpoint after each step ---
+                    memory_service.save_checkpoint(
+                        thread_id=thread_id,
+                        user_id=user_id,
+                        agent_id=agent_id or 0,
+                        state_data={
+                            'step_id': step_id,
+                            'parameters': parameters,
+                            'result': result,
+                            'workflow_memory': workflow_memory.copy(),
+                            'logs': logs.copy()
+                        }
+                    )
+                except Exception as e:
+                    last_error = str(e)
+                    logs.append(f"[Workflow] Step {step_id} failed: {last_error}")
+                    retries += 1
+                    if retries >= max_retries:
+                        failed_steps.append({
+                            'step': step_id,
+                            'tool': tool_name,
+                            'parameters': parameters,
+                            'result': last_error,
+                            'success': False
+                        })
+        
+        # 6. Final reflection (LLM-driven)
+        final_reflection = self._final_reflection(
+            workflow, step_results, workflow_memory, logs, logger, ltm_context=ltm_context
+        )
+        logs.append(f"[Workflow] Final reflection: {final_reflection}")
+        
+        # 7. Long-term memory: extract and store memories from workflow run
+        try:
+            # Compose conversation/messages for memory extraction
+            conversation_messages = [
+                {'role': 'system', 'content': workflow.goal},
+                {'role': 'system', 'content': workflow.instructions}
+            ]
+            for step_id, result in step_results.items():
+                conversation_messages.append({'role': 'assistant', 'content': f"Step {step_id} result: {result}"})
+            # Store episodic, semantic, and procedural memories
+            stored_memories = memory_service.extract_and_store_memories(
+                user_id=user_id,
+                conversation_messages=conversation_messages,
+                agent_id=agent_id,
+                tool_call=None,  # Optionally pass tool call info
+                feedback=final_reflection.get('notes') if isinstance(final_reflection, dict) else str(final_reflection),
+                user_goal=workflow.goal
+            )
+            logs.append(f"[Memory] Stored memories: {[m.memory_id for m in stored_memories if hasattr(m, 'memory_id')]}")
+        except Exception as e:
+            logs.append(f"[Memory] Failed to store long-term memories: {str(e)}")
+        
+        # 8. Output results
+        return {
+            'workflow_id': workflow.id,
+            'status': 'completed' if not failed_steps else 'partial_failure',
+            'step_results': step_results,
+            'memory': workflow_memory,
+            'logs': logs,
+            'failed_steps': failed_steps,
+            'final_reflection': final_reflection
+        }
+
+    def _parse_workflow_to_dag(self, instructions, required_tools, ltm_context=None, hierarchical_context=None):
+        """
+        Use LLM to parse instructions into a list of steps with dependencies (DAG).
+        Each step: {'id': str, 'tool': str, 'parameters': dict, 'deps': list[str]}
+        Incorporate LTM and hierarchical context for better planning.
+        """
+        # Use LLM to parse instructions into a DAG
+        planning_prompt = (
+            "You are an expert workflow planner. Given the following workflow instructions, "
+            "decompose them into a list of steps with dependencies. "
+            "Each step should have: 'id', 'tool', 'parameters', and 'deps' (list of step ids it depends on).\n"
+            f"Instructions:\n{instructions}\n"
+            f"Relevant facts/context:\n{json.dumps(ltm_context)}\n"
+            f"Hierarchical context:\n{json.dumps(hierarchical_context) if hierarchical_context else 'None'}\n"
+            "Respond with a JSON list of steps."
+        )
+        planning_messages = [
+            {"role": "system", "content": planning_prompt}
+        ]
+        try:
+            response = self.llm_client.create_chat_completion(planning_messages, logger=logger)
+            content = response['choices'][0]['message']['content']
+            import json as _json
+            steps = _json.loads(content)
+            # Validate structure
+            filtered_steps = []
+            for step in steps:
+                if all(k in step for k in ('id', 'tool', 'parameters', 'deps')):
+                    filtered_steps.append(step)
+            return filtered_steps
+        except Exception as e:
+            if logger:
+                logger.warning(f"LLM DAG parsing failed: {str(e)}. Falling back to sequential steps.")
+            return []
+
+    def _reflect_on_step(self, step, result, memory, logger, ltm_context=None):
+        """
+        Use LLM to review the result of a step and decide whether to retry, continue, or escalate.
+        Returns: dict, e.g., {'retry': False, 'notes': 'Looks good.'}
+        """
+        reflection_prompt = (
+            "You are an expert agentic workflow critic. Review the following step, its result, and context. "
+            "If the result is incomplete, incorrect, or unsatisfactory, suggest a retry.\n"
+            f"Step: {json.dumps(step)}\n"
+            f"Result: {json.dumps(result)}\n"
+            f"Workflow memory: {json.dumps(memory)}\n"
+            f"Relevant facts/context: {json.dumps(ltm_context)}\n"
+            "Respond with a JSON object: {'retry': true/false, 'notes': '...'}"
+        )
+        reflection_messages = [
+            {"role": "system", "content": reflection_prompt}
+        ]
+        try:
+            response = self.llm_client.create_chat_completion(reflection_messages, logger=logger)
+            content = response['choices'][0]['message']['content']
+            import json as _json
+            reflection = _json.loads(content)
+            if 'retry' in reflection and 'notes' in reflection:
+                return reflection
+            return {'retry': False, 'notes': str(reflection)}
+        except Exception as e:
+            if logger:
+                logger.warning(f"LLM reflection failed: {str(e)}. Defaulting to continue.")
+            return {'retry': False, 'notes': 'Step completed.'}
+
+    def _final_reflection(self, workflow, step_results, memory, logs, logger, ltm_context=None):
+        """
+        Use LLM to review the entire workflow execution for improvement or summary.
+        Returns: dict or str
+        """
+        final_prompt = (
+            "You are an expert agentic workflow reviewer. Summarize the workflow execution, "
+            "highlight successes, failures, and suggest improvements.\n"
+            f"Goal: {workflow.goal}\n"
+            f"Instructions: {workflow.instructions}\n"
+            f"Step results: {json.dumps(step_results)}\n"
+            f"Workflow memory: {json.dumps(memory)}\n"
+            f"Logs: {json.dumps(logs[-10:])}\n"
+            f"Relevant facts/context: {json.dumps(ltm_context)}\n"
+            "Respond with a JSON object: {'summary': '...', 'notes': '...'}"
+        )
+        final_messages = [
+            {"role": "system", "content": final_prompt}
+        ]
+        try:
+            response = self.llm_client.create_chat_completion(final_messages, logger=logger)
+            content = response['choices'][0]['message']['content']
+            import json as _json
+            summary = _json.loads(content)
+            if 'summary' in summary:
+                return summary
+            return {'summary': str(summary)}
+        except Exception as e:
+            if logger:
+                logger.warning(f"LLM final reflection failed: {str(e)}. Returning basic summary.")
+            return {'summary': 'Workflow execution complete.'}
+
     def get_agent_interaction_history(self, agent: History):
         interactions = InteractionHistory.query.filter_by(
             history_id=agent.id,
@@ -231,7 +586,7 @@ class AgentService:
             history.append({'role': 'assistant', 'content': interaction.assistant_message})
         return history
 
-    def _initialize_agent_memory(self, user_id: int, agent_id: int):
+    def _initialize_agent_memory(self, user_id: str, agent_id: int):
         """Initialize memory structures for a new agent"""
         try:
             # Create initial memory entry for the agent
@@ -253,7 +608,7 @@ class AgentService:
     def _get_context_for_message(
         self,
         agent_id: int,
-        user_id: int,
+        user_id: str,
         user_message: str,
         thread_id: Optional[str],
         web_search_enabled: bool,
@@ -484,7 +839,7 @@ Respond with ONLY "NEW" or "CONTINUE".
         
         return False
 
-    def _get_or_create_thread_id(self, agent_id: int, user_id: int, user_message: str, existing_thread_id: str = None) -> str:
+    def _get_or_create_thread_id(self, agent_id: int, user_id: str, user_message: str, existing_thread_id: str = None) -> str:
         """
         Smart thread ID management:
         - Use existing thread_id if provided
@@ -836,7 +1191,7 @@ Respond with ONLY "NEW" or "CONTINUE".
         except Exception as e:
             logger.error(f"Failed to extract and store memories: {str(e)}")
 
-    def _cleanup_old_working_memory(self, thread_id: str, user_id: int, max_checkpoints: int = None):
+    def _cleanup_old_working_memory(self, thread_id: str, user_id: str, max_checkpoints: int = None):
         """
         Clean up old working memory checkpoints to prevent indefinite growth.
         Keeps the most recent checkpoints and removes older ones.

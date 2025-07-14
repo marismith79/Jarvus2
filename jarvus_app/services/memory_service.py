@@ -42,7 +42,7 @@ class MemoryService:
     def save_checkpoint(
         self, 
         thread_id: str, 
-        user_id: int, 
+        user_id: str, 
         agent_id: int, 
         state_data: Dict[str, Any],
         checkpoint_id: Optional[str] = None,
@@ -79,17 +79,17 @@ class MemoryService:
             logger.error(f"Failed to save checkpoint: {str(e)}")
             raise
     
-    def get_latest_state(self, thread_id: str, user_id: int) -> Optional[Dict[str, Any]]:
+    def get_latest_state(self, thread_id: str, user_id: str) -> Optional[Dict[str, Any]]:
         """Get the latest state for a thread"""
         checkpoint = ShortTermMemory.get_latest_checkpoint(thread_id, user_id)
         return checkpoint.state_data if checkpoint else None
     
-    def get_state_history(self, thread_id: str, user_id: int) -> List[Dict[str, Any]]:
+    def get_state_history(self, thread_id: str, user_id: str) -> List[Dict[str, Any]]:
         """Get the complete state history for a thread"""
         checkpoints = ShortTermMemory.get_checkpoint_history(thread_id, user_id)
         return [checkpoint.to_dict() for checkpoint in checkpoints]
     
-    def delete_thread(self, thread_id: str, user_id: int) -> bool:
+    def delete_thread(self, thread_id: str, user_id: str) -> bool:
         """Delete all checkpoints for a thread"""
         try:
             checkpoints = ShortTermMemory.query.filter_by(
@@ -113,7 +113,7 @@ class MemoryService:
     
     def store_memory(
         self, 
-        user_id: int, 
+        user_id: str, 
         namespace: str, 
         memory_data: Dict[str, Any], 
         memory_type: str = 'fact',
@@ -178,7 +178,7 @@ class MemoryService:
     
     def store_episodic_memory(
         self, 
-        user_id: int, 
+        user_id: str, 
         episode_type: str, 
         episode_data: Dict[str, Any],
         importance_score: float = 1.0
@@ -200,7 +200,7 @@ class MemoryService:
     
     def store_semantic_memory(
         self, 
-        user_id: int, 
+        user_id: str, 
         fact_type: str, 
         fact_data: Dict[str, Any],
         importance_score: float = 1.0
@@ -221,7 +221,7 @@ class MemoryService:
     
     def store_procedural_memory(
         self, 
-        user_id: int, 
+        user_id: str, 
         procedure_name: str, 
         procedure_data: Dict[str, Any],
         importance_score: float = 1.0
@@ -242,7 +242,7 @@ class MemoryService:
     
     def search_memories(
         self, 
-        user_id: int, 
+        user_id: str, 
         namespace: str, 
         query: Optional[str] = None, 
         limit: int = 10,
@@ -289,7 +289,7 @@ class MemoryService:
             # Fallback to SQL search
             return LongTermMemory.search_memories(user_id, namespace, query, limit)
     
-    def get_memory(self, user_id: int, namespace: str, memory_id: str) -> Optional[LongTermMemory]:
+    def get_memory(self, user_id: str, namespace: str, memory_id: str) -> Optional[LongTermMemory]:
         """Get a specific memory by ID"""
         try:
             memory = LongTermMemory.get_memory(user_id, namespace, memory_id)
@@ -300,7 +300,7 @@ class MemoryService:
             logger.error(f"Failed to get memory {memory_id}: {str(e)}")
             return None
     
-    def delete_memory(self, user_id: int, namespace: str, memory_id: str) -> bool:
+    def delete_memory(self, user_id: str, namespace: str, memory_id: str) -> bool:
         """Delete a specific memory"""
         try:
             memory = LongTermMemory.get_memory(user_id, namespace, memory_id)
@@ -319,7 +319,7 @@ class MemoryService:
     
     def create_hierarchical_context(
         self,
-        user_id: int,
+        user_id: str,
         name: str,
         description: str,
         context_data: Dict[str, Any],
@@ -387,7 +387,7 @@ class MemoryService:
             logger.error(f"Failed to create hierarchical context: {str(e)}")
             raise
     
-    def get_active_contexts(self, user_id: int) -> List[HierarchicalMemory]:
+    def get_active_contexts(self, user_id: str) -> List[HierarchicalMemory]:
         """Get all active contexts for a user"""
         try:
             contexts = HierarchicalMemory.get_active_contexts(user_id)
@@ -396,7 +396,7 @@ class MemoryService:
             logger.error(f"Failed to get active contexts: {str(e)}")
             return []
     
-    def get_context_influence(self, memory_id: str, user_id: int) -> Dict[str, Any]:
+    def get_context_influence(self, memory_id: str, user_id: str) -> Dict[str, Any]:
         """Get the combined influence context from a memory and its ancestors"""
         try:
             memory = HierarchicalMemory.query.filter_by(
@@ -412,7 +412,7 @@ class MemoryService:
             logger.error(f"Failed to get context influence: {str(e)}")
             return {}
     
-    def get_root_contexts(self, user_id: int) -> List[HierarchicalMemory]:
+    def get_root_contexts(self, user_id: str) -> List[HierarchicalMemory]:
         """Get all root-level contexts for a user"""
         try:
             return HierarchicalMemory.get_root_contexts(user_id)
@@ -420,7 +420,7 @@ class MemoryService:
             logger.error(f"Failed to get root contexts: {str(e)}")
             return []
     
-    def get_context_children(self, memory_id: str, user_id: int) -> List[HierarchicalMemory]:
+    def get_context_children(self, memory_id: str, user_id: str) -> List[HierarchicalMemory]:
         """Get all children of a context"""
         try:
             return HierarchicalMemory.get_children(memory_id, user_id)
@@ -430,7 +430,7 @@ class MemoryService:
     
     def update_context(
         self,
-        user_id: int,
+        user_id: str,
         memory_id: str,
         context_data: Optional[Dict[str, Any]] = None,
         influence_rules: Optional[Dict[str, Any]] = None,
@@ -467,7 +467,7 @@ class MemoryService:
             logger.error(f"Failed to update context: {str(e)}")
             return None
     
-    def delete_context(self, user_id: int, memory_id: str) -> bool:
+    def delete_context(self, user_id: str, memory_id: str) -> bool:
         """Delete a hierarchical context"""
         try:
             context = HierarchicalMemory.query.filter_by(
@@ -496,7 +496,7 @@ class MemoryService:
     
     def get_contextualized_memories(
         self, 
-        user_id: int, 
+        user_id: str, 
         namespace: str, 
         query: Optional[str] = None,
         context_memory_id: Optional[str] = None,
@@ -518,7 +518,7 @@ class MemoryService:
             logger.error(f"Failed to get contextualized memories: {str(e)}")
             return [], {}
     
-    def create_vacation_context_example(self, user_id: int) -> HierarchicalMemory:
+    def create_vacation_context_example(self, user_id: str) -> HierarchicalMemory:
         """Example: Create a vacation context that influences all other decisions"""
         vacation_context = self.create_hierarchical_context(
             user_id=user_id,
@@ -575,7 +575,7 @@ class MemoryService:
     
     def get_combined_context_for_decision(
         self, 
-        user_id: int, 
+        user_id: str, 
         decision_type: str
     ) -> Dict[str, Any]:
         """Get all relevant contexts for a specific decision type"""
@@ -605,7 +605,7 @@ class MemoryService:
 
     # --- Memory Editing & Improvement System ---
     
-    def find_mergeable_memories(self, user_id: int, namespace: str, similarity_threshold: float = 0.85) -> List[List[LongTermMemory]]:
+    def find_mergeable_memories(self, user_id: str, namespace: str, similarity_threshold: float = 0.85) -> List[List[LongTermMemory]]:
         """Find memories that can be merged based on similarity"""
         try:
             memories = self.search_memories(user_id, namespace, limit=100)
@@ -627,7 +627,7 @@ class MemoryService:
             logger.error(f"Failed to find mergeable memories: {str(e)}")
             return []
     
-    def merge_memories(self, user_id: int, memory_ids: List[str], merge_type: str = 'episodic') -> Optional[LongTermMemory]:
+    def merge_memories(self, user_id: str, memory_ids: List[str], merge_type: str = 'episodic') -> Optional[LongTermMemory]:
         """Merge multiple memories into a single, improved memory"""
         try:
             memories = []
@@ -672,7 +672,7 @@ class MemoryService:
             logger.error(f"Failed to merge memories: {str(e)}")
             return None
     
-    def improve_memory(self, user_id: int, memory_id: str, improvement_type: str = 'auto') -> Optional[LongTermMemory]:
+    def improve_memory(self, user_id: str, memory_id: str, improvement_type: str = 'auto') -> Optional[LongTermMemory]:
         """Improve a specific memory with enhanced content"""
         try:
             memory = self.get_memory(user_id, 'episodes', memory_id)
@@ -702,7 +702,7 @@ class MemoryService:
             logger.error(f"Failed to improve memory: {str(e)}")
             return None
     
-    def assess_memory_quality(self, user_id: int, memory_id: str) -> Dict[str, float]:
+    def assess_memory_quality(self, user_id: str, memory_id: str) -> Dict[str, float]:
         """Assess the quality of a memory across multiple dimensions"""
         try:
             memory = self.get_memory(user_id, 'episodes', memory_id)
@@ -723,7 +723,7 @@ class MemoryService:
             logger.error(f"Failed to assess memory quality: {str(e)}")
             return {}
     
-    def detect_memory_conflicts(self, user_id: int, namespace: str) -> List[Dict[str, Any]]:
+    def detect_memory_conflicts(self, user_id: str, namespace: str) -> List[Dict[str, Any]]:
         """Detect conflicts between memories"""
         try:
             memories = self.search_memories(user_id, namespace, limit=100)
@@ -747,7 +747,7 @@ class MemoryService:
             logger.error(f"Failed to detect memory conflicts: {str(e)}")
             return []
     
-    def resolve_memory_conflicts(self, user_id: int, conflicts: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def resolve_memory_conflicts(self, user_id: str, conflicts: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Resolve memory conflicts intelligently"""
         try:
             resolutions = []
@@ -766,7 +766,7 @@ class MemoryService:
             logger.error(f"Failed to resolve memory conflicts: {str(e)}")
             return []
     
-    def get_memory_evolution(self, user_id: int, memory_id: str) -> List[Dict[str, Any]]:
+    def get_memory_evolution(self, user_id: str, memory_id: str) -> List[Dict[str, Any]]:
         """Get the evolution history of a memory"""
         try:
             # This would require a separate versioning table in a full implementation
@@ -1239,7 +1239,7 @@ class MemoryService:
     def search_hierarchical_contexts_vector(
         self, 
         query: str, 
-        user_id: int, 
+        user_id: str, 
         n_results: int = 10,
         similarity_threshold: float = 0.7
     ) -> List[Dict[str, Any]]:
@@ -1259,7 +1259,7 @@ class MemoryService:
     def efficient_semantic_search(
         self, 
         query: str, 
-        user_id: int, 
+        user_id: str, 
         namespace: str, 
         n_results: int = 10,
         similarity_threshold: float = 0.7
@@ -1290,7 +1290,7 @@ class MemoryService:
     
     def update_memory_content(
         self, 
-        user_id: int, 
+        user_id: str, 
         namespace: str, 
         memory_id: str, 
         new_content: str
@@ -1323,7 +1323,7 @@ class MemoryService:
     
     def delete_memory_with_vector(
         self, 
-        user_id: int, 
+        user_id: str, 
         namespace: str, 
         memory_id: str
     ) -> bool:
@@ -1347,7 +1347,7 @@ class MemoryService:
     
     def delete_hierarchical_context_with_vector(
         self, 
-        user_id: int, 
+        user_id: str, 
         memory_id: str
     ) -> bool:
         """Delete hierarchical context from both SQL and vector databases"""
@@ -1407,7 +1407,7 @@ On a scale from 1 (not important) to 5 (very important), how important is this m
 
     def extract_and_store_memories(
         self,
-        user_id: int,
+        user_id: str,
         conversation_messages: list,
         agent_id: int = None,
         tool_call: dict = None,
@@ -1529,7 +1529,7 @@ On a scale from 1 (not important) to 5 (very important), how important is this m
 
     def get_context_for_conversation(
         self,
-        user_id: int,
+        user_id: str,
         thread_id: str = None,
         current_message: str = None,
         max_memories: int = 5,
@@ -1586,7 +1586,7 @@ On a scale from 1 (not important) to 5 (very important), how important is this m
 class MemoryConfig:
     """Configuration for memory management"""
     
-    def __init__(self, thread_id: str, user_id: int, agent_id: int):
+    def __init__(self, thread_id: str, user_id: str, agent_id: int):
         self.thread_id = thread_id
         self.user_id = user_id
         self.agent_id = agent_id

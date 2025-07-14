@@ -48,22 +48,22 @@
                 </div>
                 <div class="workflow-content">
                     <div class="workflow-section active" id="all-workflows">
-                        <div id="workflow-list">
+                        <div id="all-workflows-workflow-list">
                             <!-- Workflows will be loaded dynamically -->
                         </div>
                     </div>
                     <div class="workflow-section" id="running-workflows">
-                        <div id="running-workflow-list">
+                        <div id="running-workflows-workflow-list">
                             <!-- Running workflows will be loaded dynamically -->
                         </div>
                     </div>
                     <div class="workflow-section" id="requires-review-workflows">
-                        <div id="review-workflow-list">
+                        <div id="requires-review-workflows-workflow-list">
                             <!-- Workflows requiring review will be loaded dynamically -->
                         </div>
                     </div>
                     <div class="workflow-section" id="recently-ran-workflows">
-                        <div id="recent-workflow-list">
+                        <div id="recently-ran-workflows-workflow-list">
                             <!-- Recently executed workflows will be loaded dynamically -->
                         </div>
                     </div>
@@ -240,24 +240,8 @@
             </form>
         </div>
     </section>
-</div>
-{% endblock %}
 
-{% block extra_js %}
-<script>
-    window.mostRecentAgentId = {{ most_recent_agent.id if most_recent_agent else 'null' }};
-    window.mostRecentAgentName = {{ most_recent_agent.name|tojson if most_recent_agent else 'null' }};
-    // Pass connection status to JavaScript
-    {% for tool in tool_list -%}
-    window.{{ tool.slug }}Connected = {{ 'true' if tool.connected else 'false' }};
-    {% endfor %}
-    window.toolSlugs = {{ tool_list | map(attribute='slug') | list | tojson }};
-</script>
-<script src="{{ url_for('static', filename='js/marked.min.js') }}"></script>
-<script src="{{ url_for('static', filename='js/chatbot.js') }}?v=4"></script>
-{% endblock %}
-
-    <!-- Workflow Execution Details Modal -->
+    <!-- Workflow Execution Details Modal (moved inside .chatbot-layout) -->
     <div id="workflow-execution-modal" class="modal" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">
@@ -268,7 +252,6 @@
                 <div id="execution-details">
                     <!-- Execution details will be loaded here -->
                 </div>
-                
                 <!-- Progress Steps Section -->
                 <div id="progress-steps-section" style="display: none;">
                     <h3>Execution Progress</h3>
@@ -276,7 +259,6 @@
                         <!-- Progress steps will be loaded here -->
                     </div>
                 </div>
-                
                 <!-- Feedback Section -->
                 <div id="feedback-section" style="display: none;">
                     <h3>Feedback</h3>
@@ -298,8 +280,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Modal Styles -->
     <style>
         .modal {
             position: fixed;
@@ -313,31 +293,33 @@
             align-items: center;
             justify-content: center;
         }
-        
         .modal-content {
-            background-color: white;
-            border-radius: 8px;
-            width: 90%;
-            max-width: 800px;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 32px rgba(0,0,0,0.18);
+            padding: 0;
+            max-width: 600px;
+            width: 100%;
             max-height: 90vh;
             overflow-y: auto;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
         }
-        
         .modal-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 20px;
             border-bottom: 1px solid #e5e7eb;
+            background: #f9fafb;
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
         }
-        
         .modal-header h2 {
             margin: 0;
             font-size: 1.5rem;
             color: #1f2937;
         }
-        
         .close-modal-btn {
             background: none;
             border: none;
@@ -352,16 +334,13 @@
             justify-content: center;
             border-radius: 4px;
         }
-        
         .close-modal-btn:hover {
             background-color: #f3f4f6;
             color: #374151;
         }
-        
         .modal-body {
             padding: 20px;
         }
-        
         .execution-status {
             display: inline-block;
             padding: 4px 12px;
@@ -370,58 +349,48 @@
             font-weight: 500;
             margin-bottom: 16px;
         }
-        
         .execution-status.running {
             background-color: #dbeafe;
             color: #1d4ed8;
         }
-        
         .execution-status.completed {
             background-color: #d1fae5;
             color: #065f46;
         }
-        
         .execution-status.failed {
             background-color: #fee2e2;
             color: #dc2626;
         }
-        
         .execution-status.cancelled {
             background-color: #f3f4f6;
             color: #6b7280;
         }
-        
         .execution-info {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 16px;
             margin-bottom: 24px;
         }
-        
         .execution-info-item {
             padding: 12px;
             background-color: #f9fafb;
             border-radius: 6px;
         }
-        
         .execution-info-label {
             font-size: 0.875rem;
             color: #6b7280;
             margin-bottom: 4px;
         }
-        
         .execution-info-value {
             font-weight: 500;
             color: #1f2937;
         }
-        
         .progress-step {
             border: 1px solid #e5e7eb;
             border-radius: 8px;
             margin-bottom: 12px;
             overflow: hidden;
         }
-        
         .progress-step-header {
             background-color: #f9fafb;
             padding: 12px 16px;
@@ -430,50 +399,41 @@
             align-items: center;
             border-bottom: 1px solid #e5e7eb;
         }
-        
         .progress-step-number {
             font-weight: 600;
             color: #374151;
         }
-        
         .progress-step-action {
             color: #6b7280;
             font-size: 0.875rem;
         }
-        
         .progress-step-status {
             padding: 2px 8px;
             border-radius: 12px;
             font-size: 0.75rem;
             font-weight: 500;
         }
-        
         .progress-step-status.success {
             background-color: #d1fae5;
             color: #065f46;
         }
-        
         .progress-step-status.error {
             background-color: #fee2e2;
             color: #dc2626;
         }
-        
         .progress-step-content {
             padding: 16px;
         }
-        
         .progress-step-input,
         .progress-step-output {
             margin-bottom: 12px;
         }
-        
         .progress-step-label {
             font-size: 0.875rem;
             font-weight: 500;
             color: #374151;
             margin-bottom: 4px;
         }
-        
         .progress-step-text {
             background-color: #f9fafb;
             padding: 8px 12px;
@@ -484,13 +444,11 @@
             max-height: 200px;
             overflow-y: auto;
         }
-        
         .feedback-actions {
             display: flex;
             gap: 12px;
             margin-top: 16px;
         }
-        
         .btn {
             padding: 8px 16px;
             border-radius: 6px;
@@ -500,41 +458,33 @@
             border: none;
             transition: all 0.2s;
         }
-        
         .btn-success {
             background-color: #10b981;
             color: white;
         }
-        
         .btn-success:hover {
             background-color: #059669;
         }
-        
         .btn-warning {
             background-color: #f59e0b;
             color: white;
         }
-        
         .btn-warning:hover {
             background-color: #d97706;
         }
-        
         .btn-secondary {
             background-color: #6b7280;
             color: white;
         }
-        
         .btn-secondary:hover {
             background-color: #4b5563;
         }
-        
         .current-feedback {
             background-color: #f9fafb;
             padding: 16px;
             border-radius: 6px;
             margin-bottom: 16px;
         }
-        
         .feedback-status {
             display: inline-block;
             padding: 2px 8px;
@@ -543,22 +493,18 @@
             font-weight: 500;
             margin-bottom: 8px;
         }
-        
         .feedback-status.accepted {
             background-color: #d1fae5;
             color: #065f46;
         }
-        
         .feedback-status.rejected {
             background-color: #fee2e2;
             color: #dc2626;
         }
-        
         .feedback-status.pending {
             background-color: #fef3c7;
             color: #92400e;
         }
-        
         .execution-item {
             border: 1px solid #e5e7eb;
             border-radius: 6px;
@@ -566,48 +512,56 @@
             cursor: pointer;
             transition: background-color 0.2s;
         }
-        
         .execution-item:hover {
             background-color: #f9fafb;
         }
-        
         .execution-item-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 12px 16px;
         }
-        
         .execution-item-title {
             font-weight: 500;
             color: #374151;
         }
-        
         .execution-item-status {
             padding: 2px 8px;
             border-radius: 12px;
             font-size: 0.75rem;
             font-weight: 500;
         }
-        
         .execution-item-status.running {
             background-color: #dbeafe;
             color: #1d4ed8;
         }
-        
         .execution-item-status.completed {
             background-color: #d1fae5;
             color: #065f46;
         }
-        
         .execution-item-status.failed {
             background-color: #fee2e2;
             color: #dc2626;
         }
-        
         .execution-item-time {
             font-size: 0.875rem;
             color: #6b7280;
         }
     </style>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script type="text/javascript">
+    window.mostRecentAgentId = {{ most_recent_agent.id if most_recent_agent else 'null' }};
+    window.mostRecentAgentName = {{ most_recent_agent.name|tojson if most_recent_agent else 'null' }};
+    // Pass connection status to JavaScript
+    {% for tool in tool_list -%}
+    window.{{ tool.slug }}Connected = {{ 'true' if tool.connected else 'false' }};
+    {% endfor %}
+    window.toolSlugs = {{ tool_list | map(attribute='slug') | list | tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/marked.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/chatbot.js') }}?v=4"></script>
+{% endblock %}
 

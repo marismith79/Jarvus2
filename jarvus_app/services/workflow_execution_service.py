@@ -135,7 +135,7 @@ class WorkflowExecutionService:
             
             # Create or get agent for execution
             if agent_id:
-                agent = self.agent_service.get_agent(agent_id, int(user_id))
+                agent = self.agent_service.get_agent(agent_id, user_id)
             else:
                 # Create a temporary agent for workflow execution
                 agent = self._create_workflow_agent(workflow, user_id)
@@ -172,7 +172,7 @@ class WorkflowExecutionService:
         
         # Create agent with the specified tools for workflow execution
         agent = self.agent_service.create_agent(
-            user_id=int(user_id),
+            user_id=user_id,
             name=agent_name,
             tools=required_tools,
             description=agent_description
@@ -186,12 +186,21 @@ class WorkflowExecutionService:
         agent: History, 
         thread_id: Optional[str]
     ) -> List[Dict[str, Any]]:
-        """Execute the workflow steps using the agent"""
+        """Execute the workflow steps using the agent, step by step"""
         workflow = execution.workflow
         results = []
         
-        # Create the workflow execution prompt
-        workflow_prompt = self._create_workflow_prompt(workflow)
+        # Decompose instructions into steps (use agent_service LLM planner or fallback)
+        plan_steps = self.agent_service._plan_task_with_llm(
+            workflow.instructions, workflow.required_tools or []
+        )
+        if not plan_steps:
+            # Fallback: treat each instruction line as a step with tool 'auto'
+            plan_steps = [
+                {'tool': 'auto', 'parameters': {'instruction': line.strip()}}
+                for line in workflow.instructions.split('\n') if line.strip()
+            ]
+        execution.total_steps = len(plan_steps)
         
         # Add initial progress step
         execution.add_progress_step(
@@ -202,68 +211,114 @@ class WorkflowExecutionService:
             status="success"
         )
         
-        # Execute the workflow as a single task
-        try:
-            # Add progress step for agent processing
-            execution.add_progress_step(
-                step_number=2,
-                action="agent_processing",
-                input_data=workflow_prompt,
-                output_data="Processing workflow instructions...",
-                status="success"
-            )
-            
-            # Use the agent service to process the workflow
-            final_response, memory_info = self.agent_service.process_message(
-                agent_id=agent.id,
-                user_id=int(execution.user_id),
-                user_message=workflow_prompt,
-                thread_id=thread_id,
-                tool_choice="auto",
-                web_search_enabled=True,
-                current_task=None,
-                logger=logger
-            )
-            
-            # Add progress step for completion
-            execution.add_progress_step(
-                step_number=3,
-                action="workflow_completed",
-                input_data="Final processing",
-                output_data=final_response,
-                status="success"
-            )
-            
-            # Record the result
+        # Step-by-step execution
+        for idx, step in enumerate(plan_steps):
+            step_num = idx + 1
+            instruction = step['parameters'].get('instruction') if isinstance(step.get('parameters'), dict) else str(step.get('parameters'))
+            step_prompt = f"Step {step_num}: {instruction}\nPlease execute this step."
+            retries = 0
+            max_retries = 3
+            step_success = False
+            last_response = None
+            last_memory_info = None
+            last_reflection = None
+            while retries < max_retries and not step_success:
+                try:
+                    logger.info(f"[Workflow] Executing step {step_num}: {instruction} (Attempt {retries+1}/{max_retries})")
+                    execution.add_progress_step(
+                        step_number=step_num,
+                        action=f"step_{step_num}_execution",
+                        input_data=step_prompt,
+                        output_data=f"Executing step {step_num}...",
+                        status="running"
+                    )
+                    # Call the agent to execute this step
+                    response, memory_info = self.agent_service.process_message(
+                        agent_id=agent.id,
+                        user_id=execution.user_id,
+                        user_message=step_prompt,
+                        thread_id=thread_id,
+                        tool_choice="auto",
+                        web_search_enabled=True,
+                        current_task=None,
+                        logger=logger
+                    )
+                    last_response = response
+                    last_memory_info = memory_info
+                    # LLM-based reflection/validation
+                    reflection_prompt = (
+                        "You are an expert workflow validator. "
+                        "Given the following step instruction and the agent's response, "
+                        "determine if the step was completed successfully. "
+                        "If not, suggest what to do next (retry, adapt, escalate, or skip). "
+                        "Respond in JSON: {\"success\": true/false, \"reason\": \"...\", \"retry\": true/false, \"suggestion\": \"...\"}\n"
+                        f"Step Instruction: {instruction}\n"
+                        f"Agent Response: {response}\n"
+                    )
+                    reflection_messages = [
+                        {"role": "system", "content": reflection_prompt}
+                    ]
+                    try:
+                        reflection_response = self.llm_client.create_chat_completion(reflection_messages, logger=logger)
+                        import json as _json
+                        content = reflection_response['choices'][0]['message']['content']
+                        reflection = _json.loads(content)
+                        last_reflection = reflection
+                        logger.info(f"[Workflow] Step {step_num} reflection: {reflection}")
+                        if reflection.get('success', False):
+                            step_success = True
+                            status = "success"
+                        else:
+                            status = "failed"
+                            retries += 1
+                            if not reflection.get('retry', False):
+                                logger.info(f"[Workflow] Step {step_num} reflection suggests not to retry. Breaking.")
+                                break
+                    except Exception as e:
+                        logger.warning(f"[Workflow] Step {step_num} LLM reflection failed: {str(e)}. Defaulting to simple validation.")
+                        # Fallback: simple validation
+                        if response and isinstance(response, str) and response.strip():
+                            step_success = True
+                            status = "success"
+                        else:
+                            status = "failed"
+                            retries += 1
+                except Exception as e:
+                    status = "error"
+                    last_response = str(e)
+                    last_reflection = {'success': False, 'reason': str(e), 'retry': False, 'suggestion': ''}
+                    logger.error(f"[Workflow] Step {step_num} execution error: {str(e)}")
+                    retries += 1
+                if not step_success and retries >= max_retries:
+                    logger.error(f"[Workflow] Step {step_num} failed after {max_retries} retries: {last_response}")
+                    execution.add_progress_step(
+                        step_number=step_num,
+                        action=f"step_{step_num}_retry_failed",
+                        input_data=step_prompt,
+                        output_data=f"Step failed after {max_retries} retries: {last_response}",
+                        status="error"
+                    )
+            # Log result for this step
             step_result = {
-                'step': 1,
-                'action': 'workflow_execution',
-                'input': workflow_prompt,
-                'output': final_response,
+                'step': step_num,
+                'action': f'step_{step_num}_execution',
+                'input': step_prompt,
+                'output': last_response,
                 'timestamp': datetime.utcnow().isoformat(),
-                'memory_info': memory_info
+                'memory_info': last_memory_info,
+                'status': status,
+                'reflection': last_reflection
             }
             results.append(step_result)
-            
-            # Update execution progress
-            execution.current_step = 3
-            execution.total_steps = 3
-            
-        except Exception as e:
-            logger.error(f"Error executing workflow step: {str(e)}")
-            
-            # Add error progress step
-            execution.add_progress_step(
-                step_number=execution.current_step + 1,
-                action="workflow_error",
-                input_data="Error occurred during execution",
-                output_data=str(e),
-                status="error"
-            )
-            
-            execution.errors.append(f"Step execution failed: {str(e)}")
-            raise
-        
+            execution.current_step = step_num
+        # Add final progress step
+        execution.add_progress_step(
+            step_number=execution.total_steps + 1,
+            action="workflow_completed",
+            input_data="Final processing",
+            output_data="Workflow execution complete.",
+            status="success"
+        )
         return results
     
     def _create_workflow_prompt(self, workflow: Workflow) -> str:

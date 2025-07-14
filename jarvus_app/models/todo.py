@@ -14,7 +14,7 @@ class Todo(db.Model):
     __tablename__ = 'todos'
     
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    user_id = Column(String(50), ForeignKey('users.id'), nullable=False)
     text = Column(Text, nullable=False)
     completed = Column(Boolean, default=False, nullable=False)
     current_task = Column(Boolean, default=False, nullable=False)  # New field for current task
