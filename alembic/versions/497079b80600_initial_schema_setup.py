@@ -30,7 +30,7 @@ def upgrade() -> None:
     )
     op.create_table('history',
     sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('user_id', sa.String(length=50), nullable=False),
     sa.Column('name', sa.String(length=100), nullable=False),
     sa.Column('description', sa.Text(), nullable=True),
     sa.Column('tools', sa.JSON(), nullable=True),

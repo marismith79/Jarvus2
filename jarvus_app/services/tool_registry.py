@@ -309,7 +309,7 @@ from .tools import (
 
 # Register all tools
 # register_browser_tools(tool_registry)
-register_web_search_tools(tool_registry)
+# register_web_search_tools(tool_registry)
 # register_docs_tools(tool_registry)
 # register_gmail_tools(tool_registry)
 # register_calendar_tools(tool_registry)

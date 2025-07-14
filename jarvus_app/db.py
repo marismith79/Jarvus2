@@ -73,7 +73,7 @@ class Suggestion(Base):
 class Workflow(Base):
     __tablename__ = 'workflows'
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, nullable=True)
+    user_id = Column(String(50), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     video_path = Column(Text, nullable=True)  # Path to user-recorded video
     inferred_steps = Column(JSON)  # List of action dicts (see schema below)

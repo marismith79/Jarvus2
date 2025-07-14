@@ -81,5 +81,6 @@ ALL_PIPEDREAM_APPS = [
     {"slug": "zoom", "name": "Zoom"},
     {"slug": "slack", "name": "Slack"},
     {"slug": "notion", "name": "Notion"},
+     {"slug": "scrapingant", "name": "ScrapingAnt"},
     # Add more as needed
 ]

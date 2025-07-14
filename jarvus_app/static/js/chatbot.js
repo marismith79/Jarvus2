@@ -324,15 +324,31 @@ function initWorkflowTabs() {
     tabs.forEach(tab => {
         tab.addEventListener('click', () => {
             const targetTab = tab.dataset.tab;
-            
             // Remove active class from all tabs and sections
             tabs.forEach(t => t.classList.remove('active'));
             sections.forEach(s => s.classList.remove('active'));
-            
             // Add active class to clicked tab and corresponding section
             tab.classList.add('active');
-            document.getElementById(`${targetTab}-workflows`).classList.add('active');
-            
+            // Map tab name to section ID
+            let sectionId = '';
+            switch (targetTab) {
+                case 'all-workflows':
+                    sectionId = 'all-workflows';
+                    break;
+                case 'running':
+                    sectionId = 'running-workflows';
+                    break;
+                case 'requires-review':
+                    sectionId = 'requires-review-workflows';
+                    break;
+                case 'recently-ran':
+                    sectionId = 'recently-ran-workflows';
+                    break;
+                default:
+                    sectionId = 'all-workflows';
+            }
+            const section = document.getElementById(sectionId);
+            if (section) section.classList.add('active');
             // Load appropriate workflows for the selected tab
             loadWorkflowsForTab(targetTab);
         });
@@ -1373,7 +1389,8 @@ document.addEventListener('DOMContentLoaded', () => {
     chatList.addEventListener('click', e => {
         const item = e.target.closest('.chat-item');
         if (item) {
-            const agentId = item.dataset.agentId;
+            // Ensure agentId is always an integer
+            const agentId = parseInt(item.dataset.agentId, 10);
             const agentName = item.querySelector('.agent-name').textContent.trim();
             if (chatbotCard) chatbotCard.style.display = 'flex';
             if (document.getElementById('empty-state')) document.getElementById('empty-state').style.display = 'none';
@@ -1618,11 +1635,30 @@ async function executeWorkflow(workflowId) {
     }
     
     try {
-        // Show execution status
-        const workflowList = document.getElementById('workflow-list');
-        const workflowItem = workflowList.querySelector(`[data-workflow-id="${workflowId}"]`);
+        // Find the active workflow tab and its container
+        const activeTab = document.querySelector('.workflow-tab.active');
+        let containerId = 'all-workflows-workflow-list'; // default
+        if (activeTab) {
+            switch (activeTab.dataset.tab) {
+                case 'all-workflows':
+                    containerId = 'all-workflows-workflow-list';
+                    break;
+                case 'running':
+                    containerId = 'running-workflows-workflow-list';
+                    break;
+                case 'requires-review':
+                    containerId = 'requires-review-workflows-workflow-list';
+                    break;
+                case 'recently-ran':
+                    containerId = 'recently-ran-workflows-workflow-list';
+                    break;
+            }
+        }
+        const workflowList = document.getElementById(containerId);
+        const workflowItem = workflowList ? workflowList.querySelector(`[data-workflow-id="${workflowId}"]`) : null;
+        let originalContent = null;
         if (workflowItem) {
-            const originalContent = workflowItem.innerHTML;
+            originalContent = workflowItem.innerHTML;
             workflowItem.innerHTML = `
                 <div class="workflow-icon">🔄</div>
                 <div class="workflow-details">
@@ -1630,59 +1666,57 @@ async function executeWorkflow(workflowId) {
                     <div class="workflow-desc">Please wait</div>
                 </div>
             `;
-            
-            // Execute the workflow
-            const response = await fetch(`/api/workflows/${workflowId}/execute`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    agent_id: currentAgentId  // Use current agent if available
-                })
-            });
-            
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-            }
-            
-            const data = await response.json();
-            safeLog('Workflow execution started:', data);
-            
-            // Show success message
-            alert('Workflow execution started! Check the chat for progress updates.');
-            
-            // Switch to chat view to see the execution
-            const mainChatArea = document.getElementById('main-chat-area');
-            const rightSidebar = document.querySelector('.right-sidebar');
-            if (mainChatArea) mainChatArea.style.display = 'flex';
-            if (rightSidebar) rightSidebar.style.display = 'flex';
-            
-            // Hide workflow creation view if it's open
-            const workflowView = document.getElementById('workflow-creation-view');
-            if (workflowView) workflowView.style.display = 'none';
-            
-            // Add a message to the chat showing the workflow execution
-            const execution = data.execution;
-            const workflowName = execution.workflow_name;
-            
-            // Add user message showing workflow execution
-            appendMessage('user', `Execute workflow: ${workflowName}`);
-            
-            // Add system message showing execution started
-            appendMessage('bot', `🚀 **Workflow Execution Started**\n\n**Workflow:** ${workflowName}\n**Execution ID:** ${execution.execution_id}\n**Status:** ${execution.status}\n\nI'm now executing the workflow steps. You'll see the progress in the chat as I work through each step.`);
-            
-        } else {
-            throw new Error('Workflow item not found');
         }
+        
+        // Execute the workflow
+        const response = await fetch(`/api/workflows/${workflowId}/execute`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                agent_id: currentAgentId  // Use current agent if available
+            })
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        safeLog('Workflow execution started:', data);
+        
+        // Show success message
+        alert('Workflow execution started! Check the chat for progress updates.');
+        
+        // Switch to chat view to see the execution
+        const mainChatArea = document.getElementById('main-chat-area');
+        const rightSidebar = document.querySelector('.right-sidebar');
+        if (mainChatArea) mainChatArea.style.display = 'flex';
+        if (rightSidebar) rightSidebar.style.display = 'flex';
+        
+        // Hide workflow creation view if it's open
+        const workflowView = document.getElementById('workflow-creation-view');
+        if (workflowView) workflowView.style.display = 'none';
+        
+        // Add a message to the chat showing the workflow execution
+        const execution = data.execution;
+        const workflowName = execution.workflow_name;
+        
+        // Add user message showing workflow execution
+        appendMessage('user', `Execute workflow: ${workflowName}`);
+        
+        // Add system message showing execution started
+        appendMessage('bot', `🚀 **Workflow Execution Started**\n\n**Workflow:** ${workflowName}\n**Execution ID:** ${execution.execution_id}\n**Status:** ${execution.status}\n\nI'm now executing the workflow steps. You'll see the progress in the chat as I work through each step.`);
         
     } catch (error) {
         safeError('Failed to execute workflow:', error);
         alert(`Error executing workflow: ${error.message}`);
         
         // Restore original content on error
-        if (workflowItem) {
+        // Only restore if workflowItem and originalContent exist
+        if (typeof workflowItem !== 'undefined' && workflowItem && originalContent) {
             workflowItem.innerHTML = originalContent;
         }
     }
@@ -1787,7 +1821,7 @@ const TOOL_ICONS = {
 // Fetch available tools from API
 async function fetchAvailableTools() {
     try {
-        const response = await fetch('/workflows/available-tools');
+        const response = await fetch('/api/workflows/available-tools');
         if (response.ok) {
             const data = await response.json();
             if (data.success && data.available_apps) {
@@ -1797,7 +1831,8 @@ async function fetchAvailableTools() {
                     name: app.name,
                     icon: TOOL_ICONS[app.id] || '🔧',
                     description: `${app.name} tools`,
-                    tools: app.tools
+                    tools: app.tools,
+                    connected: app.connected // <-- add this line!
                 }));
                 return true;
             }
@@ -1831,23 +1866,33 @@ function populateToolSelection(selectedTools = []) {
         if (selectedTools.includes(tool.id)) {
             toolItem.classList.add('selected');
         }
-        
+        // Add connected/not-connected class
+        if (tool.connected) {
+            toolItem.classList.add('connected');
+        } else {
+            toolItem.classList.add('not-connected');
+        }
         // Create tool details with available tools count
         const toolsCount = tool.tools ? tool.tools.length : 0;
         const toolsText = toolsCount > 0 ? ` (${toolsCount} tools available)` : '';
         
         toolItem.innerHTML = `
             <input type="checkbox" id="tool-${tool.id}" value="${tool.id}" 
-                   ${selectedTools.includes(tool.id) ? 'checked' : ''}>
+                   ${selectedTools.includes(tool.id) ? 'checked' : ''} ${tool.connected ? '' : 'disabled'}>
             <div class="tool-icon">${tool.icon}</div>
             <div>
                 <div class="tool-name">${tool.name}</div>
                 <div class="tool-description">${tool.description}${toolsText}</div>
+                ${!tool.connected ? '<div class="connect-warning">Not connected</div>' : ''}
             </div>
         `;
-        
         // Add click handler for the entire item
         toolItem.addEventListener('click', (e) => {
+            if (!tool.connected) {
+                e.preventDefault();
+                showConnectToolModal(tool.id, tool.name);
+                return;
+            }
             if (e.target.type !== 'checkbox') {
                 const checkbox = toolItem.querySelector('input[type="checkbox"]');
                 checkbox.checked = !checkbox.checked;
@@ -1856,9 +1901,36 @@ function populateToolSelection(selectedTools = []) {
                 toolItem.classList.toggle('selected', e.target.checked);
             }
         });
-        
         toolGrid.appendChild(toolItem);
     });
+}
+
+// Show a modal to connect a tool
+function showConnectToolModal(toolId, toolName) {
+    // Remove any existing modal
+    let modal = document.getElementById('connect-tool-modal');
+    if (modal) modal.remove();
+    modal = document.createElement('div');
+    modal.id = 'connect-tool-modal';
+    modal.className = 'modal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Connect ${toolName}</h2>
+                <button class="close-modal-btn" onclick="document.getElementById('connect-tool-modal').remove()">×</button>
+            </div>
+            <div class="modal-body">
+                <p>You need to connect <b>${toolName}</b> before using it in a workflow.</p>
+                <button class="btn btn-primary" id="connect-tool-btn">Connect Now</button>
+                <button class="btn btn-secondary" onclick="document.getElementById('connect-tool-modal').remove()">Cancel</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    document.getElementById('connect-tool-btn').onclick = function() {
+        // Redirect to Pipedream connection flow (customize as needed)
+        window.location.href = `/auth/connect/${toolId}`;
+    };
 }
 
 // Get selected tools
@@ -2032,3 +2104,25 @@ function getTriggerDisplayText(triggerType, triggerConfig) {
             return '👆 Manual';
     }
 }
+
+(function addConnectModalStyles() {
+    if (document.getElementById('connect-modal-style')) return;
+    const style = document.createElement('style');
+    style.id = 'connect-modal-style';
+    style.innerHTML = `
+    .modal { position: fixed; z-index: 2000; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; }
+    .modal-content { background: #fff; border-radius: 12px; box-shadow: 0 4px 32px rgba(0,0,0,0.18); padding: 0; max-width: 400px; width: 100%; overflow: hidden; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 20px; border-bottom: 1px solid #e5e7eb; background: #f9fafb; border-top-left-radius: 12px; border-top-right-radius: 12px; }
+    .modal-header h2 { margin: 0; font-size: 1.2rem; color: #1f2937; }
+    .close-modal-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #6b7280; padding: 0; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 4px; }
+    .close-modal-btn:hover { background-color: #f3f4f6; color: #374151; }
+    .modal-body { padding: 20px; }
+    .btn-primary { background: #2563eb; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 500; margin-right: 8px; cursor: pointer; }
+    .btn-secondary { background: #6b7280; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 500; cursor: pointer; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-secondary:hover { background: #4b5563; }
+    .tool-selection-item.not-connected { opacity: 0.6; pointer-events: auto; border: 1px dashed #f59e0b; }
+    .tool-selection-item .connect-warning { color: #dc2626; font-size: 0.8em; margin-top: 4px; font-weight: 500; }
+    `;
+    document.head.appendChild(style);
+})();

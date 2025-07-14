@@ -5,7 +5,7 @@ class History(db.Model):
     __tablename__ = 'history'
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.String(50), db.ForeignKey('users.id'), nullable=False)
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text, nullable=True)
     tools = db.Column(db.JSON, nullable=True)
@@ -24,7 +24,7 @@ class InteractionHistory(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     history_id = db.Column(db.Integer, db.ForeignKey('history.id'), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.String(50), db.ForeignKey('users.id'), nullable=False)
     user_message = db.Column(db.Text, nullable=False)
     assistant_message = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, server_default=db.func.now())
