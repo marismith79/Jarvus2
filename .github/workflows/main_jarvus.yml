@@ -7,7 +7,7 @@ name: Build and deploy Python app to Azure Web App - jarvus
 on:
   push:
     branches:
-      - main
+      - Production
   workflow_dispatch:
 
 jobs:
