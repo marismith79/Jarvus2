@@ -114,7 +114,8 @@ class AgentService:
         web_search_enabled=True,
         current_task=None,
         logger=None,
-        mentions=None  # Add mentions parameter
+        mentions=None,  # Add mentions parameter
+        execution_type="chat"  # NEW PARAM
     ):
         """Process a message with full memory context and tool orchestration."""
         if logger is None:
@@ -122,20 +123,7 @@ class AgentService:
         
         # Smart thread ID management
         thread_id = self._get_or_create_thread_id(agent_id, user_id, user_message, thread_id)
-        logger.info(f"Using thread_id: {thread_id} for agent {agent_id}, user {user_id}")
-        
-        # plan = None  # Initialize plan to avoid UnboundLocalError
-        # # Capture screenshot before processing message
-        # screenshot_data = None
-        # try:
-        #     screenshot_result = sync_take_screenshot_auto()
-        #     if screenshot_result.get('success') and screenshot_result.get('base64'):
-        #         screenshot_data = screenshot_result['base64']
-        #         logger.info("Screenshot captured successfully for chat message")
-        #     else:
-        #         logger.warning(f"Screenshot capture failed: {screenshot_result.get('error', 'Unknown error')}")
-        # except Exception as e:
-        #     logger.error(f"Error capturing screenshot: {str(e)}")
+        logger.info(f"Using thread_id: {thread_id} for agent {agent_id}, user {user_id}, execution_type={execution_type}")
         
         # Step 1: Get context
         agent, allowed_tools, memory_info, messages, current_state = self._get_context_for_message(
@@ -201,14 +189,34 @@ class AgentService:
                 'content': final_assistant_message,
                 'timestamp': datetime.utcnow().isoformat()
             })
-            
-            # Save the updated state back to working memory
-            memory_service.save_checkpoint(
-                thread_id=thread_id,
-                user_id=user_id,
-                agent_id=agent_id,
-                state_data=current_state
-            )
+            # Branch memory update logic based on execution_type
+            if execution_type == "chat":
+                # Standard memory update
+                memory_service.save_checkpoint(
+                    thread_id=thread_id,
+                    user_id=user_id,
+                    agent_id=agent_id,
+                    state_data=current_state
+                )
+            elif execution_type == "todo_generation":
+                # Custom logic for todo generation (e.g., don't save to working memory)
+                pass
+            elif execution_type == "workflow_step":
+                # Custom logic for workflow step
+                memory_service.save_checkpoint(
+                    thread_id=thread_id,
+                    user_id=user_id,
+                    agent_id=agent_id,
+                    state_data=current_state
+                )
+            else:
+                # Default to standard memory update
+                memory_service.save_checkpoint(
+                    thread_id=thread_id,
+                    user_id=user_id,
+                    agent_id=agent_id,
+                    state_data=current_state
+                )
             # logger.info(f"Saved working memory checkpoint for thread {thread_id} with {len(current_state['messages'])} messages")
             
             # Clean up old working memory checkpoints to prevent indefinite growth

@@ -2160,8 +2160,40 @@ function showConnectToolModal(toolId, toolName) {
     `;
     document.body.appendChild(modal);
     document.getElementById('connect-tool-btn').onclick = function() {
-        // Redirect to Pipedream connection flow (customize as needed)
-        window.location.href = `/auth/connect/${toolId}`;
+        // Open Pipedream connection flow in a popup window so the main page is not redirected
+        const popup = window.open(`/connect/${toolId}`, 'ConnectTool', 'width=600,height=700');
+        let connectionHandled = false;
+        // Listen for postMessage from popup (preferred, instant update)
+        function handleConnectionMessage(event) {
+            // You may want to check event.origin for security
+            if (event.data === 'tool_connected') {
+                connectionHandled = true;
+                window.removeEventListener('message', handleConnectionMessage);
+                if (popup && !popup.closed) popup.close();
+                // Re-fetch available tools and update UI
+                fetchAvailableTools().then(() => {
+                    populateToolSelection(getSelectedTools());
+                });
+                // Close the modal
+                document.getElementById('connect-tool-modal')?.remove();
+            }
+        }
+        window.addEventListener('message', handleConnectionMessage);
+        // Fallback: Poll for popup close (in case postMessage is not sent)
+        const pollTimer = setInterval(function() {
+            if (popup.closed && !connectionHandled) {
+                clearInterval(pollTimer);
+                window.removeEventListener('message', handleConnectionMessage);
+                // Re-fetch available tools and update UI
+                fetchAvailableTools().then(() => {
+                    populateToolSelection(getSelectedTools());
+                });
+                // Close the modal
+                document.getElementById('connect-tool-modal')?.remove();
+            } else if (popup.closed) {
+                clearInterval(pollTimer);
+            }
+        }, 700);
     };
 }
 

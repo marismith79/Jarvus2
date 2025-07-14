@@ -117,7 +117,8 @@ def handle_chat_message():
             tool_choice=tool_choice,
             web_search_enabled=web_search_enabled,
             current_task=current_task,
-            logger=logger
+            logger=logger,
+            execution_type="chat"
         )
         
         # # Add debug logging
@@ -624,7 +625,8 @@ Please respond with just a simple list of tasks, one per line, without explanati
             thread_id=None,
             tool_choice='auto',
             web_search_enabled=True,
-            logger=logger
+            logger=logger,
+            execution_type="todo_generation"
         )
         
         # Parse the response to extract todo items

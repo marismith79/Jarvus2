@@ -235,8 +235,23 @@ def pipedream_callback(service):
         
         # Clear the state from session
         session.pop('oauth_state', None)
-        
-        return redirect(url_for("profile.profile"))
+        # Detect if this is a popup flow (by query param)
+        if request.args.get('popup') == '1':
+            # Render a minimal HTML page that closes the popup and notifies the opener
+            return '''
+            <html><body><script>
+            if (window.opener) {
+                window.opener.postMessage('tool_connected', '*');
+                window.close();
+            } else {
+                window.location.href = '/profile';
+            }
+            </script>
+            <p>Connection complete. You can close this window.</p>
+            </body></html>
+            '''
+        else:
+            return redirect(url_for("profile.profile"))
         
     except Exception as e:
         # print(f"ERROR: Failed to process Pipedream callback for {service}: {str(e)}")
@@ -329,8 +344,8 @@ def connect_pipedream_service(service):
                 "name": service
             },
             "project_id": pipedream_project_id,
-            "success_redirect_uri": f"{redirect_uri}/{service}?state={state}",
-            "error_redirect_uri": f"{redirect_uri}/{service}?state={state}",
+            "success_redirect_uri": f"{redirect_uri}/{service}?state={state}&popup=1",
+            "error_redirect_uri": f"{redirect_uri}/{service}?state={state}&popup=1",
             "allowed_origins": ["http://localhost:5001"],
         }
 

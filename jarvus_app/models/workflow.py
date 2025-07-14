@@ -21,6 +21,9 @@ class Workflow(db.Model):
     trigger_type = db.Column(db.String(50), nullable=True)  # 'manual', 'scheduled', 'event'
     trigger_config = db.Column(db.JSON, nullable=True)  # Trigger-specific configuration
     
+    # Link to procedural memory (long_term_memory)
+    procedural_memory_id = db.Column(db.Integer, db.ForeignKey('long_term_memory.id'), nullable=True)
+
     # Metadata
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, server_default=db.func.now())
@@ -44,6 +47,7 @@ class Workflow(db.Model):
             'required_tools': self.required_tools or [],
             'trigger_type': self.trigger_type or 'manual',
             'trigger_config': self.trigger_config or {},
+            'procedural_memory_id': self.procedural_memory_id,
             'is_active': self.is_active,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
@@ -63,7 +67,7 @@ class Workflow(db.Model):
     def create_workflow(cls, user_id: str, name: str, goal: str, instructions: str, 
                        description: str = None, notes: str = None, 
                        required_tools: list = None, trigger_type: str = 'manual', 
-                       trigger_config: dict = None) -> 'Workflow':
+                       trigger_config: dict = None, procedural_memory_id: int = None) -> 'Workflow':
         """Create a new workflow"""
         workflow = cls(
             user_id=user_id,
@@ -74,7 +78,8 @@ class Workflow(db.Model):
             notes=notes,
             required_tools=required_tools or [],
             trigger_type=trigger_type,
-            trigger_config=trigger_config or {}
+            trigger_config=trigger_config or {},
+            procedural_memory_id=procedural_memory_id
         )
         db.session.add(workflow)
         db.session.commit()
@@ -82,7 +87,7 @@ class Workflow(db.Model):
 
     def update_workflow(self, name: str = None, goal: str = None, instructions: str = None,
                        description: str = None, notes: str = None, is_active: bool = None,
-                       required_tools: list = None, trigger_type: str = None, trigger_config: dict = None):
+                       required_tools: list = None, trigger_type: str = None, trigger_config: dict = None, procedural_memory_id: int = None):
         """Update workflow fields"""
         if name is not None:
             self.name = name
@@ -102,6 +107,8 @@ class Workflow(db.Model):
             self.trigger_type = trigger_type
         if trigger_config is not None:
             self.trigger_config = trigger_config
+        if procedural_memory_id is not None:
+            self.procedural_memory_id = procedural_memory_id
         
         self.updated_at = datetime.utcnow()
         db.session.commit()

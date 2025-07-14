@@ -103,7 +103,8 @@ class WorkflowExecutionService:
         workflow_id: int, 
         user_id: str, 
         agent_id: Optional[int] = None,
-        thread_id: Optional[str] = None
+        thread_id: Optional[str] = None,
+        procedural_memory_id: Optional[int] = None
     ) -> Dict[str, Any]:
         """
         Execute a workflow using the agent infrastructure
@@ -113,7 +114,8 @@ class WorkflowExecutionService:
             user_id: ID of the user executing the workflow
             agent_id: Optional agent ID to use for execution (creates temporary agent if not provided)
             thread_id: Optional thread ID for memory context
-            
+            procedural_memory_id: Optional override for which procedural memory to use/update
+        
         Returns:
             Dictionary with execution details
         """
@@ -140,8 +142,11 @@ class WorkflowExecutionService:
                 # Create a temporary agent for workflow execution
                 agent = self._create_workflow_agent(workflow, user_id)
             
-            # Execute the workflow
-            results = self._execute_workflow_steps(execution, agent, thread_id)
+            # Execute the workflow, passing the procedural_memory_id (override or workflow default)
+            results = self._execute_workflow_steps(
+                execution, agent, thread_id,
+                procedural_memory_id=procedural_memory_id or getattr(workflow, 'procedural_memory_id', None)
+            )
             
             # Mark as completed
             execution.status = WorkflowStatus.COMPLETED
@@ -184,12 +189,21 @@ class WorkflowExecutionService:
         self, 
         execution: WorkflowExecution, 
         agent: History, 
-        thread_id: Optional[str]
+        thread_id: Optional[str],
+        procedural_memory_id: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
-        """Execute the workflow steps using the agent, step by step"""
+        """Execute the workflow steps using the agent, step by step, with procedural memory integration"""
+        from jarvus_app.models.memory import LongTermMemory
         workflow = execution.workflow
         results = []
-        
+        procedural_memory_content = None
+        procedural_memory_obj = None
+        # Load procedural memory if linked or overridden
+        pmem_id = procedural_memory_id or getattr(workflow, 'procedural_memory_id', None)
+        if pmem_id:
+            procedural_memory_obj = LongTermMemory.query.filter_by(id=pmem_id).first()
+            if procedural_memory_obj:
+                procedural_memory_content = procedural_memory_obj.memory_data.get('content') if isinstance(procedural_memory_obj.memory_data, dict) else str(procedural_memory_obj.memory_data)
         # Decompose instructions into steps (use agent_service LLM planner or fallback)
         plan_steps = self.agent_service._plan_task_with_llm(
             workflow.instructions, workflow.required_tools or []
@@ -201,7 +215,6 @@ class WorkflowExecutionService:
                 for line in workflow.instructions.split('\n') if line.strip()
             ]
         execution.total_steps = len(plan_steps)
-        
         # Add initial progress step
         execution.add_progress_step(
             step_number=1,
@@ -210,12 +223,15 @@ class WorkflowExecutionService:
             output_data=f"Goal: {workflow.goal}",
             status="success"
         )
-        
         # Step-by-step execution
         for idx, step in enumerate(plan_steps):
             step_num = idx + 1
             instruction = step['parameters'].get('instruction') if isinstance(step.get('parameters'), dict) else str(step.get('parameters'))
-            step_prompt = f"Step {step_num}: {instruction}\nPlease execute this step."
+            # Inject procedural memory into the step prompt if available
+            if procedural_memory_content:
+                step_prompt = f"Step {step_num}: {instruction}\n\n### Procedural Memory\n{procedural_memory_content}\n\nPlease execute this step."
+            else:
+                step_prompt = f"Step {step_num}: {instruction}\nPlease execute this step."
             retries = 0
             max_retries = 3
             step_success = False
@@ -241,7 +257,8 @@ class WorkflowExecutionService:
                         tool_choice="auto",
                         web_search_enabled=True,
                         current_task=None,
-                        logger=logger
+                        logger=logger,
+                        execution_type="workflow_step"
                     )
                     last_response = response
                     last_memory_info = memory_info
@@ -319,6 +336,38 @@ class WorkflowExecutionService:
             output_data="Workflow execution complete.",
             status="success"
         )
+        # After execution, update procedural memory if linked
+        if procedural_memory_obj:
+            try:
+                # Summarize new learnings/reflection from this run
+                all_reflections = [r['reflection'] for r in results if r.get('reflection')]
+                # Include user feedback if available
+                user_feedback = execution.user_feedback if hasattr(execution, 'user_feedback') else None
+                if user_feedback:
+                    all_reflections.append({'user_feedback': user_feedback})
+                summary_prompt = (
+                    "You are an expert at maintaining procedural memory for workflow execution. "
+                    "Given the previous procedural memory and the following new reflections/feedback from the latest run, "
+                    "update and improve the procedural memory so that future executions are more reliable and efficient. "
+                    "Respond with the improved procedural memory content as a string.\n"
+                    f"Previous Procedural Memory:\n{procedural_memory_content}\n"
+                    f"New Reflections/Feedback:\n{all_reflections}\n"
+                )
+                summary_messages = [
+                    {"role": "system", "content": summary_prompt}
+                ]
+                summary_response = self.llm_client.create_chat_completion(summary_messages, logger=logger)
+                improved_content = summary_response['choices'][0]['message']['content']
+                # Update the procedural memory entry
+                if isinstance(procedural_memory_obj.memory_data, dict):
+                    procedural_memory_obj.memory_data['content'] = improved_content
+                else:
+                    procedural_memory_obj.memory_data = {'content': improved_content}
+                procedural_memory_obj.updated_at = datetime.utcnow()
+                db.session.commit()
+                logger.info(f"[Workflow] Procedural memory updated for workflow {workflow.id}")
+            except Exception as e:
+                logger.error(f"[Workflow] Failed to update procedural memory: {str(e)}")
         return results
     
     def _create_workflow_prompt(self, workflow: Workflow) -> str:
