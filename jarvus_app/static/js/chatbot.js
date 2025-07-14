@@ -1297,15 +1297,244 @@ function checkAndGenerateMorningTodos() {
     }
 }
 
+// --- NEW: @ Mention Autocomplete ---
+let availableTools = [];
+let currentSuggestion = '';
+
+async function getAvailableToolsFromConfig() {
+    console.log('🌐 Fetching tools from config...');
+    try {
+        const response = await fetch('/chatbot/tools/config');
+        console.log('📡 Response status:', response.status);
+        if (response.ok) {
+            const tools = await response.json();
+            console.log('📦 Tools received:', tools);
+            return tools.map(tool => ({
+                name: tool.name,
+                mention: tool.mention,
+                slug: tool.slug
+            }));
+        } else {
+            console.log('❌ Response not ok:', response.status, response.statusText);
+        }
+    } catch (error) {
+        console.log('❌ Error fetching tools:', error);
+        safeError('Failed to fetch tools from config:', error);
+    }
+    return [];
+}
+
+function setupAutocomplete() {
+    console.log('🔧 Setting up autocomplete...');
+    const inputEl = document.getElementById('chat-input');
+    
+    if (!inputEl) {
+        console.log('❌ Chat input element not found!');
+        return;
+    }
+    
+    console.log('✅ Chat input element found');
+    
+    // Create suggestion element
+    const suggestionEl = document.createElement('div');
+    suggestionEl.id = 'autocomplete-suggestion';
+    suggestionEl.className = 'autocomplete-suggestion';
+    suggestionEl.style.display = 'none';
+    inputEl.parentNode.appendChild(suggestionEl);
+    
+    console.log('✅ Suggestion element created and appended');
+    
+    inputEl.addEventListener('input', async (e) => {
+        console.log('⌨️ Input event triggered');
+        await handleAutocomplete(e.target);
+    });
+    
+    inputEl.addEventListener('keydown', (e) => {
+        if (e.key === 'Tab' && currentSuggestion) {
+            console.log('↹️ Tab pressed, completing suggestion');
+            e.preventDefault();
+            completeSuggestion(inputEl);
+        } else if (e.key === 'Escape') {
+            console.log('⎋ Escape pressed, hiding suggestion');
+            hideSuggestion();
+        }
+    });
+    
+    // Hide suggestion when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('#chat-input') && !e.target.closest('#autocomplete-suggestion')) {
+            console.log('🖱️ Click outside, hiding suggestion');
+            hideSuggestion();
+        }
+    });
+    
+    console.log('✅ Autocomplete setup complete');
+}
+
+async function handleAutocomplete(inputEl) {
+    console.log('🔍 handleAutocomplete called');
+    const cursorPosition = inputEl.selectionStart;
+    const textBeforeCursor = inputEl.value.substring(0, cursorPosition);
+    const lastAtSymbol = textBeforeCursor.lastIndexOf('@');
+    
+    console.log('📝 Text before cursor:', textBeforeCursor);
+    console.log('📍 Cursor position:', cursorPosition);
+    console.log('🔗 Last @ symbol at:', lastAtSymbol);
+    
+    if (lastAtSymbol === -1) {
+        console.log('❌ No @ symbol found, hiding suggestion');
+        hideSuggestion();
+        return;
+    }
+    
+    const query = textBeforeCursor.substring(lastAtSymbol + 1).toLowerCase();
+    console.log('🔎 Query after @:', query);
+    
+    // Get available tools if not already loaded
+    if (!availableTools.length) {
+        console.log('📦 Loading available tools...');
+        availableTools = await getAvailableToolsFromConfig();
+        console.log('📦 Available tools loaded:', availableTools);
+    }
+    
+    // Find matching tools
+    const matches = availableTools.filter(tool => 
+        tool.mention.toLowerCase().startsWith(query)
+    );
+    console.log('🎯 Matching tools:', matches);
+    
+    if (matches.length === 0) {
+        console.log('❌ No matches found, hiding suggestion');
+        hideSuggestion();
+        return;
+    }
+    
+    // Show suggestion
+    const bestMatch = matches[0];
+    const suggestionText = `@${bestMatch.mention}`;
+    const remainingText = suggestionText.substring(query.length + 1); // +1 for @
+    
+    console.log('✨ Best match:', bestMatch);
+    console.log('📄 Suggestion text:', suggestionText);
+    console.log('🔤 Remaining text:', remainingText);
+    
+    showSuggestion(inputEl, remainingText, bestMatch.name);
+}
+
+function showSuggestion(inputEl, remainingText, toolName) {
+    console.log('🎨 showSuggestion called with:', { remainingText, toolName });
+    const suggestionEl = document.getElementById('autocomplete-suggestion');
+    if (!suggestionEl) {
+        console.log('❌ Suggestion element not found!');
+        return;
+    }
+
+    // Calculate position for suggestion
+    const cursorPosition = inputEl.selectionStart;
+    const textBeforeCursor = inputEl.value.substring(0, cursorPosition);
+    const lastAtSymbol = textBeforeCursor.lastIndexOf('@');
+    const queryLength = cursorPosition - lastAtSymbol - 1;
+    console.log('📏 Query length:', queryLength);
+
+    // Create temporary span to measure text width
+    const tempSpan = document.createElement('span');
+    const style = window.getComputedStyle(inputEl);
+    tempSpan.style.font = style.font;
+    tempSpan.style.fontSize = style.fontSize;
+    tempSpan.style.fontFamily = style.fontFamily;
+    tempSpan.style.fontWeight = style.fontWeight;
+    tempSpan.style.letterSpacing = style.letterSpacing;
+    tempSpan.style.whiteSpace = 'pre';
+    tempSpan.style.visibility = 'hidden';
+    tempSpan.style.position = 'absolute';
+    tempSpan.textContent = textBeforeCursor.substring(0, lastAtSymbol + 1 + queryLength);
+    document.body.appendChild(tempSpan);
+    const textWidth = tempSpan.offsetWidth;
+    document.body.removeChild(tempSpan);
+
+    // Get input's left padding
+    const paddingLeft = parseInt(style.paddingLeft, 10) || 0;
+    const paddingTop = parseInt(style.paddingTop, 10) || 0;
+    console.log('🧮 Input paddingLeft:', paddingLeft, 'paddingTop:', paddingTop);
+
+    // Position relative to input inside .chat-input-bar
+    const parent = inputEl.closest('.chat-input-bar');
+    const inputRect = inputEl.getBoundingClientRect();
+    const parentRect = parent.getBoundingClientRect();
+    const topPos = inputEl.offsetTop + paddingTop;
+    const leftPos = inputEl.offsetLeft + paddingLeft + textWidth;
+    console.log('📍 Positioning suggestion at:', { left: leftPos, top: topPos });
+
+    suggestionEl.innerHTML = `
+        <span class="suggestion-text">${remainingText}</span>
+    `;
+
+    suggestionEl.style.position = 'absolute';
+    suggestionEl.style.left = leftPos + 'px';
+    suggestionEl.style.top = topPos + 'px';
+    suggestionEl.style.display = 'block';
+    suggestionEl.style.pointerEvents = 'none';
+    suggestionEl.style.background = 'transparent';
+    suggestionEl.style.zIndex = 1000;
+    console.log('✅ Suggestion should now be visible');
+    currentSuggestion = remainingText;
+}
+
+function completeSuggestion(inputEl) {
+    if (!currentSuggestion) return;
+    const cursorPosition = inputEl.selectionStart;
+    const textBeforeCursor = inputEl.value.substring(0, cursorPosition);
+    const lastAtSymbol = textBeforeCursor.lastIndexOf('@');
+    const query = textBeforeCursor.substring(lastAtSymbol + 1);
+    // The full suggestion (including @)
+    const fullSuggestion = '@' + availableTools.find(tool => tool.mention.startsWith(query))?.mention;
+    // Only append the missing part after what the user typed
+    const missingPart = fullSuggestion ? fullSuggestion.substring(1 + query.length) : currentSuggestion;
+    const beforeAt = inputEl.value.substring(0, cursorPosition);
+    const afterCursor = inputEl.value.substring(cursorPosition);
+    inputEl.value = beforeAt + missingPart + ' ' + afterCursor;
+    inputEl.setSelectionRange(cursorPosition + missingPart.length + 1, cursorPosition + missingPart.length + 1);
+    hideSuggestion();
+    inputEl.focus();
+}
+
+function hideSuggestion() {
+    const suggestionEl = document.getElementById('autocomplete-suggestion');
+    if (suggestionEl) {
+        suggestionEl.style.display = 'none';
+    }
+    currentSuggestion = '';
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('🚦 DOMContentLoaded fired');
+    let inputEl = document.getElementById('chat-input');
+    if (!inputEl) {
+        console.log('❌ #chat-input not found on DOMContentLoaded, retrying...');
+        // Try again every 100ms until found, up to 2 seconds
+        let retryCount = 0;
+        const maxRetries = 20;
+        const interval = setInterval(() => {
+            inputEl = document.getElementById('chat-input');
+            if (inputEl) {
+                console.log('✅ #chat-input found after retry');
+                setupAutocomplete();
+                clearInterval(interval);
+            } else if (++retryCount >= maxRetries) {
+                console.log('❌ #chat-input still not found after retries');
+                clearInterval(interval);
+            }
+        }, 100);
+    } else {
+        console.log('✅ #chat-input found on DOMContentLoaded');
+        setupAutocomplete();
+    }
     loadAvailableTools();
     initWorkflowTabs();
     loadTodos();
     refreshCalendar();
     // Removed automatic morning generation - now uses manual button
   
-    const inputEl = document.getElementById('chat-input');
-    
     // Add auto-resize functionality
     inputEl.addEventListener('input', function() {
         autoResizeTextarea(this);
@@ -1320,6 +1549,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     document.getElementById('send-btn').addEventListener('click', sendCommand);
+
+    // --- NEW: Setup autocomplete ---
+    setupAutocomplete();
 
     // --- Agent Creation and Selection Flow ---
     const newAgentBtn = document.querySelectorAll('.new-agent-btn');
