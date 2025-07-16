@@ -164,7 +164,7 @@ class AgentService:
         orchestration_messages = messages.copy()
         final_assistant_message, _ = self.execution_agent(
             user_id=user_id,
-            allowed_tools=filtered_tools,
+            allowed_tools=filtered_tools if len(filtered_tools)!= 0 else None,
             messages=orchestration_messages,
             tool_choice=tool_choice,
             logger=logger
