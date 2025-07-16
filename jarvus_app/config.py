@@ -77,6 +77,7 @@ class Config:
         "- Optionally, include error handling instructions if the step could fail or be ambiguous.\n"
         "- For each step, explicitly define any data dependencies on previous steps using an 'inputs' field (a list of variable names required from previous steps). The first step cannot have a required input. \n"
         "- For each step, specify an 'extract' field (a list of variable names to extract from the tool result and store for later use).\n"
+        "- The variables in the 'input' field must always be a variable in the 'extract' field from previous steps. Never add a variable as an input without extracting it in previous steps.\n"
         "- When a step needs to use the output of a previous step, refer to it by the variable name defined in 'extract'.\n"
         "Output a JSON list. Each item must have:\n"
         "  'instruction': a single, detailed, actionable command,\n"

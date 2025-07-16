@@ -893,7 +893,7 @@ Respond with ONLY "NEW" or "CONTINUE".
         if extract:
             extract_clause = (
                 f"\nAdditionally, extract the following output variables from the agent's response/tool result and return them in an 'extracted' field in the JSON. "
-                f"For each variable in {extract}, extract them from the tool result and include it as-is (do not summarize or modify unless the variable explicitly requires summarization). "
+                f"For each variable in 'Extract', extract them from the tool result and include it as-is (do not summarize or modify unless the variable explicitly requires summarization). "
                 f"If the variable is not present, try to infer it from the response. "
                 # f"If the variable is needs to be a summary, you may summarize it, otherwise preserve the original output."
             )
@@ -906,7 +906,7 @@ Respond with ONLY "NEW" or "CONTINUE".
             "You are an expert workflow validator. "
             + llm_cleanup_instruction +
             "Given the following step instruction, success criteria, the agent's response, and the error handling instructions, "
-            "determine if the step was completed successfully. If variables that need to be extracted are not present, the step should be marked as a fail and you should recommend a retry. "
+            "determine if the step was completed successfully. If variables that need to be extracted are not present, the step should be marked as a fail and you should recommend a retry. Never move on after a failure (i.e., not recommend a retry) if the step has not extracted the required variables defined in 'Extract'."
             "If not, suggest what to do next. When doing so, read the error message carefully, and suggest how the tool call can be improved, using the error handling instructions if relevant. "
             "Always provide a concise 1-2 sentence summary of what was attempted and the outcome for use as context in future steps, regardless of success. "
             "Respond in JSON: {\"success\": true/false, \"reason\": \"...\", \"retry\": true/false, \"suggestion\": \"...\", \"summary\": \"...\", \"extracted\": { ... }}\n"
@@ -915,6 +915,7 @@ Respond with ONLY "NEW" or "CONTINUE".
             f"Success Criteria: {success_criteria}\n"
             f"Error Handling: {error_handling}\n"
             f"{extract_clause}\n"
+            f"Extract: {extract}\n"
             f"Agent Response: {agent_response}\n"
         )
         reflection_messages = [
