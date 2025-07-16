@@ -17,6 +17,7 @@ import pickle
 from .pipedream_auth_service import pipedream_auth_service
 from jarvus_app.models.tool_discovery_cache import ToolDiscoveryCache
 from jarvus_app.config import ALL_PIPEDREAM_APPS
+from jarvus_app.services.tool_registry import user_feedback_tool
 
 logger = logging.getLogger(__name__)
 
@@ -179,6 +180,27 @@ class PipedreamToolService:
         self.tools_registry = PipedreamToolsRegistry()
         self._initialized = False
         self._initialization_lock = False  # Simple lock to prevent concurrent initialization
+        # Register user_feedback tool globally for all users
+        self.tools_registry._apps['user_feedback'] = PipedreamAppTools(
+            app_slug='user_feedback',
+            app_name='User Feedback',
+            tools=[
+                PipedreamTool(
+                    name=user_feedback_tool.name,
+                    description=user_feedback_tool.description,
+                    input_schema={
+                        "type": "object",
+                        "properties": {
+                            "question": {"type": "string", "description": "The clarification or question to ask the user."}
+                        },
+                        "required": ["question"]
+                    },
+                    app_slug='user_feedback',
+                    is_active=True
+                )
+            ],
+            is_connected=True
+        )
     
     def ensure_initialized(self, user_id: str, force_refresh: bool = False) -> None:
         """
@@ -371,38 +393,38 @@ class PipedreamToolService:
                 print(f"Successfully registered {len(tools_data.get('tools', []))} tools for {app_slug}")
             else:
                 print(f"Could not retrieve tools for {app_slug}")
-        # Register local MCP tools using the same registration logic as the main ToolRegistry
-        from jarvus_app.services.tools.web_search_tools import register_web_search_tools
-        from jarvus_app.services.tool_registry import ToolRegistry
-        # Create a temporary ToolRegistry to collect local tools
-        local_registry = ToolRegistry()
-        register_web_search_tools(local_registry)
-        # Convert ToolMetadata to PipedreamTool-compatible dicts
-        local_tools = []
-        for tool in local_registry.get_all_tools():
-            # Build inputSchema from parameters
-            props = {}
-            required = []
-            if tool.parameters:
-                for p in tool.parameters:
-                    props[p.name] = p.to_schema()
-                    if p.required:
-                        required.append(p.name)
-            else:
-                props = {"query": {"type": "string", "description": "Search query or parameters for the operation"}}
-            input_schema = {
-                "type": "object",
-                "properties": props,
-                "required": required
-            }
-            local_tools.append({
-                "name": tool.name,
-                "description": tool.description,
-                "inputSchema": input_schema
-            })
-        self.tools_registry.register_app_tools(
-            "web", "Local MCP Web browser", {"tools": local_tools}
-        )
+        # # Register local MCP tools using the same registration logic as the main ToolRegistry
+        # from jarvus_app.services.tools.web_search_tools import register_web_search_tools
+        # from jarvus_app.services.tool_registry import ToolRegistry
+        # # Create a temporary ToolRegistry to collect local tools
+        # local_registry = ToolRegistry()
+        # register_web_search_tools(local_registry)
+        # # Convert ToolMetadata to PipedreamTool-compatible dicts
+        # local_tools = []
+        # for tool in local_registry.get_all_tools():
+        #     # Build inputSchema from parameters
+        #     props = {}
+        #     required = []
+        #     if tool.parameters:
+        #         for p in tool.parameters:
+        #             props[p.name] = p.to_schema()
+        #             if p.required:
+        #                 required.append(p.name)
+        #     else:
+        #         props = {"query": {"type": "string", "description": "Search query or parameters for the operation"}}
+        #     input_schema = {
+        #         "type": "object",
+        #         "properties": props,
+        #         "required": required
+        #     }
+        #     local_tools.append({
+        #         "name": tool.name,
+        #         "description": tool.description,
+        #         "inputSchema": input_schema
+        #     })
+        # self.tools_registry.register_app_tools(
+        #     "web", "Local MCP Web browser", {"tools": local_tools}
+        # )
         # Mark as discovered
         self.tools_registry.mark_discovered()
         logger.info(f"Total apps with tools discovered: {len(self.tools_registry._apps)}")
@@ -418,19 +440,11 @@ class PipedreamToolService:
         return self.tools_registry
     
     def get_all_sdk_tools(self) -> List[ChatCompletionsToolDefinition]:
-        """
-        Get all discovered tools as Azure SDK definitions.
-        Uses session registry if available, otherwise falls back to global registry.
-        
-        Returns:
-            List[ChatCompletionsToolDefinition]: All tools ready for LLM
-        """
-        # Try to use session registry first
-        if not self.tools_registry.is_fresh():
-            logger.warning("Tools registry is stale, tools need to be rediscovered")
-            return []
-        
-        return self.tools_registry.get_all_sdk_tools()
+        """Get all tools as Azure SDK definitions, including user_feedback."""
+        all_tools = []
+        for app_tools in self.tools_registry._apps.values():
+            all_tools.extend(app_tools.get_sdk_tools())
+        return all_tools
     
     def get_tools_by_app(self, app_slug: str) -> List[ChatCompletionsToolDefinition]:
         """

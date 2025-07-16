@@ -133,14 +133,14 @@ async function loadAgentHistory(agentId, agentName = null) {
 
     // Update greeting with agent name
     if (agentName) {
-        updateGreeting(`${agentName}`, `Ready to help you with your tasks`);
+        updateGreeting(`${agentName}`, `What are you working on?`);
     } else {
         // If no agent name provided, try to get it from the DOM
         const activeItem = document.querySelector(`.chat-item[data-agent-id="${agentId}"]`);
         if (activeItem) {
             const nameElement = activeItem.querySelector('.agent-name');
             if (nameElement) {
-                updateGreeting(`Chat with ${nameElement.textContent}`, `Ready to help you with your tasks`);
+                updateGreeting(`Chat with ${nameElement.textContent}`, `What are you working on?`);
             }
         }
     }
@@ -358,7 +358,7 @@ function initWorkflowTabs() {
 // Load workflows for specific tab
 async function loadWorkflowsForTab(tabName) {
     try {
-        const response = await fetch('/api/workflows/status-summary');
+        const response = await fetch('/workflows/status-summary');
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -498,7 +498,7 @@ function displayWorkflowsInContainer(workflows, container, tabName) {
 // View workflow executions
 async function viewWorkflowExecutions(workflowId, workflowName) {
     try {
-        const response = await fetch(`/api/workflows/${workflowId}/executions`);
+        const response = await fetch(`/workflows/${workflowId}/executions`);
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -569,6 +569,31 @@ function displayExecutionDetails(execution) {
     // Clear previous content
     detailsContainer.innerHTML = '';
     
+    // --- PLAN DISPLAY ---
+    if (execution.plan && Array.isArray(execution.plan) && execution.plan.length > 0) {
+        const planSection = document.createElement('div');
+        planSection.className = 'plan-section';
+        planSection.innerHTML = '<h3>Workflow Plan</h3>';
+        const planList = document.createElement('ol');
+        planList.className = 'plan-list';
+        execution.plan.forEach((step, idx) => {
+            const li = document.createElement('li');
+            li.className = 'plan-step';
+            li.innerHTML = `
+                <div><strong>Step ${idx + 1}:</strong> ${step.instruction || ''}</div>
+                <div><em>Tool:</em> ${step.tool || 'None'}</div>
+                ${step.inputs && step.inputs.length ? `<div><em>Inputs:</em> ${step.inputs.join(', ')}</div>` : ''}
+                ${step.extract && step.extract.length ? `<div><em>Extract:</em> ${step.extract.join(', ')}</div>` : ''}
+                ${step.success_criteria ? `<div><em>Success Criteria:</em> ${step.success_criteria}</div>` : ''}
+                ${step.error_handling ? `<div><em>Error Handling:</em> ${step.error_handling}</div>` : ''}
+            `;
+            planList.appendChild(li);
+        });
+        planSection.appendChild(planList);
+        detailsContainer.appendChild(planSection);
+    }
+    // --- END PLAN DISPLAY ---
+    
     // Create execution details
     const detailsHtml = `
         <div class="execution-status ${execution.status}">${execution.status.toUpperCase()}</div>
@@ -592,7 +617,7 @@ function displayExecutionDetails(execution) {
         </div>
     `;
     
-    detailsContainer.innerHTML = detailsHtml;
+    detailsContainer.innerHTML += detailsHtml;
     
     // Show progress steps if available
     if (execution.progress_steps && execution.progress_steps.length > 0) {
@@ -674,7 +699,7 @@ async function submitFeedback(status) {
     }
     
     try {
-        const response = await fetch(`/api/executions/${executionId}/feedback`, {
+        const response = await fetch(`/workflows/executions/${executionId}/feedback`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -1719,7 +1744,7 @@ function hideWorkflowCreation() {
 // Load workflow data for editing
 async function loadWorkflowForEditing(workflowId) {
     try {
-        const response = await fetch(`/api/workflows/${workflowId}`);
+        const response = await fetch(`/workflows/${workflowId}`);
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -1752,8 +1777,8 @@ async function loadWorkflowForEditing(workflowId) {
 async function saveWorkflow(formData) {
     try {
         const url = currentWorkflowId 
-            ? `/api/workflows/${currentWorkflowId}`
-            : '/api/workflows';
+            ? `/workflows/${currentWorkflowId}`
+            : '/workflows';
         
         const method = currentWorkflowId ? 'PUT' : 'POST';
         
@@ -1901,7 +1926,7 @@ async function executeWorkflow(workflowId) {
         }
         
         // Execute the workflow
-        const response = await fetch(`/api/workflows/${workflowId}/execute`, {
+        const response = await fetch(`/workflows/${workflowId}/execute`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -1961,7 +1986,7 @@ async function deleteWorkflow(workflowId) {
     }
     
     try {
-        const response = await fetch(`/api/workflows/${workflowId}`, {
+        const response = await fetch(`/workflows/${workflowId}`, {
             method: 'DELETE'
         });
         
@@ -2053,7 +2078,7 @@ const TOOL_ICONS = {
 // Fetch available tools from API
 async function fetchAvailableTools() {
     try {
-        const response = await fetch('/api/workflows/available-tools');
+        const response = await fetch('/workflows/available-tools');
         if (response.ok) {
             const data = await response.json();
             if (data.success && data.available_apps) {
@@ -2062,9 +2087,9 @@ async function fetchAvailableTools() {
                     id: app.id,
                     name: app.name,
                     icon: TOOL_ICONS[app.id] || '🔧',
-                    description: `${app.name} tools`,
+                    // description: `${app.name} tools`,
                     tools: app.tools,
-                    connected: app.connected // <-- add this line!
+                    connected: app.connected 
                 }));
                 return true;
             }
@@ -2114,7 +2139,6 @@ function populateToolSelection(selectedTools = []) {
             <div class="tool-icon">${tool.icon}</div>
             <div>
                 <div class="tool-name">${tool.name}</div>
-                <div class="tool-description">${tool.description}${toolsText}</div>
                 ${!tool.connected ? '<div class="connect-warning">Not connected</div>' : ''}
             </div>
         `;
@@ -2387,6 +2411,186 @@ function getTriggerDisplayText(triggerType, triggerConfig) {
     .btn-secondary:hover { background: #4b5563; }
     .tool-selection-item.not-connected { opacity: 0.6; pointer-events: auto; border: 1px dashed #f59e0b; }
     .tool-selection-item .connect-warning { color: #dc2626; font-size: 0.8em; margin-top: 4px; font-weight: 500; }
+    `;
+    document.head.appendChild(style);
+})();
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Workflow User Feedback (Requires Review Tab)
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Poll for workflows awaiting user feedback every 10 seconds
+let awaitingFeedbackInterval = null;
+let awaitingFeedbackCache = [];
+
+function startAwaitingFeedbackPolling() {
+    if (awaitingFeedbackInterval) clearInterval(awaitingFeedbackInterval);
+    loadAwaitingFeedback();
+    awaitingFeedbackInterval = setInterval(loadAwaitingFeedback, 10000);
+}
+
+async function loadAwaitingFeedback() {
+    try {
+        const res = await fetch('/workflows/awaiting_feedback');
+        if (!res.ok) throw new Error('Failed to fetch awaiting feedback');
+        const data = await res.json();
+        const awaiting = data.awaiting_feedback || [];
+        awaitingFeedbackCache = awaiting;
+        renderAwaitingFeedbackSidebar(awaiting);
+        updateRequiresReviewTabBadge(awaiting.length);
+    } catch (err) {
+        safeError('Failed to load awaiting feedback:', err);
+        renderAwaitingFeedbackSidebar([]);
+        updateRequiresReviewTabBadge(0);
+    }
+}
+
+function renderAwaitingFeedbackSidebar(awaiting) {
+    const container = document.getElementById('requires-review-workflows-workflow-list');
+    if (!container) return;
+    container.innerHTML = '';
+    if (!awaiting.length) {
+        container.innerHTML = '<div class="workflow-item"><div class="workflow-details"><div class="workflow-name">No workflows require review</div><div class="workflow-desc">You have no pending clarifications</div></div></div>';
+        return;
+    }
+    awaiting.forEach(item => {
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'workflow-item requires-review-clarification';
+        itemDiv.innerHTML = `
+            <div class="workflow-details">
+                <div class="workflow-name">${item.workflow_name}</div>
+                <div class="workflow-desc">Step ${item.step_number}: <b>Clarification required</b></div>
+                <div class="clarification-question">${item.clarification_question}</div>
+                <textarea class="clarification-response" placeholder="Type your answer..."></textarea>
+                <button class="clarification-submit-btn">Submit</button>
+                <div class="clarification-status" style="display:none;"></div>
+            </div>
+        `;
+        const submitBtn = itemDiv.querySelector('.clarification-submit-btn');
+        const textarea = itemDiv.querySelector('.clarification-response');
+        const statusDiv = itemDiv.querySelector('.clarification-status');
+        submitBtn.addEventListener('click', async () => {
+            const feedback = textarea.value.trim();
+            if (!feedback) {
+                statusDiv.textContent = 'Please enter a response.';
+                statusDiv.style.display = 'block';
+                statusDiv.style.color = '#dc2626';
+                return;
+            }
+            submitBtn.disabled = true;
+            statusDiv.textContent = 'Submitting...';
+            statusDiv.style.display = 'block';
+            statusDiv.style.color = '#6b7280';
+            try {
+                const res = await fetch('/workflows/submit_feedback', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        execution_id: item.execution_id,
+                        feedback: feedback
+                    })
+                });
+                const data = await res.json();
+                if (res.ok && data.status === 'ok') {
+                    statusDiv.textContent = 'Submitted!';
+                    statusDiv.style.color = '#10b981';
+                    textarea.disabled = true;
+                    submitBtn.style.display = 'none';
+                    setTimeout(loadAwaitingFeedback, 1000);
+                } else {
+                    statusDiv.textContent = data.error || 'Submission failed.';
+                    statusDiv.style.color = '#dc2626';
+                    submitBtn.disabled = false;
+                }
+            } catch (err) {
+                statusDiv.textContent = 'Submission failed.';
+                statusDiv.style.color = '#dc2626';
+                submitBtn.disabled = false;
+            }
+        });
+        container.appendChild(itemDiv);
+    });
+}
+
+function updateRequiresReviewTabBadge(count) {
+    const tab = document.querySelector('.workflow-tab[data-tab="requires-review"]');
+    if (!tab) return;
+    let badge = tab.querySelector('.requires-review-badge');
+    if (!badge && count > 0) {
+        badge = document.createElement('span');
+        badge.className = 'requires-review-badge';
+        tab.appendChild(badge);
+    }
+    if (badge) {
+        badge.textContent = count > 0 ? count : '';
+        badge.style.display = count > 0 ? 'inline-block' : 'none';
+    }
+}
+
+// Start polling when the page loads
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', startAwaitingFeedbackPolling);
+} else {
+    startAwaitingFeedbackPolling();
+}
+
+(function addRequiresReviewStyles() {
+    if (document.getElementById('requires-review-style')) return;
+    const style = document.createElement('style');
+    style.id = 'requires-review-style';
+    style.innerHTML = `
+    .requires-review-badge {
+        background: #dc2626;
+        color: #fff;
+        border-radius: 12px;
+        font-size: 0.75em;
+        padding: 2px 8px;
+        margin-left: 6px;
+        vertical-align: middle;
+        display: inline-block;
+        min-width: 18px;
+        text-align: center;
+    }
+    .requires-review-clarification {
+        border: 1px solid #f59e0b;
+        background: #fffbe6;
+        border-radius: 8px;
+        margin-bottom: 12px;
+        padding: 12px 16px;
+    }
+    .clarification-question {
+        font-weight: 500;
+        color: #92400e;
+        margin: 8px 0 6px 0;
+    }
+    .clarification-response {
+        width: 100%;
+        min-height: 40px;
+        border-radius: 6px;
+        border: 1px solid #e5e7eb;
+        margin-bottom: 8px;
+        padding: 6px 8px;
+        font-size: 1em;
+        resize: vertical;
+    }
+    .clarification-submit-btn {
+        background: #2563eb;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        padding: 6px 16px;
+        font-weight: 500;
+        cursor: pointer;
+        margin-bottom: 4px;
+        transition: background 0.2s;
+    }
+    .clarification-submit-btn:hover {
+        background: #1d4ed8;
+    }
+    .clarification-status {
+        font-size: 0.9em;
+        margin-top: 2px;
+    }
     `;
     document.head.appendChild(style);
 })();

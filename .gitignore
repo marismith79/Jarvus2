@@ -83,3 +83,4 @@ htmlcov/
 .flake8
 
 browser_connection.json
+workflow_logs/

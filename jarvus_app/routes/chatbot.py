@@ -31,6 +31,7 @@ from ..db import db
 from ..services.agent_service import agent_service
 from ..utils.token_utils import get_valid_jwt_token
 from ..services.pipedream_tool_registry import pipedream_tool_service
+from ..services.workflow_execution_service import workflow_execution_service
 
 jarvus_ai = JarvusAIClient()
 
@@ -103,12 +104,14 @@ def handle_chat_message():
         thread_id = data.get('thread_id')  # Optional thread ID for memory
         tool_choice = data.get('tool_choice', 'auto')
         web_search_enabled = data.get('web_search_enabled', True)
-        if not all([user_text, agent_id]):
-            return jsonify({'error': 'Message and agent_id are required.'}), 400
-        
+        if not user_text:
+            return jsonify({'error': 'Message is required.'}), 400
+
+        # --- Normal Chat Handling ---
+        if not agent_id:
+            return jsonify({'error': 'agent_id is required.'}), 400
         # Get current task context
         current_task = Todo.get_current_task(current_user.id)
-        
         final_assistant_message, memory_info = agent_service.process_message(
             agent_id=agent_id,
             user_id=current_user.id,
@@ -120,22 +123,11 @@ def handle_chat_message():
             logger=logger,
             execution_type="chat"
         )
-        
-        # # Add debug logging
-        # logger.info(f"Final assistant message type: {type(final_assistant_message)}")
-        # logger.info(f"Final assistant message length: {len(str(final_assistant_message)) if final_assistant_message else 0}")
-        # logger.info(f"Final assistant message: {final_assistant_message[:200] if final_assistant_message else 'None'}...")
-        # logger.info(f"Memory info: {memory_info}")
-        
         response_data = {
             'response': final_assistant_message,
             'memory_info': memory_info,
             'thread_id': memory_info.get('thread_id')
         }
-        
-        # Log response metadata without the full content to avoid base64 spam
-        logger.info(f"Sending response - length: {len(str(final_assistant_message)) if final_assistant_message else 0}, thread_id: {memory_info.get('thread_id')}")
-        
         return jsonify(response_data), 200
     except Exception as e:
         logger.error(f"Error processing message with memory: {str(e)}", exc_info=True)

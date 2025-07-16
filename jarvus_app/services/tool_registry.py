@@ -316,3 +316,39 @@ from .tools import (
 # register_drive_tools(tool_registry)
 # register_sheets_tools(tool_registry)
 # register_slides_tools(tool_registry) 
+
+def user_feedback_executor(**kwargs):
+    """Executor for user_feedback tool. If user_response is provided, return it as the result. Otherwise, trigger sidebar notification/event for clarification."""
+    question = kwargs.get('question')
+    user_response = kwargs.get('user_response')
+    if user_response is not None:
+        return {'user_response': user_response, 'status': 'received'}
+    # If no user_response, return a dict indicating clarification is needed
+    import logging
+    logging.getLogger(__name__).info(f"Triggering sidebar clarification: {question}")
+    return {
+        'action': 'user_feedback',
+        'question': question,
+        'status': 'pending'
+    }
+
+user_feedback_tool = ToolMetadata(
+    name="user_feedback",
+    description="Use this tool to ask the user for clarification or missing information ONLY if it is necessary to proceed. Do not trigger this tool unless the user's input is required to resolve ambiguity or missing data.",
+    category=ToolCategory.CUSTOM,
+    server_path="user_feedback",
+    requires_auth=False,
+    is_active=True,
+    executor=user_feedback_executor,
+    parameters=[
+        ToolParameter(
+            name="question",
+            type="string",
+            description="The clarification or question to ask the user.",
+            required=True
+        )
+    ]
+)
+
+# Register the tool (add this to wherever tools are registered)
+tool_registry.register(user_feedback_tool) 

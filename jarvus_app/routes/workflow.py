@@ -13,7 +13,7 @@ from ..config import ALL_PIPEDREAM_APPS
 workflow_bp = Blueprint('workflow', __name__)
 logger = logging.getLogger(__name__)
 
-@workflow_bp.route('/workflows/available-tools', methods=['GET'])
+@workflow_bp.route('/available-tools', methods=['GET'])
 @login_required
 def get_available_tools():
     """Get available tools for workflow creation (only those the user has connected to, plus Web Browser as default)"""
@@ -27,7 +27,7 @@ def get_available_tools():
         # Add Web Browser (scrapingant) as a special case
         if 'scrapingant' in connected_services:
             available_apps.append({
-                "id": "web_browser",
+                "id": "scrapingant",
                 "name": "Web Browser",
                 "connected": True
             })
@@ -53,7 +53,7 @@ def get_available_tools():
         logger.error(f"Error getting available tools: {str(e)}", exc_info=True)
         return jsonify({'error': 'Failed to get available tools'}), 500
 
-@workflow_bp.route('/workflows', methods=['GET'])
+@workflow_bp.route('', methods=['GET'])
 @login_required
 def get_workflows():
     """Get all workflows for the current user"""
@@ -66,7 +66,7 @@ def get_workflows():
         logger.error(f"Error fetching workflows: {str(e)}", exc_info=True)
         return jsonify({'error': 'Failed to fetch workflows'}), 500
 
-@workflow_bp.route('/workflows/<int:workflow_id>', methods=['GET'])
+@workflow_bp.route('/<int:workflow_id>', methods=['GET'])
 @login_required
 def get_workflow(workflow_id):
     """Get a specific workflow by ID"""
@@ -80,7 +80,7 @@ def get_workflow(workflow_id):
         logger.error(f"Error fetching workflow {workflow_id}: {str(e)}", exc_info=True)
         return jsonify({'error': 'Failed to fetch workflow'}), 500
 
-@workflow_bp.route('/workflows', methods=['POST'])
+@workflow_bp.route('', methods=['POST'])
 @login_required
 def create_workflow():
     """Create a new workflow"""
@@ -114,7 +114,7 @@ def create_workflow():
         logger.error(f"Error creating workflow: {str(e)}", exc_info=True)
         return jsonify({'error': 'Failed to create workflow'}), 500
 
-@workflow_bp.route('/workflows/<int:workflow_id>', methods=['PUT'])
+@workflow_bp.route('/<int:workflow_id>', methods=['PUT'])
 @login_required
 def update_workflow(workflow_id):
     """Update an existing workflow"""
@@ -147,7 +147,7 @@ def update_workflow(workflow_id):
         logger.error(f"Error updating workflow {workflow_id}: {str(e)}", exc_info=True)
         return jsonify({'error': 'Failed to update workflow'}), 500
 
-@workflow_bp.route('/workflows/<int:workflow_id>', methods=['DELETE'])
+@workflow_bp.route('/<int:workflow_id>', methods=['DELETE'])
 @login_required
 def delete_workflow(workflow_id):
     """Delete a workflow"""
@@ -168,7 +168,7 @@ def delete_workflow(workflow_id):
 
 # Workflow Execution Routes
 
-@workflow_bp.route('/workflows/<int:workflow_id>/execute', methods=['POST'])
+@workflow_bp.route('/<int:workflow_id>/execute', methods=['POST'])
 @login_required
 def execute_workflow(workflow_id):
     """Execute a workflow"""
@@ -267,7 +267,7 @@ def get_user_executions():
         logger.error(f"Error getting user executions: {str(e)}", exc_info=True)
         return jsonify({'error': 'Failed to get executions'}), 500
 
-@workflow_bp.route('/workflows/status-summary', methods=['GET'])
+@workflow_bp.route('/status-summary', methods=['GET'])
 @login_required
 def get_workflow_status_summary():
     """Get workflow status summary for sidebar categories"""
@@ -316,7 +316,7 @@ def get_workflow_status_summary():
         logger.error(f"Error getting workflow status summary: {str(e)}", exc_info=True)
         return jsonify({'error': 'Failed to get workflow status summary'}), 500
 
-@workflow_bp.route('/workflows/<int:workflow_id>/executions', methods=['GET'])
+@workflow_bp.route('/<int:workflow_id>/executions', methods=['GET'])
 @login_required
 def get_workflow_executions(workflow_id):
     """Get all executions for a specific workflow"""
@@ -374,3 +374,30 @@ def add_execution_feedback(execution_id):
     except Exception as e:
         logger.error(f"Error adding execution feedback: {str(e)}", exc_info=True)
         return jsonify({'error': 'Failed to add feedback'}), 500 
+
+@workflow_bp.route('/awaiting_feedback', methods=['GET'])
+@login_required
+def get_workflows_awaiting_feedback():
+    """Return all workflows for the current user that are awaiting user feedback (for sidebar)."""
+    awaiting = workflow_execution_service.get_awaiting_feedback_for_user(current_user.id)
+    return jsonify({'awaiting_feedback': awaiting}), 200
+
+@workflow_bp.route('/submit_feedback', methods=['POST'])
+@login_required
+def submit_workflow_feedback():
+    """Submit user feedback for a workflow step (from sidebar)."""
+    data = request.get_json() or {}
+    execution_id = data.get('execution_id')
+    feedback = data.get('feedback')
+    if not execution_id or not feedback:
+        return jsonify({'error': 'execution_id and feedback are required'}), 400
+    try:
+        result = workflow_execution_service.resume_after_feedback(
+            execution_id=execution_id,
+            user_id=current_user.id,
+            feedback=feedback
+        )
+        return jsonify({'status': 'ok', 'workflow': result}), 200
+    except Exception as e:
+        logger.error(f"Error submitting workflow feedback: {str(e)}", exc_info=True)
+        return jsonify({'error': str(e)}), 500 

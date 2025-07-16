@@ -30,6 +30,7 @@ from jarvus_app.services.tool_registry import tool_registry
 from jarvus_app.services.pipedream_auth_service import pipedream_auth_service
 from jarvus_app.services.pipedream_tool_registry import pipedream_tool_service
 from ..services.pipedream_tool_registry import ensure_tools_discovered
+from jarvus_app import Config
         
 
 logger = logging.getLogger(__name__)
@@ -144,7 +145,7 @@ class AgentService:
         # Use all allowed tools (mentions are just hints, not restrictions)
         filtered_tools = allowed_tools
         
-        # print("[DEBUG] allowed_tools", allowed_tools)
+        print("[DEBUG] allowed_tools", allowed_tools)
         # print("[DEBUG] conversation_context_length", len(conversation_context))
         # print("[DEBUG] conversation_context", conversation_context[-2:] if len(conversation_context) >= 2 else conversation_context)
         # print("[DEBUG] filtered_tools", filtered_tools)
@@ -161,7 +162,7 @@ class AgentService:
         #     messages.insert(1, {"role": "system", "content": "\n".join(plan_instructions)})
         # Step 4: Orchestration
         orchestration_messages = messages.copy()
-        final_assistant_message = self._orchestrate_tool_calls(
+        final_assistant_message, _ = self.execution_agent(
             user_id=user_id,
             allowed_tools=filtered_tools,
             messages=orchestration_messages,
@@ -227,361 +228,6 @@ class AgentService:
         self._store_memories_from_interaction(user_id, agent_id, orchestration_messages)
         agent = self.get_agent(agent_id, user_id)  # Re-fetch from DB
         return final_assistant_message, memory_info
-    
-    def execute_workflow(self, workflow, user_id: str, logger=None):
-        """
-        Execute a workflow definition step-by-step using agentic orchestration.
-        Args:
-            workflow: Workflow model instance (with goal, instructions, required_tools, etc.)
-            user_id: The user executing the workflow
-            logger: Optional logger
-        Returns:
-            dict: Workflow execution result, including status, outputs, and logs
-        """
-        if logger is None:
-            logger = logging.getLogger(__name__)
-        
-        # 1. Parse workflow definition
-        goal = workflow.goal
-        instructions = workflow.instructions
-        notes = workflow.notes
-        required_tools = workflow.required_tools or []
-        trigger_type = workflow.trigger_type or 'manual'
-        trigger_config = workflow.trigger_config or {}
-        
-        # 2. Decompose instructions into steps (use LLM or fallback to splitting by lines)
-        plan_steps = self._plan_task_with_llm(instructions, required_tools)
-        if not plan_steps:
-            # Fallback: treat each instruction line as a step with tool 'auto'
-            plan_steps = [
-                {'tool': 'auto', 'parameters': {'instruction': line.strip()}}
-                for line in instructions.split('\n') if line.strip()
-            ]
-        
-        logger.info(f"[Workflow] Decomposed into {len(plan_steps)} steps.")
-        
-        # 3. Execute each step, track state, handle retries/reflection
-        step_results = []
-        workflow_state = {}
-        for idx, step in enumerate(plan_steps):
-            tool_name = step.get('tool', 'auto')
-            parameters = step.get('parameters', {})
-            retries = 0
-            max_retries = 3
-            step_success = False
-            last_error = None
-            while retries < max_retries and not step_success:
-                try:
-                    logger.info(f"[Workflow] Step {idx+1}/{len(plan_steps)}: Executing tool '{tool_name}' with parameters {parameters}")
-                    # Use tool registry to execute the tool
-                    # (If tool_name is 'auto', use LLM to select tool)
-                    if tool_name == 'auto':
-                        # Use LLM to select tool based on instruction
-                        allowed_tools = required_tools
-                        selected_tools = self._select_tools_with_llm(parameters.get('instruction', ''), allowed_tools)
-                        tool_name = selected_tools[0] if selected_tools else None
-                        if not tool_name:
-                            raise Exception("No suitable tool found for step.")
-                    # Get tool metadata
-                    tool_meta = tool_registry.get_tool(tool_name)
-                    if not tool_meta:
-                        raise Exception(f"Tool '{tool_name}' not found in registry.")
-                    # Execute tool
-                    jwt_token = None  # Add JWT if needed for auth
-                    result = tool_registry.execute_tool(tool_name, parameters, jwt_token)
-                    step_results.append({
-                        'step': idx+1,
-                        'tool': tool_name,
-                        'parameters': parameters,
-                        'result': result,
-                        'success': True
-                    })
-                    workflow_state[f'step_{idx+1}'] = result
-                    step_success = True
-                except Exception as e:
-                    last_error = str(e)
-                    logger.error(f"[Workflow] Step {idx+1} failed: {last_error}")
-                    retries += 1
-                    if retries >= max_retries:
-                        step_results.append({
-                            'step': idx+1,
-                            'tool': tool_name,
-                            'parameters': parameters,
-                            'result': last_error,
-                            'success': False
-                        })
-        
-        # 4. Reflection: Optionally review results and retry failed steps (future extension)
-        # (For now, just log failures)
-        failed_steps = [r for r in step_results if not r['success']]
-        if failed_steps:
-            logger.warning(f"[Workflow] {len(failed_steps)} steps failed. See step_results for details.")
-        
-        # 5. Output results (e.g., return, write to sheet, send message)
-        # (For now, just return the results)
-        return {
-            'workflow_id': workflow.id,
-            'status': 'completed' if not failed_steps else 'partial_failure',
-            'step_results': step_results,
-            'final_state': workflow_state,
-            'failed_steps': failed_steps
-        }
-
-    def execute_comprehensive_workflow(self, workflow, user_id: str, logger=None, context_memory_id: str = None):
-        """
-        Execute a workflow using a comprehensive agentic architecture with full memory integration.
-        Args:
-            workflow: Workflow model instance
-            user_id: The user executing the workflow
-            logger: Optional logger
-            context_memory_id: Optional hierarchical memory context
-        Returns:
-            dict: Comprehensive workflow execution report
-        """
-        import networkx as nx
-        if logger is None:
-            logger = logging.getLogger(__name__)
-        
-        # 1. Retrieve relevant long-term memories for context
-        ltm_context = memory_service.get_context_for_conversation(
-            user_id=user_id,
-            current_message=workflow.goal + "\n" + workflow.instructions,
-            as_sections=True
-        )
-        logger.info(f"[Memory] Retrieved LTM context for workflow: {ltm_context}")
-        
-        # 2. Optionally retrieve hierarchical/contextual memory
-        hierarchical_context = None
-        if context_memory_id:
-            hierarchical_context = memory_service.get_context_influence(context_memory_id, user_id)
-            logger.info(f"[Memory] Retrieved hierarchical context: {hierarchical_context}")
-        
-        # 3. Parse workflow into DAG of steps (LLM-driven)
-        dag_steps = self._parse_workflow_to_dag(
-            workflow.instructions,
-            workflow.required_tools or [],
-            ltm_context=ltm_context,
-            hierarchical_context=hierarchical_context
-        )
-        if not dag_steps:
-            dag_steps = [
-                {'id': f'step_{i+1}', 'tool': 'auto', 'parameters': {'instruction': line.strip()}, 'deps': []}
-                for i, line in enumerate(workflow.instructions.split('\n')) if line.strip()
-            ]
-        
-        # Build DAG
-        G = nx.DiGraph()
-        for step in dag_steps:
-            G.add_node(step['id'], **step)
-            for dep in step.get('deps', []):
-                G.add_edge(dep, step['id'])
-        
-        # 4. Initialize memory and logs
-        workflow_memory = {}
-        step_results = {}
-        logs = []
-        failed_steps = []
-        thread_id = f"workflow_{workflow.id}_{user_id}_{int(datetime.utcnow().timestamp())}"
-        agent_id = None  # Optionally associate with an agent
-        
-        # 5. Execute steps in topological order
-        for step_id in nx.topological_sort(G):
-            step = G.nodes[step_id]
-            tool_name = step.get('tool', 'auto')
-            parameters = step.get('parameters', {}).copy()
-            # Inject outputs from dependencies if needed
-            for dep in step.get('deps', []):
-                dep_result = step_results.get(dep, {})
-                parameters[f'dep_{dep}'] = dep_result
-            retries = 0
-            max_retries = 3
-            step_success = False
-            last_error = None
-            while retries < max_retries and not step_success:
-                try:
-                    logs.append(f"[Workflow] Step {step_id}: Executing tool '{tool_name}' with parameters {parameters}")
-                    if tool_name == 'auto':
-                        allowed_tools = workflow.required_tools or []
-                        selected_tools = self._select_tools_with_llm(parameters.get('instruction', ''), allowed_tools)
-                        tool_name = selected_tools[0] if selected_tools else None
-                        if not tool_name:
-                            raise Exception("No suitable tool found for step.")
-                    tool_meta = tool_registry.get_tool(tool_name)
-                    if not tool_meta:
-                        raise Exception(f"Tool '{tool_name}' not found in registry.")
-                    jwt_token = None
-                    result = tool_registry.execute_tool(tool_name, parameters, jwt_token)
-                    # Reflection: Use LLM to review result
-                    reflection = self._reflect_on_step(step, result, workflow_memory, logger, ltm_context=ltm_context)
-                    logs.append(f"[Workflow] Step {step_id} reflection: {reflection}")
-                    if reflection.get('retry'):
-                        retries += 1
-                        logs.append(f"[Workflow] Step {step_id} reflection requested retry ({retries}/{max_retries})")
-                        continue
-                    step_results[step_id] = result
-                    workflow_memory[step_id] = result
-                    step_success = True
-                    # --- Short-term memory: checkpoint after each step ---
-                    memory_service.save_checkpoint(
-                        thread_id=thread_id,
-                        user_id=user_id,
-                        agent_id=agent_id or 0,
-                        state_data={
-                            'step_id': step_id,
-                            'parameters': parameters,
-                            'result': result,
-                            'workflow_memory': workflow_memory.copy(),
-                            'logs': logs.copy()
-                        }
-                    )
-                except Exception as e:
-                    last_error = str(e)
-                    logs.append(f"[Workflow] Step {step_id} failed: {last_error}")
-                    retries += 1
-                    if retries >= max_retries:
-                        failed_steps.append({
-                            'step': step_id,
-                            'tool': tool_name,
-                            'parameters': parameters,
-                            'result': last_error,
-                            'success': False
-                        })
-        
-        # 6. Final reflection (LLM-driven)
-        final_reflection = self._final_reflection(
-            workflow, step_results, workflow_memory, logs, logger, ltm_context=ltm_context
-        )
-        logs.append(f"[Workflow] Final reflection: {final_reflection}")
-        
-        # 7. Long-term memory: extract and store memories from workflow run
-        try:
-            # Compose conversation/messages for memory extraction
-            conversation_messages = [
-                {'role': 'system', 'content': workflow.goal},
-                {'role': 'system', 'content': workflow.instructions}
-            ]
-            for step_id, result in step_results.items():
-                conversation_messages.append({'role': 'assistant', 'content': f"Step {step_id} result: {result}"})
-            # Store episodic, semantic, and procedural memories
-            stored_memories = memory_service.extract_and_store_memories(
-                user_id=user_id,
-                conversation_messages=conversation_messages,
-                agent_id=agent_id,
-                tool_call=None,  # Optionally pass tool call info
-                feedback=final_reflection.get('notes') if isinstance(final_reflection, dict) else str(final_reflection),
-                user_goal=workflow.goal
-            )
-            logs.append(f"[Memory] Stored memories: {[m.memory_id for m in stored_memories if hasattr(m, 'memory_id')]}")
-        except Exception as e:
-            logs.append(f"[Memory] Failed to store long-term memories: {str(e)}")
-        
-        # 8. Output results
-        return {
-            'workflow_id': workflow.id,
-            'status': 'completed' if not failed_steps else 'partial_failure',
-            'step_results': step_results,
-            'memory': workflow_memory,
-            'logs': logs,
-            'failed_steps': failed_steps,
-            'final_reflection': final_reflection
-        }
-
-    def _parse_workflow_to_dag(self, instructions, required_tools, ltm_context=None, hierarchical_context=None):
-        """
-        Use LLM to parse instructions into a list of steps with dependencies (DAG).
-        Each step: {'id': str, 'tool': str, 'parameters': dict, 'deps': list[str]}
-        Incorporate LTM and hierarchical context for better planning.
-        """
-        # Use LLM to parse instructions into a DAG
-        planning_prompt = (
-            "You are an expert workflow planner. Given the following workflow instructions, "
-            "decompose them into a list of steps with dependencies. "
-            "Each step should have: 'id', 'tool', 'parameters', and 'deps' (list of step ids it depends on).\n"
-            f"Instructions:\n{instructions}\n"
-            f"Relevant facts/context:\n{json.dumps(ltm_context)}\n"
-            f"Hierarchical context:\n{json.dumps(hierarchical_context) if hierarchical_context else 'None'}\n"
-            "Respond with a JSON list of steps."
-        )
-        planning_messages = [
-            {"role": "system", "content": planning_prompt}
-        ]
-        try:
-            response = self.llm_client.create_chat_completion(planning_messages, logger=logger)
-            content = response['choices'][0]['message']['content']
-            import json as _json
-            steps = _json.loads(content)
-            # Validate structure
-            filtered_steps = []
-            for step in steps:
-                if all(k in step for k in ('id', 'tool', 'parameters', 'deps')):
-                    filtered_steps.append(step)
-            return filtered_steps
-        except Exception as e:
-            if logger:
-                logger.warning(f"LLM DAG parsing failed: {str(e)}. Falling back to sequential steps.")
-            return []
-
-    def _reflect_on_step(self, step, result, memory, logger, ltm_context=None):
-        """
-        Use LLM to review the result of a step and decide whether to retry, continue, or escalate.
-        Returns: dict, e.g., {'retry': False, 'notes': 'Looks good.'}
-        """
-        reflection_prompt = (
-            "You are an expert agentic workflow critic. Review the following step, its result, and context. "
-            "If the result is incomplete, incorrect, or unsatisfactory, suggest a retry.\n"
-            f"Step: {json.dumps(step)}\n"
-            f"Result: {json.dumps(result)}\n"
-            f"Workflow memory: {json.dumps(memory)}\n"
-            f"Relevant facts/context: {json.dumps(ltm_context)}\n"
-            "Respond with a JSON object: {'retry': true/false, 'notes': '...'}"
-        )
-        reflection_messages = [
-            {"role": "system", "content": reflection_prompt}
-        ]
-        try:
-            response = self.llm_client.create_chat_completion(reflection_messages, logger=logger)
-            content = response['choices'][0]['message']['content']
-            import json as _json
-            reflection = _json.loads(content)
-            if 'retry' in reflection and 'notes' in reflection:
-                return reflection
-            return {'retry': False, 'notes': str(reflection)}
-        except Exception as e:
-            if logger:
-                logger.warning(f"LLM reflection failed: {str(e)}. Defaulting to continue.")
-            return {'retry': False, 'notes': 'Step completed.'}
-
-    def _final_reflection(self, workflow, step_results, memory, logs, logger, ltm_context=None):
-        """
-        Use LLM to review the entire workflow execution for improvement or summary.
-        Returns: dict or str
-        """
-        final_prompt = (
-            "You are an expert agentic workflow reviewer. Summarize the workflow execution, "
-            "highlight successes, failures, and suggest improvements.\n"
-            f"Goal: {workflow.goal}\n"
-            f"Instructions: {workflow.instructions}\n"
-            f"Step results: {json.dumps(step_results)}\n"
-            f"Workflow memory: {json.dumps(memory)}\n"
-            f"Logs: {json.dumps(logs[-10:])}\n"
-            f"Relevant facts/context: {json.dumps(ltm_context)}\n"
-            "Respond with a JSON object: {'summary': '...', 'notes': '...'}"
-        )
-        final_messages = [
-            {"role": "system", "content": final_prompt}
-        ]
-        try:
-            response = self.llm_client.create_chat_completion(final_messages, logger=logger)
-            content = response['choices'][0]['message']['content']
-            import json as _json
-            summary = _json.loads(content)
-            if 'summary' in summary:
-                return summary
-            return {'summary': str(summary)}
-        except Exception as e:
-            if logger:
-                logger.warning(f"LLM final reflection failed: {str(e)}. Returning basic summary.")
-            return {'summary': 'Workflow execution complete.'}
 
     def get_agent_interaction_history(self, agent: History):
         interactions = InteractionHistory.query.filter_by(
@@ -650,9 +296,11 @@ class AgentService:
             'timestamp': datetime.utcnow().isoformat()
         })
         # 1. System instructions
+        now_iso = datetime.now().isoformat()
+        system_prompt = config.Config.CHATBOT_SYSTEM_PROMPT.strip().replace("{CURRENT_DATETIME}", now_iso)
         system_instructions = [
             "### System Instructions",
-            config.Config.CHATBOT_SYSTEM_PROMPT.strip(),
+            system_prompt,
         ]
         
         # Add current task context
@@ -955,45 +603,48 @@ Respond with ONLY "NEW" or "CONTINUE".
         ]
         return filtered_tools
 
-    def _plan_task_with_llm(self, user_message, allowed_tools):
+    def planner_agent(self, user_message, allowed_tools, memory_context=None):
         """
         Use the LLM to generate a step-by-step plan for the user's request.
         Returns a list of plan steps, each a dict with 'tool' and 'parameters'.
         """
         jarvus_ai = self.llm_client
-        planning_prompt = (
-            f"You are an AI agent with access to the following tools: {allowed_tools}. "
-            "Given the user's request, break it down into a step-by-step plan. "
-            "Respond with a JSON list, where each item is an action with a 'tool' name and 'parameters' dict. "
-            "If the task is simple, the list may have only one step."
-        )
+        planning_prompt = Config.AGENT_PLANNING_PROMPT.format(allowed_tools=allowed_tools)
         planning_messages = [
             {"role": "system", "content": planning_prompt},
-            {"role": "user", "content": user_message}
         ]
+        if memory_context:
+            planning_messages.append({"role": "system", "content": f"### Memory Context\n{memory_context}"})
+        planning_messages.append({"role": "user", "content": user_message})
         planning_response = jarvus_ai.create_chat_completion(planning_messages, logger=logger)
-        def parse_plan_from_response(resp):
-            try:
-                if isinstance(resp, dict) and 'assistant' in resp and 'content' in resp['assistant']:
-                    content = resp['assistant']['content']
-                elif isinstance(resp, dict) and 'choices' in resp and resp['choices']:
-                    content = resp['choices'][0]['message']['content']
-                else:
-                    content = str(resp)
-                import re, json
-                match = re.search(r'\[.*\]', content, re.DOTALL)
-                if match:
-                    return json.loads(match.group(0))
-                return json.loads(content)
-            except Exception:
-                return []
-        plan = parse_plan_from_response(planning_response)
-        # Ensure plan is a list of dicts with 'tool' and 'parameters'
+        logger.info(f"Azure AI response: {planning_response}")
+
+        def parse_plan_steps(plan_steps):
+            # If plan_steps is a string, try to parse it as JSON
+            if isinstance(plan_steps, str):
+                try:
+                    plan_steps = json.loads(plan_steps)
+                except Exception as e:
+                    # Optionally log or handle the error
+                    print(f"Failed to parse plan steps: {e}")
+                    return []
+            # If plan_steps is a list, return as is
+            if isinstance(plan_steps, list):
+                return plan_steps
+        
         filtered_plan = []
+        plan = parse_plan_steps(planning_response['choices'][0]['message']['content'])
         for step in plan:
-            if isinstance(step, dict) and 'tool' in step and 'parameters' in step:
-                filtered_plan.append(step)
+            filtered_plan.append(step)
+        
         return filtered_plan
+        # plan = parse_plan_from_response(planning_response)
+        # # Ensure plan is a list of dicts with 'tool' and 'parameters'
+        # filtered_plan = []
+        # for step in plan:
+        #     if isinstance(step, dict) and 'tool' in step and 'parameters' in step:
+        #         filtered_plan.append(step)
+        # return filtered_plan
 
     def _format_tool_result_for_llm(self, tool_result):
         """
@@ -1002,9 +653,10 @@ Respond with ONLY "NEW" or "CONTINUE".
         """
         import json
         
+        instruction = "Check this tool call response to see if the tool call succeeded and returned what was requested by user. If so, return the result without a calling a tool again."
         # If it's already a string, return it as is
         if isinstance(tool_result, str):
-            return tool_result
+            return tool_result + "\n" + instruction
         
         # If it's a dict, create summary + full payload
         if isinstance(tool_result, dict):
@@ -1040,58 +692,61 @@ Respond with ONLY "NEW" or "CONTINUE".
             # Create the full response with summary first
             try:
                 full_payload = json.dumps(tool_result, indent=2)
-                return f"SUMMARY: {summary}\n\nCOMPLETE RESULT:\n{full_payload}"
+                return f"SUMMARY: {summary}\n\nCOMPLETE RESULT:\n{full_payload}\n{instruction}"
             except Exception:
-                return f"SUMMARY: {summary}\n\nCOMPLETE RESULT:\n{str(tool_result)}"
+                return f"SUMMARY: {summary}\n\nCOMPLETE RESULT:\n{str(tool_result)}\n{instruction}"
         
         # For any other type, convert to string
-        return str(tool_result)
+        return str(tool_result) + "\n" + instruction
 
-    def _orchestrate_tool_calls(self, user_id, allowed_tools, messages, tool_choice, logger):
+    def execution_agent(self, user_id, allowed_tools, messages, tool_choice, logger):
         """Orchestrate tool calling logic for both legacy and enhanced chat handlers, with plan adherence."""
         from jarvus_app.utils.token_utils import get_valid_jwt_token
         jarvus_ai = self.llm_client
         # Ensure tools are discovered if needed (now optimized to avoid repeated discovery)
         # No longer pass session_data; tool discovery uses DB cache or in-memory registry only
-        ensure_tools_discovered(user_id)
-        # Only include SDK tools that are in allowed_tools
-        tool_to_app_mapping = pipedream_tool_service.get_tool_to_app_mapping()
-        all_sdk_tools = pipedream_tool_service.get_all_sdk_tools()
-        sdk_tools = [
-            tool for tool in all_sdk_tools
-            if tool_to_app_mapping.get(tool.function.name) in allowed_tools
-        ]
+        if allowed_tools:
+            ensure_tools_discovered(user_id)
+            # Only include SDK tools that are in allowed_tools
+            tool_to_app_mapping = pipedream_tool_service.get_tool_to_app_mapping()
+            all_sdk_tools = pipedream_tool_service.get_all_sdk_tools()
+
+            sdk_tools = [
+                tool for tool in all_sdk_tools
+                if tool_to_app_mapping.get(tool.function.name) in allowed_tools
+            ]
         
         # # Use DB-cached tool discovery for allowed app slugs
         # from jarvus_app.services.pipedream_tool_registry import get_or_discover_tools_for_user_apps
         # sdk_tools = get_or_discover_tools_for_user_apps(user_id, allowed_tools)
         # print("[DEBUG] allowed_sdk_tools", sdk_tools)
         new_messages = []
+        logger.info(f"Messages passed into execution agent: {messages} (execution_agent)")
         try:
-            while True:
-                logger.info("Calling Azure AI for completion (_orchestrate_tool_calls)")
-                if len(allowed_tools) == 0:
-                    response = jarvus_ai.create_chat_completion(
-                        messages=messages,
-                        logger=logger
-                    )
-                else:
-                    response = jarvus_ai.create_chat_completion(
-                        messages=messages,
-                        tools=sdk_tools,
-                        tool_choice=tool_choice,
-                        logger=logger
-                    )
-                logger.info("Received response from Azure AI (_orchestrate_tool_calls)")
-                choice = response.choices[0]
-                msg = choice.message
-                assistant_msg = AssistantMessage(content=msg.content if msg.content is not None else "", tool_calls=msg.tool_calls)
-                messages.append(assistant_msg)
-                new_messages.append({'role': 'assistant', 'content': assistant_msg.content})
-                if not msg.tool_calls:
-                    logger.info("No tool calls in response - conversation complete (_orchestrate_tool_calls)")
-                    break
-                logger.info(f"Processing {len(msg.tool_calls)} tool calls (_orchestrate_tool_calls)")
+            # while True:
+            logger.info("Calling Azure AI for completion (execution_agent)")
+            if not allowed_tools:
+                response = jarvus_ai.create_chat_completion(
+                    messages=messages,
+                    logger=logger
+                )
+            else:
+                response = jarvus_ai.create_chat_completion(
+                    messages=messages,
+                    tools=sdk_tools,
+                    tool_choice=tool_choice,
+                    logger=logger
+                )
+            logger.info("Received response from Azure AI (execution_agent)")
+            choice = response.choices[0]
+            msg = choice.message
+            assistant_msg = AssistantMessage(content=msg.content if msg.content is not None else "", tool_calls=msg.tool_calls)
+            messages.append(assistant_msg)
+            new_messages.append({'role': 'assistant', 'content': assistant_msg.content})
+            if not msg.tool_calls:
+                logger.info("No tool calls in response - conversation complete (execution_agent)")
+            else:
+                logger.info(f"Processing {len(msg.tool_calls)} tool calls (execution_agent)")
                 for call in msg.tool_calls:
                     retries = 0
                     max_retries = 3
@@ -1100,7 +755,7 @@ Respond with ONLY "NEW" or "CONTINUE".
                     while retries < max_retries:
                         tool_name = current_call.function.name
                         tool_args = json.loads(current_call.function.arguments) if current_call.function.arguments else {}
-                        logger.info(f"Executing tool: {tool_name} with args: {tool_args} (_orchestrate_tool_calls)")
+                        logger.info(f"Executing tool: {tool_name} with args: {tool_args} (execution_agent)")
                         try:
                             # Get the app slug for this tool from the mapping
                             app_slug = tool_to_app_mapping.get(tool_name, "google_docs")  # fallback
@@ -1128,24 +783,24 @@ Respond with ONLY "NEW" or "CONTINUE".
                             messages.append(SystemMessage(content="When you see an error message, you must analyze it and try a different tool or fix the arguments and call a tool again. Do not just suggest alternatives in text—actually call a tool."))
                             retries += 1
                             if retries >= max_retries:
-                                logger.error(f"Max retries reached for tool call '{tool_name}'. Moving on. (_orchestrate_tool_calls)")
+                                logger.error(f"Max retries reached for tool call '{tool_name}'. Moving on. (execution_agent)")
                                 break
-                            logger.info("Prompting LLM again after tool call failure (_orchestrate_tool_calls)")
+                            logger.info("Prompting LLM again after tool call failure (execution_agent)")
                             response = jarvus_ai.create_chat_completion(
                                 messages=messages,
                                 tools=sdk_tools,
                                 tool_choice="auto",
                                 logger=logger
                             )
-                            logger.info("Received response from Azure AI (retry, _orchestrate_tool_calls)")
+                            logger.info("Received response from Azure AI (retry, execution_agent)")
                             choice = response.choices[0]
                             msg = choice.message
                             assistant_msg = AssistantMessage(content=msg.content if msg.content is not None else "", tool_calls=msg.tool_calls)
                             messages.append(assistant_msg)
                             new_messages.append({'role': 'assistant', 'content': assistant_msg.content})
-                            # logger.info(f"Assistant message (retry, _orchestrate_tool_calls): {assistant_msg}")
+                            # logger.info(f"Assistant message (retry, execution_agent): {assistant_msg}")
                             if not msg.tool_calls:
-                                logger.info("No tool calls in response after retry - conversation complete (_orchestrate_tool_calls)")
+                                logger.info("No tool calls in response after retry - conversation complete (execution_agent)")
                                 break
                             current_call = msg.tool_calls[0]
 
@@ -1156,9 +811,9 @@ Respond with ONLY "NEW" or "CONTINUE".
                     if msg.get('role') == 'assistant' and msg.get('content'):
                         final_assistant_message = msg.get('content')
                         break
-            return final_assistant_message
+            return final_assistant_message, messages
         except Exception as e:
-            logger.error(f"Error in _orchestrate_tool_calls: {str(e)}", exc_info=True)
+            logger.error(f"Error in execution_agent: {str(e)}", exc_info=True)
             return ""
     
     def _save_interaction(self, agent: History, user_message: str, assistant_message: str):
@@ -1230,6 +885,102 @@ Respond with ONLY "NEW" or "CONTINUE".
         except Exception as e:
             logger.error(f"Failed to cleanup old working memory: {str(e)}")
             db.session.rollback()
+
+    def validation_agent(self, instruction, success_criteria, agent_response, error_handling, extract=None, logger=None):
+        """LLM-based validation/reflection for a workflow step, always returning a summary and extracted outputs."""
+        # Compose the prompt for validation and extraction
+        extract_clause = ""
+        if extract:
+            extract_clause = (
+                f"\nAdditionally, extract the following output variables from the agent's response/tool result and return them in an 'extracted' field in the JSON. "
+                f"For each variable in {extract}, extract them from the tool result and include it as-is (do not summarize or modify unless the variable explicitly requires summarization). "
+                f"If the variable is not present, try to infer it from the response. "
+                # f"If the variable is needs to be a summary, you may summarize it, otherwise preserve the original output."
+            )
+        # --- NEW: Add explicit LLM instruction to ignore/summarize unnecessary or repetitive content in any document/tool result ---
+        llm_cleanup_instruction = (
+            "When reviewing the tool response, you must ignore or summarize unnecessary, repetitive, or boilerplate content, excessive formatting, irrelevant metadata, and any content that does not contribute to the main purpose or meaning of the result. "
+            "Focus your validation, extraction, and summary only on the main content and relevant information. Do not include unsubscribe links, copyright footers, repeated URLs, or generic disclaimers in your summary or extracted outputs. If the content is too long or verbose, summarize or truncate as needed. "
+        )
+        reflection_prompt = (
+            "You are an expert workflow validator. "
+            + llm_cleanup_instruction +
+            "Given the following step instruction, success criteria, the agent's response, and the error handling instructions, "
+            "determine if the step was completed successfully. If variables that need to be extracted are not present, the step should be marked as a fail and you should recommend a retry. "
+            "If not, suggest what to do next. When doing so, read the error message carefully, and suggest how the tool call can be improved, using the error handling instructions if relevant. "
+            "Always provide a concise 1-2 sentence summary of what was attempted and the outcome for use as context in future steps, regardless of success. "
+            "Respond in JSON: {\"success\": true/false, \"reason\": \"...\", \"retry\": true/false, \"suggestion\": \"...\", \"summary\": \"...\", \"extracted\": { ... }}\n"
+            "Respond with ONLY valid JSON, no comments, no extra text, no truncation."
+            f"Step Instruction: {instruction}\n"
+            f"Success Criteria: {success_criteria}\n"
+            f"Error Handling: {error_handling}\n"
+            f"{extract_clause}\n"
+            f"Agent Response: {agent_response}\n"
+        )
+        reflection_messages = [
+            {"role": "system", "content": reflection_prompt}
+        ]
+        try:
+            logger.info("======== Validation Agent Called ========")
+            reflection_response = self.llm_client.create_chat_completion(reflection_messages, logger=logger)
+            import json as _json
+            content = reflection_response['choices'][0]['message']['content']
+            try:
+                reflection = _json.loads(content)
+            except Exception as e1:
+                # Try to extract JSON object from the string using regex
+                import re
+                logger.warning(f"[AgentService] LLM returned non-JSON output, attempting to extract JSON. Raw output: {content}")
+                match = re.search(r'\{[\s\S]*\}', content)
+                if match:
+                    json_str = match.group(0)
+                    # Remove JS-style comments
+                    json_str = re.sub(r'//.*', '', json_str)
+                    # Remove trailing commas before } or ]
+                    json_str = re.sub(r',\s*([}\]])', r'\1', json_str)
+                    try:
+                        reflection = _json.loads(json_str)
+                    except Exception as e2:
+                        logger.warning(f"[AgentService] Failed to parse cleaned JSON: {e2}. Returning fallback reflection.")
+                        raise e2
+                else:
+                    logger.warning(f"[AgentService] No JSON object found in LLM output. Returning fallback reflection.")
+                    raise e1
+            return reflection
+        except Exception as e:
+            if logger:
+                logger.warning(f"[AgentService] LLM validation failed: {str(e)}. Returning fallback reflection.")
+            # Fallback: treat as failed with a basic summary
+            return {
+                'success': False,
+                'reason': str(e),
+                'retry': False,
+                'suggestion': '',
+                'summary': f"Validation failed: {str(e)}",
+                'extracted': {}
+            }
+
+    def procedural_memory_update_agent(self, previous_procedural_memory, new_reflections_feedback, logger=None):
+        """LLM-based update of procedural memory given previous memory and new reflections/feedback."""
+        summary_prompt = (
+            "You are an expert at maintaining procedural memory for workflow execution. "
+            "Given the previous procedural memory and the following new reflections/feedback from the latest run, "
+            "update and improve the procedural memory so that future executions are more reliable and efficient. "
+            "Respond with the improved procedural memory content as a string.\n"
+            f"Previous Procedural Memory:\n{previous_procedural_memory}\n"
+            f"New Reflections/Feedback:\n{new_reflections_feedback}\n"
+        )
+        summary_messages = [
+            {"role": "system", "content": summary_prompt}
+        ]
+        try:
+            summary_response = self.llm_client.create_chat_completion(summary_messages, logger=logger)
+            improved_content = summary_response['choices'][0]['message']['content']
+            return improved_content
+        except Exception as e:
+            if logger:
+                logger.error(f"[AgentService] Failed to update procedural memory: {str(e)}")
+            return previous_procedural_memory
 
 
 # Global enhanced agent service instance
