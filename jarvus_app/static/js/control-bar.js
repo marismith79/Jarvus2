@@ -29,18 +29,27 @@ class ControlBar {
         this.controlBar = document.getElementById('controlBar');
         this.loginButton = document.getElementById('loginButton');
         this.chatButton = document.getElementById('chatButton');
-        this.feedbackButton = document.getElementById('feedbackButton');
+        this.taskButton = document.getElementById('taskButton');
         this.browseButton = document.getElementById('browseButton');
         this.optionsButton = document.getElementById('optionsButton');
         this.chatPopup = document.getElementById('chatPopup');
         this.chatPopupMessages = document.getElementById('chatPopupMessages');
         this.chatPopupInput = document.getElementById('chatPopupInput');
         this.chatPopupSend = document.getElementById('chatPopupSend');
+        this.optionsDropdown = document.getElementById('optionsDropdown');
+        this.quitAppButton = document.getElementById('quitAppButton');
+        this.statusDropdown = document.getElementById('statusDropdown');
+        this.workflowList = document.getElementById('workflowList');
+        this.taskDropdown = document.getElementById('taskDropdown');
+        this.taskList = document.getElementById('taskList');
         this.isDragging = false;
         this.dragStartX = null;
         this.windowStartX = null;
         this.isChatOpen = false;
         this.wasChatOpenBeforeHide = false; // Track chat state when hiding
+        this.isOptionsDropdownOpen = false;
+        this.isStatusDropdownOpen = false;
+        this.isTaskDropdownOpen = false;
         
         // Authentication state
         this.isAuthenticated = false;
@@ -55,11 +64,19 @@ class ControlBar {
         // Button click handlers
         this.loginButton.addEventListener('click', this.handleLoginClick.bind(this));
         this.chatButton.addEventListener('click', this.handleChatClick.bind(this));
-        this.feedbackButton.addEventListener('click', this.handleFeedbackClick.bind(this));
+        this.taskButton.addEventListener('click', this.handleTaskClick.bind(this));
+        
         this.browseButton.addEventListener('click', this.handleBrowseClick.bind(this));
         this.optionsButton.addEventListener('click', this.handleOptionsClick.bind(this));
         this.chatPopupSend.addEventListener('click', this.handleSendMessage.bind(this));
         this.chatPopupInput.addEventListener('keypress', this.handleInputKeypress.bind(this));
+        this.quitAppButton.addEventListener('click', this.handleQuitApp.bind(this));
+        
+        // Status button click handler
+        this.browseButton.addEventListener('click', this.handleStatusClick.bind(this));
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', this.handleDocumentClick.bind(this));
         
         // Dragging handlers
         this.controlBar.addEventListener('mousedown', this.handleMouseDown.bind(this));
@@ -85,6 +102,37 @@ class ControlBar {
         this.chatPopup.addEventListener('mouseleave', (e) => {
             // Only re-enable click-through if not hovering bar
             if (!this.controlBar.matches(':hover')) {
+                window.electronAPI.setIgnoreMouseEvents(true);
+            }
+        });
+        this.optionsDropdown.addEventListener('mouseenter', () => {
+            window.electronAPI.setIgnoreMouseEvents(false);
+        });
+        this.optionsDropdown.addEventListener('mouseleave', (e) => {
+            // Only re-enable click-through if not hovering bar or chatPopup
+            if (!this.controlBar.matches(':hover') && !this.chatPopup.matches(':hover')) {
+                window.electronAPI.setIgnoreMouseEvents(true);
+            }
+        });
+        
+        // Status dropdown mouse enter/leave handlers
+        this.statusDropdown.addEventListener('mouseenter', () => {
+            window.electronAPI.setIgnoreMouseEvents(false);
+        });
+        this.statusDropdown.addEventListener('mouseleave', (e) => {
+            // Only re-enable click-through if not hovering bar, chatPopup, or optionsDropdown
+            if (!this.controlBar.matches(':hover') && !this.chatPopup.matches(':hover') && !this.optionsDropdown.matches(':hover')) {
+                window.electronAPI.setIgnoreMouseEvents(true);
+            }
+        });
+        
+        // Task dropdown mouse enter/leave handlers
+        this.taskDropdown.addEventListener('mouseenter', () => {
+            window.electronAPI.setIgnoreMouseEvents(false);
+        });
+        this.taskDropdown.addEventListener('mouseleave', (e) => {
+            // Only re-enable click-through if not hovering bar, chatPopup, optionsDropdown, or statusDropdown
+            if (!this.controlBar.matches(':hover') && !this.chatPopup.matches(':hover') && !this.optionsDropdown.matches(':hover') && !this.statusDropdown.matches(':hover')) {
                 window.electronAPI.setIgnoreMouseEvents(true);
             }
         });
@@ -228,6 +276,17 @@ class ControlBar {
     handleChatClick() {
         this.isChatOpen = !this.isChatOpen;
         safeLog('[DEBUG] Chat button clicked. isChatOpen:', this.isChatOpen);
+        
+        // Close status dropdown if open
+        if (this.isStatusDropdownOpen) {
+            this.toggleStatusDropdown();
+        }
+        
+        // Close task dropdown if open
+        if (this.isTaskDropdownOpen) {
+            this.toggleTaskDropdown();
+        }
+        
         if (this.isChatOpen) {
             this.positionChatPopup();
             this.chatPopup.classList.add('open');
@@ -243,19 +302,130 @@ class ControlBar {
         }
     }
     
-    handleFeedbackClick() {
-        safeLog('feedback button clicked');
+    handleTaskClick(event) {
+        event.stopPropagation(); // Prevent document click from immediately closing
+        safeLog('Task button clicked');
+        this.toggleTaskDropdown();
     }
     
     handleBrowseClick() {
         safeLog('browse button clicked');
-        // Toggle highlighted state
-        this.browseButton.classList.toggle('highlighted');
+        // This method is now handled by handleStatusClick
     }
     
-    handleOptionsClick() {
+    handleStatusClick(event) {
+        event.stopPropagation(); // Prevent document click from immediately closing
+        safeLog('Status button clicked');
+        this.toggleStatusDropdown();
+    }
+    
+    handleOptionsClick(event) {
+        event.stopPropagation(); // Prevent document click from immediately closing
         safeLog('Options button clicked');
-        window.electronAPI.optionsClick();
+        this.toggleOptionsDropdown();
+    }
+    
+    toggleOptionsDropdown() {
+        this.isOptionsDropdownOpen = !this.isOptionsDropdownOpen;
+        if (this.isOptionsDropdownOpen) {
+            this.optionsDropdown.classList.add('open');
+            // Close chat popup if open
+            if (this.isChatOpen) {
+                this.handleChatClick();
+            }
+            // Close status dropdown if open
+            if (this.isStatusDropdownOpen) {
+                this.toggleStatusDropdown();
+            }
+            // Close task dropdown if open
+            if (this.isTaskDropdownOpen) {
+                this.toggleTaskDropdown();
+            }
+        } else {
+            this.optionsDropdown.classList.remove('open');
+        }
+    }
+    
+    toggleStatusDropdown() {
+        this.isStatusDropdownOpen = !this.isStatusDropdownOpen;
+        if (this.isStatusDropdownOpen) {
+            this.statusDropdown.classList.add('open');
+            this.browseButton.classList.add('highlighted');
+            // Close chat popup if open
+            if (this.isChatOpen) {
+                this.handleChatClick();
+            }
+            // Close options dropdown if open
+            if (this.isOptionsDropdownOpen) {
+                this.toggleOptionsDropdown();
+            }
+            // Close task dropdown if open
+            if (this.isTaskDropdownOpen) {
+                this.toggleTaskDropdown();
+            }
+            // Load workflows
+            this.loadWorkflows();
+        } else {
+            this.statusDropdown.classList.remove('open');
+            this.browseButton.classList.remove('highlighted');
+        }
+    }
+    
+    toggleTaskDropdown() {
+        this.isTaskDropdownOpen = !this.isTaskDropdownOpen;
+        if (this.isTaskDropdownOpen) {
+            this.taskDropdown.classList.add('open');
+            this.taskButton.classList.add('highlighted');
+            // Close chat popup if open
+            if (this.isChatOpen) {
+                this.handleChatClick();
+            }
+            // Close options dropdown if open
+            if (this.isOptionsDropdownOpen) {
+                this.toggleOptionsDropdown();
+            }
+            // Close status dropdown if open
+            if (this.isStatusDropdownOpen) {
+                this.toggleStatusDropdown();
+            }
+            // Load tasks
+            this.loadTasks();
+        } else {
+            this.taskDropdown.classList.remove('open');
+            this.taskButton.classList.remove('highlighted');
+        }
+    }
+    
+    handleDocumentClick(event) {
+        // Close options dropdown if clicking outside
+        if (this.isOptionsDropdownOpen && 
+            !this.optionsButton.contains(event.target) && 
+            !this.optionsDropdown.contains(event.target)) {
+            this.toggleOptionsDropdown();
+        }
+        
+        // Close status dropdown if clicking outside
+        if (this.isStatusDropdownOpen && 
+            !this.browseButton.contains(event.target) && 
+            !this.statusDropdown.contains(event.target)) {
+            this.toggleStatusDropdown();
+        }
+        
+        // Close task dropdown if clicking outside
+        if (this.isTaskDropdownOpen && 
+            !this.taskButton.contains(event.target) && 
+            !this.taskDropdown.contains(event.target)) {
+            this.toggleTaskDropdown();
+        }
+    }
+    
+    handleQuitApp() {
+        safeLog('Quit app button clicked');
+        if (window.electronAPI && window.electronAPI.quitApp) {
+            window.electronAPI.quitApp();
+        } else {
+            safeLog('Quit app API not available');
+        }
     }
     
     async handleSendMessage() {
@@ -477,13 +647,380 @@ class ControlBar {
         }
     }
 
-    updateHotkeyDisplay() {
-        const hotkeyDisplay = document.querySelector('.hotkey-display');
-        if (hotkeyDisplay) {
-            // Use Command on macOS, Ctrl on other platforms
-            const modifier = window.electronAPI?.platform === 'darwin' ? '⌘' : 'Ctrl';
-            hotkeyDisplay.textContent = `${modifier}↵`;
+    async loadWorkflows() {
+        try {
+            safeLog('[STATUS] Loading workflows...');
+            
+            // Load workflows and their status
+            const [workflowsResponse, statusResponse] = await Promise.all([
+                fetch('/workflows', {
+                    credentials: 'include',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                }),
+                fetch('/workflows/status-summary', {
+                    credentials: 'include',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                })
+            ]);
+            
+            if (workflowsResponse.ok && statusResponse.ok) {
+                const workflowsData = await workflowsResponse.json();
+                const statusData = await statusResponse.json();
+                
+                safeLog('[STATUS] Raw workflows data:', workflowsData);
+                safeLog('[STATUS] Raw status data:', statusData);
+                
+                const workflows = workflowsData.workflows || [];
+                const statusSummary = statusData.summary || {};
+                
+                // Merge workflow data with status information
+                const workflowsWithStatus = this.mergeWorkflowStatus(workflows, statusSummary);
+                safeLog('[STATUS] Workflows with status:', workflowsWithStatus);
+                
+                this.displayWorkflows(workflowsWithStatus);
+            } else {
+                safeError('[STATUS] Failed to load workflows or status:', workflowsResponse.status, statusResponse.status);
+                this.displayWorkflows([]);
+            }
+        } catch (error) {
+            safeError('[STATUS] Error loading workflows:', error);
+            this.displayWorkflows([]);
         }
+    }
+    
+    mergeWorkflowStatus(workflows, statusSummary) {
+        const runningWorkflowIds = (statusSummary.running_workflows || []).map(w => w.id);
+        const recentWorkflowIds = (statusSummary.recently_ran_workflows || []).map(w => w.id);
+        
+        return workflows.map(workflow => {
+            let status = 'idle';
+            if (runningWorkflowIds.includes(workflow.id)) {
+                status = 'running';
+            } else if (recentWorkflowIds.includes(workflow.id)) {
+                status = 'completed';
+            }
+            
+            return {
+                ...workflow,
+                status: status
+            };
+        });
+    }
+    
+    displayWorkflows(workflows) {
+        // Clear existing workflows
+        this.workflowList.innerHTML = '';
+        
+        if (!workflows || workflows.length === 0) {
+            const noWorkflowsItem = document.createElement('div');
+            noWorkflowsItem.className = 'workflow-item';
+            noWorkflowsItem.textContent = 'No workflows found';
+            noWorkflowsItem.style.color = '#6b7280';
+            noWorkflowsItem.style.fontStyle = 'italic';
+            this.workflowList.appendChild(noWorkflowsItem);
+            return;
+        }
+        
+        // Add each workflow
+        workflows.forEach(workflow => {
+            const workflowItem = document.createElement('div');
+            workflowItem.className = 'workflow-item';
+            
+            // Create workflow content
+            const workflowContent = document.createElement('div');
+            workflowContent.className = 'workflow-content';
+            
+            // Create status indicator
+            const statusIndicator = document.createElement('div');
+            statusIndicator.className = 'workflow-status-indicator';
+            if (workflow.status === 'running') {
+                statusIndicator.classList.add('running');
+            } else if (workflow.status === 'completed') {
+                statusIndicator.classList.add('completed');
+            }
+            
+            // Create workflow name
+            const workflowName = document.createElement('div');
+            workflowName.className = 'workflow-name';
+            workflowName.textContent = workflow.name || 'Unnamed Workflow';
+            workflowName.title = workflow.description || workflow.name || 'No description';
+            
+            // Create actions container
+            const actionsContainer = document.createElement('div');
+            actionsContainer.className = 'workflow-actions';
+            
+            // Create start/stop button
+            const actionButton = document.createElement('button');
+            actionButton.className = 'workflow-action-btn';
+            
+            if (workflow.status === 'running') {
+                actionButton.classList.add('stop');
+                actionButton.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="6" width="12" height="12"></rect></svg>';
+                actionButton.title = 'Stop workflow';
+                actionButton.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.stopWorkflow(workflow.id, workflow.name);
+                });
+            } else {
+                actionButton.classList.add('start');
+                actionButton.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5,3 19,12 5,21"></polygon></svg>';
+                actionButton.title = 'Start workflow';
+                actionButton.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.startWorkflow(workflow.id, workflow.name);
+                });
+            }
+            
+            // Assemble the workflow item
+            workflowContent.appendChild(statusIndicator);
+            workflowContent.appendChild(workflowName);
+            actionsContainer.appendChild(actionButton);
+            
+            workflowItem.appendChild(workflowContent);
+            workflowItem.appendChild(actionsContainer);
+            
+            // Add click handler for the entire item (for future functionality)
+            workflowItem.addEventListener('click', () => {
+                safeLog('[STATUS] Workflow clicked:', workflow.name);
+                // TODO: Add workflow details view functionality
+            });
+            
+            this.workflowList.appendChild(workflowItem);
+        });
+    }
+    
+    async startWorkflow(workflowId, workflowName) {
+        try {
+            safeLog('[STATUS] Starting workflow:', workflowId, workflowName);
+            
+            const response = await fetch(`/workflows/${workflowId}/execute`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include',
+                body: JSON.stringify({})
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                safeLog('[STATUS] Workflow started successfully:', data);
+                
+                // Show success message in chat popup
+                this.addMessage('System', `🚀 Started workflow: ${workflowName}`, 'system');
+                
+                // Refresh the workflow list to update status
+                setTimeout(() => {
+                    this.loadWorkflows();
+                }, 1000);
+            } else {
+                const errorData = await response.json();
+                safeError('[STATUS] Failed to start workflow:', errorData);
+                this.addMessage('System', `❌ Failed to start workflow: ${errorData.error || 'Unknown error'}`, 'system');
+            }
+        } catch (error) {
+            safeError('[STATUS] Error starting workflow:', error);
+            this.addMessage('System', `❌ Error starting workflow: ${error.message}`, 'system');
+        }
+    }
+    
+    async stopWorkflow(workflowId, workflowName) {
+        try {
+            safeLog('[STATUS] Stopping workflow:', workflowId, workflowName);
+            
+            // First, we need to find the execution ID for this workflow
+            const executionsResponse = await fetch('/workflows/executions', {
+                credentials: 'include',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (executionsResponse.ok) {
+                const executionsData = await executionsResponse.json();
+                const runningExecution = executionsData.executions?.find(ex => 
+                    ex.workflow_id === workflowId && ex.status === 'running'
+                );
+                
+                if (runningExecution) {
+                    const cancelResponse = await fetch(`/workflows/executions/${runningExecution.execution_id}/cancel`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        credentials: 'include'
+                    });
+                    
+                    if (cancelResponse.ok) {
+                        safeLog('[STATUS] Workflow stopped successfully');
+                        this.addMessage('System', `⏹️ Stopped workflow: ${workflowName}`, 'system');
+                        
+                        // Refresh the workflow list to update status
+                        setTimeout(() => {
+                            this.loadWorkflows();
+                        }, 1000);
+                    } else {
+                        safeError('[STATUS] Failed to stop workflow');
+                        this.addMessage('System', `❌ Failed to stop workflow: ${workflowName}`, 'system');
+                    }
+                } else {
+                    safeError('[STATUS] No running execution found for workflow');
+                    this.addMessage('System', `❌ No running execution found for workflow: ${workflowName}`, 'system');
+                }
+            } else {
+                safeError('[STATUS] Failed to get executions');
+                this.addMessage('System', `❌ Failed to get workflow executions`, 'system');
+            }
+        } catch (error) {
+            safeError('[STATUS] Error stopping workflow:', error);
+            this.addMessage('System', `❌ Error stopping workflow: ${error.message}`, 'system');
+        }
+    }
+    
+    async loadTasks() {
+        try {
+            const response = await fetch('/chatbot/todos', { credentials: 'include' });
+            const data = await response.json();
+            this.displayTasks(data.todos || []);
+        } catch (error) {
+            this.displayTasks([]);
+        }
+    }
+    
+    displayTasks(tasks) {
+        this.taskList.innerHTML = '';
+        
+        if (!tasks.length) {
+            this.taskList.innerHTML = '<div class="task-item" style="color:#6b7280;font-style:italic">No tasks found</div>';
+            return;
+        }
+        
+        tasks.forEach((task, index) => {
+            const taskItem = document.createElement('div');
+            taskItem.className = 'task-item';
+            taskItem.dataset.taskId = task.id;
+            taskItem.dataset.taskIndex = index;
+            if (task.completed) taskItem.classList.add('completed');
+            
+            taskItem.innerHTML = `
+                <div class="task-content">
+                    <div class="task-drag-handle" title="Drag to reorder">⋮⋮</div>
+                    <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''}>
+                    <div class="task-text" title="${task.text}">${task.text}</div>
+                </div>
+                <div class="task-actions">
+                    <button class="task-action-btn" title="Delete task" onclick="this.closest('.task-item').remove()">🗑️</button>
+                </div>
+            `;
+            
+            // Add event listeners
+            taskItem.querySelector('.task-checkbox').addEventListener('change', (e) => {
+                e.stopPropagation();
+                this.toggleTaskCompletion(task.id, task.text, e.target.checked);
+            });
+            
+            this.setupDragAndDrop(taskItem, task.id);
+            this.taskList.appendChild(taskItem);
+        });
+    }
+    
+    async toggleTaskCompletion(taskId, taskText, completed) {
+        try {
+            await fetch(`/chatbot/todos/${taskId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ completed })
+            });
+            this.addMessage('System', `✅ Task ${completed ? 'completed' : 'uncompleted'}: ${taskText}`, 'system');
+        } catch (error) {
+            this.addMessage('System', `❌ Error updating task`, 'system');
+        }
+    }
+    
+    setupDragAndDrop(taskItem, taskId) {
+        const dragHandle = taskItem.querySelector('.task-drag-handle');
+        let isDragging = false;
+        let originalIndex = parseInt(taskItem.dataset.taskIndex);
+        
+        dragHandle.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            isDragging = true;
+            taskItem.classList.add('dragging');
+            
+            const clone = taskItem.cloneNode(true);
+            clone.style.cssText = `position:fixed;top:${e.clientY-10}px;left:${e.clientX-10}px;width:${taskItem.offsetWidth}px;z-index:10000;pointer-events:none`;
+            document.body.appendChild(clone);
+            
+            const handleMouseMove = (e) => {
+                if (!isDragging) return;
+                clone.style.top = `${e.clientY-10}px`;
+                clone.style.left = `${e.clientX-10}px`;
+            };
+            
+            const handleMouseUp = (e) => {
+                if (!isDragging) return;
+                isDragging = false;
+                taskItem.classList.remove('dragging');
+                document.body.removeChild(clone);
+                
+                const taskItems = Array.from(this.taskList.querySelectorAll('.task-item:not(.dragging)'));
+                let newIndex = taskItems.findIndex(item => {
+                    const rect = item.getBoundingClientRect();
+                    return e.clientY < rect.top + rect.height / 2;
+                });
+                if (newIndex === -1) newIndex = taskItems.length;
+                
+                if (newIndex !== originalIndex) {
+                    taskItem.remove();
+                    if (newIndex >= taskItems.length) {
+                        this.taskList.appendChild(taskItem);
+                    } else {
+                        this.taskList.insertBefore(taskItem, taskItems[newIndex]);
+                    }
+                    this.updateTaskIndices();
+                    this.addMessage('System', `🔄 Task reordered`, 'system');
+                }
+                
+                document.removeEventListener('mousemove', handleMouseMove);
+                document.removeEventListener('mouseup', handleMouseUp);
+            };
+            
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
+        });
+    }
+    
+    updateTaskIndices() {
+        this.taskList.querySelectorAll('.task-item').forEach((item, index) => {
+            item.dataset.taskIndex = index;
+        });
+    }
+    
+    updateHotkeyDisplay() {
+        // Get all hotkey displays
+        const hotkeyDisplays = document.querySelectorAll('.hotkey-display');
+        
+        hotkeyDisplays.forEach(display => {
+            // Check if this is the chat button hotkey (Command+Enter)
+            if (display.closest('#chatButton')) {
+                const modifier = window.electronAPI?.platform === 'darwin' ? '⌘' : 'Ctrl';
+                display.textContent = `${modifier}↵`;
+            }
+            // Check if this is the task button hotkey (Command+Option+T)
+            else if (display.closest('#taskButton')) {
+                const modifier = window.electronAPI?.platform === 'darwin' ? '⌘' : 'Ctrl';
+                const optionKey = window.electronAPI?.platform === 'darwin' ? '⌥' : 'Alt';
+                display.textContent = `${modifier}${optionKey}t`;
+            }
+        });
     }
     
     handleKeyDown(event) {
@@ -496,11 +1033,25 @@ class ControlBar {
             this.handleChatClick();
         }
         
-        // Escape to close chat popup if open
-        if (event.key === 'Escape' && this.isChatOpen) {
-            safeLog('[DEBUG] Escape detected, closing chat');
-            event.preventDefault();
-            this.handleChatClick();
+        // Escape to close chat popup or dropdowns if open
+        if (event.key === 'Escape') {
+            if (this.isChatOpen) {
+                safeLog('[DEBUG] Escape detected, closing chat');
+                event.preventDefault();
+                this.handleChatClick();
+            } else if (this.isOptionsDropdownOpen) {
+                safeLog('[DEBUG] Escape detected, closing options dropdown');
+                event.preventDefault();
+                this.toggleOptionsDropdown();
+            } else if (this.isStatusDropdownOpen) {
+                safeLog('[DEBUG] Escape detected, closing status dropdown');
+                event.preventDefault();
+                this.toggleStatusDropdown();
+            } else if (this.isTaskDropdownOpen) {
+                safeLog('[DEBUG] Escape detected, closing task dropdown');
+                event.preventDefault();
+                this.toggleTaskDropdown();
+            }
         }
     }
 
@@ -540,11 +1091,19 @@ class ControlBar {
             if (isVisible) {
                 // Window is visible, hide it
                 window.electronAPI.hideWindow();
-                safeLog('[CONTROL-BAR] Control bar hidden');
+                // Unregister shortcuts when hiding
+                if (window.electronAPI.unregisterShortcuts) {
+                    window.electronAPI.unregisterShortcuts();
+                }
+                safeLog('[CONTROL-BAR] Control bar hidden, shortcuts unregistered');
             } else {
                 // Window is hidden, show it
                 window.electronAPI.showWindow();
-                safeLog('[CONTROL-BAR] Control bar shown');
+                // Register shortcuts when showing
+                if (window.electronAPI.registerShortcuts) {
+                    window.electronAPI.registerShortcuts();
+                }
+                safeLog('[CONTROL-BAR] Control bar shown, shortcuts registered');
                 
                 // Restore chat state if it was open before hiding
                 if (this.wasChatOpenBeforeHide) {

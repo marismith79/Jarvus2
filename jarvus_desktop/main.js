@@ -160,11 +160,13 @@ function createControlBarWindow() {
     }
     
     controlBarWindow.show();
+    registerControlBarShortcuts();
   });
 
   ipcMain.handle('hide-window', () => {
     safeLog('[MAIN] hide-window IPC handler called');
     controlBarWindow.hide();
+    unregisterControlBarShortcuts();
     
     // On macOS, hide the entire app to restore focus to the previously active application
     if (process.platform === 'darwin') {
@@ -350,95 +352,166 @@ function setupPlaywrightBrowser() {
   safeLog('[MAIN] Browser management is now handled directly by Electron with secure profile integration');
 }
 
-// App event handlers
-app.whenReady().then(() => {
-  createControlBarWindow();
-  safeLog('[MAIN] App ready, control bar window created');
-  
-  // Setup Playwright browser control
-  setupPlaywrightBrowser();
+function registerVisibilityShortcuts() {
+  // Register control bar visibility toggle shortcuts (always active)
+  globalShortcut.register('CommandOrControl+Up', () => {
+    if (controlBarWindow) {
+      controlBarWindow.webContents.send('toggle-control-bar-visibility');
+    }
+  });
+  globalShortcut.register('CommandOrControl+Down', () => {
+    if (controlBarWindow) {
+      controlBarWindow.webContents.send('toggle-control-bar-visibility');
+    }
+  });
+}
 
+function registerControlBarShortcuts() {
   // Register DevTools shortcut
   globalShortcut.register('CommandOrControl+Alt+I', () => {
     if (controlBarWindow) {
       controlBarWindow.webContents.openDevTools({ mode: 'detach' });
-      try {
-        safeLog('[MAIN] DevTools opened via shortcut');
-      } catch (e) {
-        // Ignore EIO errors from console output
-      }
     }
   });
-
   // Register chat toggle shortcut
   globalShortcut.register('CommandOrControl+Enter', () => {
     if (controlBarWindow) {
       controlBarWindow.webContents.send('toggle-chat');
-      try {
-        safeLog('[MAIN] Chat toggle shortcut triggered');
-      } catch (e) {
-        // Ignore EIO errors from console output
-      }
     }
   });
-
   // Register control bar movement shortcuts
   globalShortcut.register('CommandOrControl+Alt+Left', () => {
     if (controlBarWindow && controlBarWindow.isVisible()) {
       controlBarWindow.webContents.send('move-control-bar', 'left');
-      try {
-        safeLog('[MAIN] Move control bar left shortcut triggered');
-      } catch (e) {
-        // Ignore EIO errors from console output
-      }
     }
   });
-
   globalShortcut.register('CommandOrControl+Alt+Right', () => {
     if (controlBarWindow && controlBarWindow.isVisible()) {
       controlBarWindow.webContents.send('move-control-bar', 'right');
-      try {
-        safeLog('[MAIN] Move control bar right shortcut triggered');
-      } catch (e) {
-        // Ignore EIO errors from console output
-      }
     }
   });
-
-  // Register control bar visibility toggle shortcuts
-  globalShortcut.register('CommandOrControl+Up', () => {
-    if (controlBarWindow) {
-      controlBarWindow.webContents.send('toggle-control-bar-visibility');
-      try {
-        safeLog('[MAIN] Toggle control bar visibility shortcut triggered (Up)');
-      } catch (e) {
-        // Ignore EIO errors from console output
-      }
-    }
-  });
-
-  globalShortcut.register('CommandOrControl+Down', () => {
-    if (controlBarWindow) {
-      controlBarWindow.webContents.send('toggle-control-bar-visibility');
-      try {
-        safeLog('[MAIN] Toggle control bar visibility shortcut triggered (Down)');
-      } catch (e) {
-        // Ignore EIO errors from console output
-      }
-    }
-  });
-
   // Register input bar focus shortcut
   globalShortcut.register('CommandOrControl+Enter', () => {
     if (controlBarWindow && controlBarWindow.isVisible()) {
       controlBarWindow.webContents.send('focus-input-bar');
-      try {
-        safeLog('[MAIN] Focus input bar shortcut triggered (Command+Enter)');
-      } catch (e) {
-        // Ignore EIO errors from console output
-      }
     }
   });
+}
+
+function registerGlobalShortcuts() {
+  registerVisibilityShortcuts();
+  registerControlBarShortcuts();
+}
+
+function unregisterControlBarShortcuts() {
+  // Unregister only the control bar specific shortcuts, not visibility toggles
+  globalShortcut.unregister('CommandOrControl+Alt+I');
+  globalShortcut.unregister('CommandOrControl+Enter');
+  globalShortcut.unregister('CommandOrControl+Alt+Left');
+  globalShortcut.unregister('CommandOrControl+Alt+Right');
+}
+
+// Add hotkey management IPC handlers
+ipcMain.handle('register-shortcuts', () => {
+  safeLog('[MAIN] register-shortcuts IPC handler called');
+  registerControlBarShortcuts();
+});
+
+ipcMain.handle('unregister-shortcuts', () => {
+  safeLog('[MAIN] unregister-shortcuts IPC handler called');
+  unregisterControlBarShortcuts();
+});
+
+// App event handlers
+app.whenReady().then(() => {
+  createControlBarWindow();
+  safeLog('[MAIN] App ready, control bar window created');
+  registerGlobalShortcuts(); // This registers both visibility and control bar shortcuts
+  
+  // Setup Playwright browser control
+  // setupPlaywrightBrowser();  // <-- THIS STARTS THE DEBUG BROWSER
+
+  // Register DevTools shortcut
+  // globalShortcut.register('CommandOrControl+Alt+I', () => {
+  //   if (controlBarWindow) {
+  //     controlBarWindow.webContents.openDevTools({ mode: 'detach' });
+  //     try {
+  //       safeLog('[MAIN] DevTools opened via shortcut');
+  //     } catch (e) {
+  //       // Ignore EIO errors from console output
+  //     }
+  //   }
+  // });
+
+  // Register chat toggle shortcut
+  // globalShortcut.register('CommandOrControl+Enter', () => {
+  //   if (controlBarWindow) {
+  //     controlBarWindow.webContents.send('toggle-chat');
+  //     try {
+  //       safeLog('[MAIN] Chat toggle shortcut triggered');
+  //     } catch (e) {
+  //       // Ignore EIO errors from console output
+  //     }
+  //   }
+  // });
+
+  // Register control bar movement shortcuts
+  // globalShortcut.register('CommandOrControl+Alt+Left', () => {
+  //   if (controlBarWindow && controlBarWindow.isVisible()) {
+  //     controlBarWindow.webContents.send('move-control-bar', 'left');
+  //     try {
+  //       safeLog('[MAIN] Move control bar left shortcut triggered');
+  //     } catch (e) {
+  //       // Ignore EIO errors from console output
+  //     }
+  //   }
+  // });
+
+  // globalShortcut.register('CommandOrControl+Alt+Right', () => {
+  //   if (controlBarWindow && controlBarWindow.isVisible()) {
+  //     controlBarWindow.webContents.send('move-control-bar', 'right');
+  //     try {
+  //       safeLog('[MAIN] Move control bar right shortcut triggered');
+  //     } catch (e) {
+  //       // Ignore EIO errors from console output
+  //     }
+  //   }
+  // });
+
+  // Register control bar visibility toggle shortcuts
+  // globalShortcut.register('CommandOrControl+Up', () => {
+  //   if (controlBarWindow) {
+  //     controlBarWindow.webContents.send('toggle-control-bar-visibility');
+  //     try {
+  //       safeLog('[MAIN] Toggle control bar visibility shortcut triggered (Up)');
+  //     } catch (e) {
+  //       // Ignore EIO errors from console output
+  //     }
+  //   }
+  // });
+
+  // globalShortcut.register('CommandOrControl+Down', () => {
+  //   if (controlBarWindow) {
+  //     controlBarWindow.webContents.send('toggle-control-bar-visibility');
+  //     try {
+  //       safeLog('[MAIN] Toggle control bar visibility shortcut triggered (Down)');
+  //     } catch (e) {
+  //       // Ignore EIO errors from console output
+  //     }
+  //   }
+  // });
+
+  // Register input bar focus shortcut
+  // globalShortcut.register('CommandOrControl+Enter', () => {
+  //   if (controlBarWindow && controlBarWindow.isVisible()) {
+  //     controlBarWindow.webContents.send('focus-input-bar');
+  //     try {
+  //       safeLog('[MAIN] Focus input bar shortcut triggered (Command+Enter)');
+  //     } catch (e) {
+  //       // Ignore EIO errors from console output
+  //     }
+  //   }
+  // });
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -540,6 +613,12 @@ ipcMain.handle('get-auth-tokens', async () => {
 ipcMain.handle('clear-auth-tokens', async () => {
   safeLog('[MAIN] IPC: clear-auth-tokens called');
   await clearAuthTokens();
+});
+
+// Quit app handler
+ipcMain.handle('quit-app', () => {
+  safeLog('[MAIN] IPC: quit-app called - quitting app');
+  app.exit(0);
 });
 
 // Browser management IPC handlers

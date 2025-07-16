@@ -63,6 +63,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Platform info
   platform: process.platform,
 
+  // Quit app
+  quitApp: () => ipcRenderer.invoke('quit-app'),
+  
+  // Hotkey management
+  registerShortcuts: () => ipcRenderer.invoke('register-shortcuts'),
+  unregisterShortcuts: () => ipcRenderer.invoke('unregister-shortcuts'),
+  
   // Click-through toggle
   setIgnoreMouseEvents: (ignore) => ipcRenderer.send('set-ignore-mouse-events', ignore),
   

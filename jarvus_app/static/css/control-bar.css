@@ -323,3 +323,412 @@ body {
     display: inline-block;
     line-height: 1.2;
 } 
+
+/* Options dropdown styles */
+.options-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 8px;
+    background: rgba(0, 0, 0, 0.9);
+    border-radius: 12px;
+    border: 1px solid #585656;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    display: none;
+    flex-direction: column;
+    min-width: 140px;
+    z-index: 200;
+    overflow: hidden;
+}
+
+.options-dropdown.open {
+    display: flex;
+}
+
+/* Status dropdown styles */
+.status-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 8px;
+    background: rgba(0, 0, 0, 0.9);
+    border-radius: 12px;
+    border: 1px solid #585656;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    display: none;
+    flex-direction: column;
+    min-width: 150px;
+    max-width: 300px;
+    z-index: 200;
+    overflow: hidden;
+}
+
+.status-dropdown.open {
+    display: flex;
+}
+
+.status-header {
+    background: rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid #585656;
+    font-weight: 600;
+    color: #fff;
+    padding: 12px 16px;
+    font-size: 13px;
+}
+
+/* Task dropdown styles */
+.task-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 8px;
+    background: rgba(0, 0, 0, 0.9);
+    border-radius: 12px;
+    border: 1px solid #585656;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    display: none;
+    flex-direction: column;
+    min-width: 200px;
+    max-width: 300px;
+    z-index: 200;
+    overflow: hidden;
+}
+
+.task-dropdown.open {
+    display: flex;
+}
+
+.task-header {
+    background: rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid #585656;
+    font-weight: 600;
+    color: #fff;
+    padding: 12px 16px;
+    font-size: 13px;
+}
+
+.task-list {
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 4px 0;
+}
+
+.task-item {
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 0px 7px 0px 15px;
+    color: #fff;
+    font-size: 11px;
+    text-align: left;
+    transition: all 0.2s ease;
+    border-radius: 0;
+    gap: 12px;
+    user-select: none;
+}
+
+.task-item.dragging {
+    opacity: 0.5;
+    transform: rotate(2deg);
+    z-index: 1000;
+}
+
+.task-item.drag-over {
+    border-top: 2px solid #10b981;
+}
+
+.task-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.task-item:active {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateX(2px);
+}
+
+.task-item:first-child {
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+}
+
+.task-item:last-child {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.task-content {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    gap: 12px;
+}
+
+.task-drag-handle {
+    cursor: grab;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 12px;
+    padding: 2px;
+    border-radius: 2px;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.task-drag-handle:hover {
+    color: rgba(255, 255, 255, 0.8);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.task-drag-handle:active {
+    cursor: grabbing;
+}
+
+.task-checkbox {
+    width: 14px;
+    height: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 2px;
+    background: none;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+
+.task-checkbox:checked {
+    background-color: #10b981;
+    border-color: #10b981;
+}
+
+.task-text {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: text;
+}
+
+.task-item.completed .task-text {
+    text-decoration: line-through;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.task-text.editing {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    padding: 2px 6px;
+    outline: none;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.task-text.editing:focus {
+    border-color: #10b981;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.task-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.task-action-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    color: #fff;
+    font-size: 12px;
+    padding: 0;
+    transition: all 0.2s ease;
+}
+
+.task-action-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: scale(1.1);
+}
+
+.task-action-btn:active {
+    background: rgba(255, 255, 255, 0.15);
+    transform: scale(0.95);
+}
+
+.workflow-list {
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 4px 0;
+}
+
+.workflow-item {
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 0px 7px 0px 15px;
+    color: #fff;
+    font-size: 11px;
+    /* font-weight: 500; */
+    text-align: left;
+    transition: all 0.2s ease;
+    border-radius: 0;
+    gap: 12px;
+}
+
+.workflow-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+    /* transform: translateX(4px); */
+}
+
+.workflow-item:active {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateX(2px);
+}
+
+.workflow-item:first-child {
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+}
+
+.workflow-item:last-child {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.workflow-content {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    gap: 12px;
+}
+
+.workflow-status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+
+.workflow-status-indicator.running {
+    background-color: #ffff00;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 0 5px rgba(255, 255, 0, 0.6);
+}
+
+.workflow-status-indicator.completed {
+    background-color: #06d228;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 0 5px rgba(98, 255, 98, 0.6);
+}
+
+.workflow-status-indicator.failed {
+    background-color: #ef4444;
+    border-color: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+}
+
+.workflow-name {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.workflow-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.workflow-action-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    color: #fff;
+    font-size: 14px;
+    padding: 0;
+    transition: all 0.2s ease;
+}
+
+.workflow-action-btn.start {
+    color: #fff;
+}
+
+.workflow-action-btn.stop {
+    color: #fff;
+}
+
+.workflow-action-btn:hover {
+    color: #fff;
+}
+
+.workflow-action-btn svg {
+    fill: currentColor;
+    stroke: currentColor;
+    stroke-width: 2;
+}
+
+.workflow-action-btn:hover svg {
+    fill: #fff;
+}
+
+.dropdown-item {
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    text-align: left;
+    width: 100%;
+}
+
+.dropdown-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.dropdown-item:active {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+/* Quit app button specific styles */
+.quit-app-button {
+    color: #ff6b6b;
+}
+
+.quit-app-button:hover {
+    background: rgba(255, 107, 107, 0.2);
+    color: #ff6b6b;
+}
+
+.quit-app-button:active {
+    background: rgba(255, 107, 107, 0.3);
+}
+
+.quit-app-button svg {
+    color: #ff6b6b;
+} 
