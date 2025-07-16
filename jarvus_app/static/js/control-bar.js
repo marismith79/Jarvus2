@@ -66,13 +66,12 @@ class ControlBar {
         this.chatButton.addEventListener('click', this.handleChatClick.bind(this));
         this.taskButton.addEventListener('click', this.handleTaskClick.bind(this));
         
-        this.browseButton.addEventListener('click', this.handleBrowseClick.bind(this));
         this.optionsButton.addEventListener('click', this.handleOptionsClick.bind(this));
         this.chatPopupSend.addEventListener('click', this.handleSendMessage.bind(this));
         this.chatPopupInput.addEventListener('keypress', this.handleInputKeypress.bind(this));
         this.quitAppButton.addEventListener('click', this.handleQuitApp.bind(this));
         
-        // Status button click handler
+        // Work/Status button click handler
         this.browseButton.addEventListener('click', this.handleStatusClick.bind(this));
         
         // Close dropdown when clicking outside
@@ -308,10 +307,7 @@ class ControlBar {
         this.toggleTaskDropdown();
     }
     
-    handleBrowseClick() {
-        safeLog('browse button clicked');
-        // This method is now handled by handleStatusClick
-    }
+
     
     handleStatusClick(event) {
         event.stopPropagation(); // Prevent document click from immediately closing
@@ -515,6 +511,22 @@ class ControlBar {
         }
         this.chatPopupMessages.appendChild(messageDiv);
         this.chatPopupMessages.scrollTop = this.chatPopupMessages.scrollHeight;
+        
+        // Copy assistant messages to clipboard
+        if (type === 'assistant' && window.electronAPI && window.electronAPI.copyToClipboard) {
+            // Extract plain text from the message (remove HTML tags if present)
+            const plainText = messageDiv.textContent || messageDiv.innerText || text;
+            window.electronAPI.copyToClipboard(plainText).then(result => {
+                if (result.success) {
+                    safeLog('[CONTROL-BAR] ✅ Assistant message copied to clipboard');
+                } else {
+                    safeError('[CONTROL-BAR] ❌ Failed to copy to clipboard:', result.error);
+                }
+            }).catch(error => {
+                safeError('[CONTROL-BAR] ❌ Error copying to clipboard:', error);
+            });
+        }
+        
         return messageDiv;
     }
     

@@ -274,7 +274,7 @@ body {
 }
 
 .chat-message.user {
-    background: #007AFF;
+    background: rgba(0, 122, 255, 0.3);
     color: #fff;
     margin-left: 20px;
     text-align: right;

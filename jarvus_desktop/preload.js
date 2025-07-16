@@ -79,5 +79,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   launchBrowserWithProfile: (profileName) => ipcRenderer.invoke('launch-browser-with-profile', profileName),
   getChromeProfileInfo: (profileName) => ipcRenderer.invoke('get-chrome-profile-info', profileName),
   getDecryptedProfilePath: () => ipcRenderer.invoke('get-decrypted-profile-path'),
-  syncProfileData: () => ipcRenderer.invoke('sync-profile-data')
+  syncProfileData: () => ipcRenderer.invoke('sync-profile-data'),
+  
+  // Clipboard management
+  copyToClipboard: (text) => ipcRenderer.invoke('copy-to-clipboard', text)
 }); 

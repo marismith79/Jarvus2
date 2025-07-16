@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, screen, globalShortcut } = require('electron');
+const { app, BrowserWindow, ipcMain, screen, globalShortcut, clipboard } = require('electron');
 const path = require('path');
 const Store = require('electron-store');
 const keytar = require('keytar');
@@ -380,12 +380,12 @@ function registerControlBarShortcuts() {
     }
   });
   // Register control bar movement shortcuts
-  globalShortcut.register('CommandOrControl+Alt+Left', () => {
+  globalShortcut.register('CommandOrControl+Left', () => {
     if (controlBarWindow && controlBarWindow.isVisible()) {
       controlBarWindow.webContents.send('move-control-bar', 'left');
     }
   });
-  globalShortcut.register('CommandOrControl+Alt+Right', () => {
+  globalShortcut.register('CommandOrControl+Right', () => {
     if (controlBarWindow && controlBarWindow.isVisible()) {
       controlBarWindow.webContents.send('move-control-bar', 'right');
     }
@@ -407,8 +407,8 @@ function unregisterControlBarShortcuts() {
   // Unregister only the control bar specific shortcuts, not visibility toggles
   globalShortcut.unregister('CommandOrControl+Alt+I');
   globalShortcut.unregister('CommandOrControl+Enter');
-  globalShortcut.unregister('CommandOrControl+Alt+Left');
-  globalShortcut.unregister('CommandOrControl+Alt+Right');
+  globalShortcut.unregister('CommandOrControl+Left');
+  globalShortcut.unregister('CommandOrControl+Right');
 }
 
 // Add hotkey management IPC handlers
@@ -429,89 +429,7 @@ app.whenReady().then(() => {
   registerGlobalShortcuts(); // This registers both visibility and control bar shortcuts
   
   // Setup Playwright browser control
-  // setupPlaywrightBrowser();  // <-- THIS STARTS THE DEBUG BROWSER
-
-  // Register DevTools shortcut
-  // globalShortcut.register('CommandOrControl+Alt+I', () => {
-  //   if (controlBarWindow) {
-  //     controlBarWindow.webContents.openDevTools({ mode: 'detach' });
-  //     try {
-  //       safeLog('[MAIN] DevTools opened via shortcut');
-  //     } catch (e) {
-  //       // Ignore EIO errors from console output
-  //     }
-  //   }
-  // });
-
-  // Register chat toggle shortcut
-  // globalShortcut.register('CommandOrControl+Enter', () => {
-  //   if (controlBarWindow) {
-  //     controlBarWindow.webContents.send('toggle-chat');
-  //     try {
-  //       safeLog('[MAIN] Chat toggle shortcut triggered');
-  //     } catch (e) {
-  //       // Ignore EIO errors from console output
-  //     }
-  //   }
-  // });
-
-  // Register control bar movement shortcuts
-  // globalShortcut.register('CommandOrControl+Alt+Left', () => {
-  //   if (controlBarWindow && controlBarWindow.isVisible()) {
-  //     controlBarWindow.webContents.send('move-control-bar', 'left');
-  //     try {
-  //       safeLog('[MAIN] Move control bar left shortcut triggered');
-  //     } catch (e) {
-  //       // Ignore EIO errors from console output
-  //     }
-  //   }
-  // });
-
-  // globalShortcut.register('CommandOrControl+Alt+Right', () => {
-  //   if (controlBarWindow && controlBarWindow.isVisible()) {
-  //     controlBarWindow.webContents.send('move-control-bar', 'right');
-  //     try {
-  //       safeLog('[MAIN] Move control bar right shortcut triggered');
-  //     } catch (e) {
-  //       // Ignore EIO errors from console output
-  //     }
-  //   }
-  // });
-
-  // Register control bar visibility toggle shortcuts
-  // globalShortcut.register('CommandOrControl+Up', () => {
-  //   if (controlBarWindow) {
-  //     controlBarWindow.webContents.send('toggle-control-bar-visibility');
-  //     try {
-  //       safeLog('[MAIN] Toggle control bar visibility shortcut triggered (Up)');
-  //     } catch (e) {
-  //       // Ignore EIO errors from console output
-  //     }
-  //   }
-  // });
-
-  // globalShortcut.register('CommandOrControl+Down', () => {
-  //   if (controlBarWindow) {
-  //     controlBarWindow.webContents.send('toggle-control-bar-visibility');
-  //     try {
-  //       safeLog('[MAIN] Toggle control bar visibility shortcut triggered (Down)');
-  //     } catch (e) {
-  //       // Ignore EIO errors from console output
-  //     }
-  //   }
-  // });
-
-  // Register input bar focus shortcut
-  // globalShortcut.register('CommandOrControl+Enter', () => {
-  //   if (controlBarWindow && controlBarWindow.isVisible()) {
-  //     controlBarWindow.webContents.send('focus-input-bar');
-  //     try {
-  //       safeLog('[MAIN] Focus input bar shortcut triggered (Command+Enter)');
-  //     } catch (e) {
-  //       // Ignore EIO errors from console output
-  //     }
-  //   }
-  // });
+  setupPlaywrightBrowser();  // <-- THIS STARTS THE DEBUG BROWSER
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -769,6 +687,18 @@ ipcMain.handle('sync-profile-data', async () => {
     return { success, message: success ? 'Profile data synced successfully' : 'Failed to sync profile data' };
   } catch (error) {
     safeError('[MAIN] Failed to sync profile data:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Clipboard management IPC handler
+ipcMain.handle('copy-to-clipboard', async (event, text) => {
+  try {
+    clipboard.writeText(text);
+    safeLog('[MAIN] ✅ Text copied to clipboard');
+    return { success: true };
+  } catch (error) {
+    safeError('[MAIN] ❌ Error copying to clipboard:', error);
     return { success: false, error: error.message };
   }
 }); 
