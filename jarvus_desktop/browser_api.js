@@ -281,25 +281,39 @@ class BrowserAPI {
             
             // Wait for at least one context to appear (max 2 seconds)
             let retries = 20;
-            while (this.browser.contexts.length === 0 && retries-- > 0) {
+            while (
+                this.browser.contexts &&
+                typeof this.browser.contexts === 'function' &&
+                this.browser.contexts().length === 0 &&
+                retries-- > 0
+            ) {
                 await new Promise(res => setTimeout(res, 100));
             }
-            console.log('DEBUG: Number of contexts after wait:', this.browser.contexts.length);
-            this.browser.contexts.forEach((ctx, i) => {
-                console.log(`DEBUG: Context ${i} has ${ctx.pages.length} pages`);
-                ctx.pages.forEach((page, j) => {
-                    try {
-                        console.log(`DEBUG:   Page ${j}: ${page.url()}`);
-                    } catch (e) {
-                        console.log(`DEBUG:   Page ${j}: (error getting URL)`);
+            let contextCount = 0;
+            if (this.browser.contexts && typeof this.browser.contexts === 'function') {
+                contextCount = this.browser.contexts().length;
+            }
+            console.log('DEBUG: Number of contexts after wait:', contextCount);
+            if (this.browser.contexts && typeof this.browser.contexts === 'function') {
+                this.browser.contexts().forEach((ctx, i) => {
+                    let pageCount = ctx.pages && typeof ctx.pages === 'function' ? ctx.pages().length : 'unknown';
+                    console.log(`DEBUG: Context ${i} has ${pageCount} pages`);
+                    if (ctx.pages && typeof ctx.pages === 'function') {
+                        ctx.pages().forEach((page, j) => {
+                            try {
+                                console.log(`DEBUG:   Page ${j}: ${page.url()}`);
+                            } catch (e) {
+                                console.log(`DEBUG:   Page ${j}: (error getting URL)`);
+                            }
+                        });
                     }
                 });
-            });
+            }
             
             // Get existing context and pages
-            if (this.browser.contexts.length > 0) {
-                this.context = this.browser.contexts[0];
-                this.pages = this.context.pages;
+            if (this.browser.contexts && typeof this.browser.contexts === 'function' && this.browser.contexts().length > 0) {
+                this.context = this.browser.contexts()[0];
+                this.pages = this.context.pages && typeof this.context.pages === 'function' ? this.context.pages() : [];
             } else {
                 this.context = await this.browser.newContext();
                 this.pages = [];
@@ -317,17 +331,22 @@ class BrowserAPI {
             this.isConnected = true;
             
             // Debug: Log all contexts and their pages after connecting
-            console.log('DEBUG: Number of contexts:', this.browser.contexts.length);
-            this.browser.contexts.forEach((ctx, i) => {
-                console.log(`DEBUG: Context ${i} has ${ctx.pages.length} pages`);
-                ctx.pages.forEach((page, j) => {
-                    try {
-                        console.log(`DEBUG:   Page ${j}: ${page.url()}`);
-                    } catch (e) {
-                        console.log(`DEBUG:   Page ${j}: (error getting URL)`);
+            if (this.browser.contexts && typeof this.browser.contexts === 'function') {
+                console.log('DEBUG: Number of contexts:', this.browser.contexts().length);
+                this.browser.contexts().forEach((ctx, i) => {
+                    let pageCount = ctx.pages && typeof ctx.pages === 'function' ? ctx.pages().length : 'unknown';
+                    console.log(`DEBUG: Context ${i} has ${pageCount} pages`);
+                    if (ctx.pages && typeof ctx.pages === 'function') {
+                        ctx.pages().forEach((page, j) => {
+                            try {
+                                console.log(`DEBUG:   Page ${j}: ${page.url()}`);
+                            } catch (e) {
+                                console.log(`DEBUG:   Page ${j}: (error getting URL)`);
+                            }
+                        });
                     }
                 });
-            });
+            }
             
             return { 
                 success: true, 

@@ -16,10 +16,10 @@ class SecureProfileManager {
         }
         
         this.encryptionKey = this.getOrCreateEncryptionKey();
-        this.hardcodedProfile = 'Profile 6'; // Hardcoded profile as requested
+        // Remove hardcoded profile - will be determined dynamically
         
         console.log(`Secure Profile Manager initialized at: ${this.baseDir}`);
-        console.log(`Using hardcoded profile: ${this.hardcodedProfile}`);
+        console.log('Using dynamic profile selection');
     }
     
     getOrCreateEncryptionKey() {
@@ -57,7 +57,12 @@ class SecureProfileManager {
         }
     }
     
-    getChromeProfilePath(profileName = this.hardcodedProfile) {
+    getChromeProfilePath(profileName = null) {
+        if (!profileName) {
+            console.warn('No profile name provided to getChromeProfilePath');
+            return null;
+        }
+        
         const userDataPath = this.getChromeUserDataPath();
         const profilePath = path.join(userDataPath, profileName);
         
@@ -200,19 +205,14 @@ class SecureProfileManager {
             }
         }
         
-        // Fallback to hardcoded profile if available
-        if (profiles[this.hardcodedProfile]) {
-            console.log(`Using hardcoded profile as default: ${this.hardcodedProfile}`);
-            return this.hardcodedProfile;
+        // If no primary account found, return the first available profile
+        const profileNames = Object.keys(profiles);
+        if (profileNames.length > 0) {
+            console.log(`Using first available profile: ${profileNames[0]}`);
+            return profileNames[0];
         }
         
-        // Fallback to first available profile
-        if (Object.keys(profiles).length > 0) {
-            const firstProfile = Object.keys(profiles)[0];
-            console.log(`Using first available profile as default: ${firstProfile}`);
-            return firstProfile;
-        }
-        
+        console.warn('No profiles found');
         return null;
     }
     
@@ -428,7 +428,7 @@ class SecureProfileManager {
         }
     }
     
-    createSecureProfileCopy(profileName = this.hardcodedProfile) {
+    createSecureProfileCopy(profileName = null) {
         try {
             // Get source profile path
             const sourceProfile = this.getChromeProfilePath(profileName);
@@ -520,7 +520,7 @@ class SecureProfileManager {
         }
     }
     
-    getPlaywrightProfilePath(profileName = this.hardcodedProfile) {
+    getPlaywrightProfilePath(profileName = null) {
         try {
             // Find the secure profile directory
             const profileDirs = fs.readdirSync(this.baseDir)
@@ -583,7 +583,7 @@ class SecureProfileManager {
         }
     }
     
-    syncProfileData(profileName = this.hardcodedProfile) {
+    syncProfileData(profileName = null) {
         try {
             console.log(`Syncing profile data for: ${profileName}`);
             
@@ -608,7 +608,7 @@ class SecureProfileManager {
         }
     }
     
-    getProfileInfo(profileName = this.hardcodedProfile) {
+    getProfileInfo(profileName = null) {
         try {
             const profileDirs = fs.readdirSync(this.baseDir)
                 .filter(item => {
@@ -649,8 +649,58 @@ class SecureProfileManager {
     }
     
     // Method to get the decrypted profile path for Python to use
-    getDecryptedProfilePath() {
-        return this.getPlaywrightProfilePath(this.hardcodedProfile);
+    getDecryptedProfilePath(profileName = null) {
+        return this.getPlaywrightProfilePath(profileName);
+    }
+
+    // Check if a profile is available (not locked by another Chrome instance)
+    isProfileAvailable(profileName) {
+        const profilePath = this.getChromeProfilePath(profileName);
+        if (!profilePath) return false;
+        
+        // Check for lock files
+        const lockFile = path.join(profilePath, 'lockfile');
+        const singletonLock = path.join(profilePath, 'SingletonLock');
+        
+        return !fs.existsSync(lockFile) && !fs.existsSync(singletonLock);
+    }
+
+    // Get all available profiles (not locked by other Chrome instances)
+    getAvailableProfiles() {
+        const allProfiles = this.discoverAvailableProfiles();
+        const availableProfiles = {};
+        
+        for (const [name, info] of Object.entries(allProfiles)) {
+            if (this.isProfileAvailable(name)) {
+                availableProfiles[name] = info;
+            }
+        }
+        
+        console.log(`Found ${Object.keys(availableProfiles).length} available profiles: ${Object.keys(availableProfiles)}`);
+        return availableProfiles;
+    }
+
+    // Get the best available profile (primary account first, then first available)
+    getBestAvailableProfile() {
+        const availableProfiles = this.getAvailableProfiles();
+        
+        if (Object.keys(availableProfiles).length === 0) {
+            console.warn('No available profiles found');
+            return null;
+        }
+        
+        // First, try to find the primary account profile
+        for (const [name, info] of Object.entries(availableProfiles)) {
+            if (info.is_consented_primary_account) {
+                console.log(`Using primary account profile: ${name}`);
+                return name;
+            }
+        }
+        
+        // If no primary account found, use the first available profile
+        const firstProfile = Object.keys(availableProfiles)[0];
+        console.log(`Using first available profile: ${firstProfile}`);
+        return firstProfile;
     }
 }
 

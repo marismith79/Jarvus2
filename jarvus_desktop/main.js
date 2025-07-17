@@ -323,13 +323,16 @@ function setupPlaywrightBrowser() {
       // Create new Chrome launcher instance
       chromeLauncher = new ChromeLauncher();
       
-      // Launch Chrome with Profile 6
-      const result = await chromeLauncher.launchChrome();
+      // Launch Chrome with dynamic profile selection and session preservation
+      // The launcher will automatically shut down non-debugger Chrome instances
+      const result = await chromeLauncher.launchChrome(null, true);
       
       if (result.success) {
         safeLog('[MAIN] ✅ Browser launched successfully from Electron');
         safeLog(`[MAIN] WebSocket Endpoint: ${result.connectionInfo.wsEndpoint}`);
         safeLog(`[MAIN] Profile Path: ${result.connectionInfo.profilePath}`);
+        safeLog(`[MAIN] Selected Profile: ${result.connectionInfo.selectedProfile}`);
+        safeLog(`[MAIN] Session Preservation: ${result.connectionInfo.preserveSessions}`);
         
         // Start Browser API server
         safeLog('[MAIN] Starting Browser API server...');
@@ -349,7 +352,7 @@ function setupPlaywrightBrowser() {
     
   }, 1000); // Reduced wait time from 2 seconds to 1 second
   
-  safeLog('[MAIN] Browser management is now handled directly by Electron with secure profile integration');
+  safeLog('[MAIN] Browser management is now handled directly by Electron with dynamic profile selection, session preservation, and automatic Chrome shutdown');
 }
 
 function registerVisibilityShortcuts() {
@@ -463,14 +466,14 @@ app.on('will-quit', () => {
     safeLog('[MAIN] Browser API server stopped');
   }
   
-  // Close browser
-  if (chromeLauncher) {
-    chromeLauncher.closeBrowser().then(() => {
-      safeLog('[MAIN] Browser closed during app quit');
-    }).catch((error) => {
-      safeError('[MAIN] Error closing browser during quit:', error);
-    });
-  }
+  // Do NOT close the Chrome debugger browser on app quit
+  // if (chromeLauncher) {
+  //   chromeLauncher.closeBrowser().then(() => {
+  //     safeLog('[MAIN] Browser closed during app quit');
+  //   }).catch((error) => {
+  //     safeError('[MAIN] Error closing browser during quit:', error);
+  //   });
+  // }
   
   safeLog('[MAIN] Browser cleanup completed');
 });
@@ -625,31 +628,6 @@ ipcMain.handle('get-default-chrome-profile', async () => {
   }
 });
 
-ipcMain.handle('launch-browser-with-profile', async (event, profileName) => {
-  safeLog(`[MAIN] IPC: launch-browser-with-profile called with profile: ${profileName}`);
-  try {
-    // Create new Chrome launcher instance
-    chromeLauncher = new ChromeLauncher();
-    
-    // Launch Chrome with the specified profile (Profile 6 is hardcoded in launcher)
-    const result = await chromeLauncher.launchChrome();
-    
-    if (result.success) {
-      safeLog('[MAIN] ✅ Chrome browser launched successfully with profile');
-      safeLog(`[MAIN] WebSocket Endpoint: ${result.connectionInfo.wsEndpoint}`);
-      safeLog(`[MAIN] Profile Path: ${result.connectionInfo.profilePath}`);
-    } else {
-      safeError('[MAIN] ❌ Failed to launch Chrome browser with profile:', result.error);
-    }
-    
-    return result;
-    
-  } catch (error) {
-    safeError('[MAIN] Failed to launch browser with profile:', error);
-    return { success: false, error: error.message };
-  }
-});
-
 ipcMain.handle('get-chrome-profile-info', async (event, profileName) => {
   safeLog(`[MAIN] IPC: get-chrome-profile-info called for profile: ${profileName}`);
   try {
@@ -687,6 +665,146 @@ ipcMain.handle('sync-profile-data', async () => {
     return { success, message: success ? 'Profile data synced successfully' : 'Failed to sync profile data' };
   } catch (error) {
     safeError('[MAIN] Failed to sync profile data:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// New IPC handlers for dynamic profile selection and session management
+ipcMain.handle('get-available-profiles', async () => {
+  safeLog('[MAIN] IPC: get-available-profiles called');
+  try {
+    const availableProfiles = profileManager.getAvailableProfiles();
+    return { success: true, profiles: availableProfiles };
+  } catch (error) {
+    safeError('[MAIN] Failed to get available profiles:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('is-profile-available', async (event, profileName) => {
+  safeLog(`[MAIN] IPC: is-profile-available called for profile: ${profileName}`);
+  try {
+    const isAvailable = profileManager.isProfileAvailable(profileName);
+    return { success: true, isAvailable };
+  } catch (error) {
+    safeError('[MAIN] Failed to check profile availability:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('get-best-available-profile', async () => {
+  safeLog('[MAIN] IPC: get-best-available-profile called');
+  try {
+    const bestProfile = profileManager.getBestAvailableProfile();
+    if (bestProfile) {
+      const profiles = profileManager.discoverAvailableProfiles();
+      const profileInfo = profiles[bestProfile] || {};
+      return { 
+        success: true, 
+        best_profile: bestProfile,
+        profile_info: profileInfo
+      };
+    } else {
+      return { success: false, error: 'No available profiles found' };
+    }
+  } catch (error) {
+    safeError('[MAIN] Failed to get best available profile:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('launch-browser-with-profile', async (event, profileName, preserveSessions = true) => {
+  safeLog(`[MAIN] IPC: launch-browser-with-profile called with profile: ${profileName}, preserveSessions: ${preserveSessions}`);
+  try {
+    // Check if profile is available
+    if (!profileManager.isProfileAvailable(profileName)) {
+      return { 
+        success: false, 
+        error: `Profile '${profileName}' is not available (may be in use by another Chrome instance)` 
+      };
+    }
+    
+    // Create new Chrome launcher instance
+    chromeLauncher = new ChromeLauncher();
+    
+    // Launch Chrome with the specified profile and session preservation
+    const result = await chromeLauncher.launchChrome(profileName, preserveSessions);
+    
+    if (result.success) {
+      safeLog('[MAIN] ✅ Chrome browser launched successfully with profile');
+      safeLog(`[MAIN] WebSocket Endpoint: ${result.connectionInfo.wsEndpoint}`);
+      safeLog(`[MAIN] Profile Path: ${result.connectionInfo.profilePath}`);
+      safeLog(`[MAIN] Selected Profile: ${result.connectionInfo.selectedProfile}`);
+      safeLog(`[MAIN] Session Preservation: ${result.connectionInfo.preserveSessions}`);
+    } else {
+      safeError('[MAIN] ❌ Failed to launch Chrome browser with profile:', result.error);
+    }
+    
+    return result;
+    
+  } catch (error) {
+    safeError('[MAIN] Failed to launch browser with profile:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('get-session-info', async () => {
+  safeLog('[MAIN] IPC: get-session-info called');
+  try {
+    if (chromeLauncher) {
+      const sessionInfo = await chromeLauncher.getSessionInfo();
+      return { success: true, sessionInfo };
+    } else {
+      return { success: false, error: 'No browser instance available' };
+    }
+  } catch (error) {
+    safeError('[MAIN] Failed to get session info:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('restore-session', async () => {
+  safeLog('[MAIN] IPC: restore-session called');
+  try {
+    if (chromeLauncher) {
+      const success = await chromeLauncher.restoreSession();
+      return { success, message: success ? 'Session restored successfully' : 'Failed to restore session' };
+    } else {
+      return { success: false, error: 'No browser instance available' };
+    }
+  } catch (error) {
+    safeError('[MAIN] Failed to restore session:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Chrome shutdown IPC handlers
+ipcMain.handle('shutdown-non-debugger-chrome', async () => {
+  safeLog('[MAIN] IPC: shutdown-non-debugger-chrome called');
+  try {
+    if (chromeLauncher) {
+      const success = await chromeLauncher.shutdownNonDebuggerChrome();
+      return { success, message: success ? 'Non-debugger Chrome instances shut down' : 'Failed to shut down Chrome instances' };
+    } else {
+      return { success: false, error: 'No browser launcher available' };
+    }
+  } catch (error) {
+    safeError('[MAIN] Failed to shutdown non-debugger Chrome:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('wait-for-chrome-shutdown', async () => {
+  safeLog('[MAIN] IPC: wait-for-chrome-shutdown called');
+  try {
+    if (chromeLauncher) {
+      const success = await chromeLauncher.waitForChromeShutdown();
+      return { success, message: success ? 'Chrome processes fully terminated' : 'Timeout waiting for Chrome shutdown' };
+    } else {
+      return { success: false, error: 'No browser launcher available' };
+    }
+  } catch (error) {
+    safeError('[MAIN] Failed to wait for Chrome shutdown:', error);
     return { success: false, error: error.message };
   }
 });

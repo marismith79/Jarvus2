@@ -81,6 +81,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getDecryptedProfilePath: () => ipcRenderer.invoke('get-decrypted-profile-path'),
   syncProfileData: () => ipcRenderer.invoke('sync-profile-data'),
   
+  // Dynamic profile selection and session management
+  getAvailableProfiles: () => ipcRenderer.invoke('get-available-profiles'),
+  isProfileAvailable: (profileName) => ipcRenderer.invoke('is-profile-available', profileName),
+  getBestAvailableProfile: () => ipcRenderer.invoke('get-best-available-profile'),
+  launchBrowserWithProfileAndSessions: (profileName, preserveSessions) => ipcRenderer.invoke('launch-browser-with-profile', profileName, preserveSessions),
+  getSessionInfo: () => ipcRenderer.invoke('get-session-info'),
+  restoreSession: () => ipcRenderer.invoke('restore-session'),
+  
+  // Chrome shutdown management
+  shutdownNonDebuggerChrome: () => ipcRenderer.invoke('shutdown-non-debugger-chrome'),
+  waitForChromeShutdown: () => ipcRenderer.invoke('wait-for-chrome-shutdown'),
+  
   // Clipboard management
   copyToClipboard: (text) => ipcRenderer.invoke('copy-to-clipboard', text)
 }); 

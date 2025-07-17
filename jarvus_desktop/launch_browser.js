@@ -17,11 +17,23 @@ class ChromeLauncher {
         this.debugPort = 9222; // Default CDP port
     }
 
-    async launchChrome() {
+    async launchChrome(selectedProfile = null, preserveSessions = true) {
         try {
             console.log('🚀 Starting Chrome browser launch process...');
             
-            // Step 1: Get Chrome executable path
+            // Step 1: Check if debug Chrome is already running
+            const isRunning = await this.checkIfChromeRunning();
+            if (isRunning) {
+                console.log('🔗 Found existing debug Chrome, connecting...');
+                return await this.connectToExistingChrome();
+            }
+            
+            // Step 2: Shutdown non-debugger Chrome instances to free up profiles
+            console.log('🔄 Shutting down non-debugger Chrome instances...');
+            await this.shutdownNonDebuggerChrome();
+            await this.waitForChromeShutdown();
+            
+            // Step 3: Get Chrome executable path
             const chromePath = this.getChromeExecutablePath();
             console.log(`🔧 Chrome executable path: ${chromePath}`);
             
@@ -31,60 +43,54 @@ class ChromeLauncher {
             }
             console.log('✅ Chrome executable found');
             
-            // Step 2: Get the original Chrome profile path directly
-            console.log('👤 Getting Chrome profile path...');
-            const originalProfilePath = this.profileManager.getChromeProfilePath();
+            // Step 4: Get the selected profile path
+            if (!selectedProfile) {
+                // Get the best available profile dynamically
+                selectedProfile = this.profileManager.getBestAvailableProfile();
+                if (!selectedProfile) {
+                    throw new Error('No available Chrome profiles found. Please ensure Chrome is installed and has at least one profile.');
+                }
+            }
+            
+            const originalProfilePath = this.profileManager.getChromeProfilePath(selectedProfile);
             if (!originalProfilePath) {
-                throw new Error('Failed to get Chrome profile path');
+                throw new Error(`Profile '${selectedProfile}' not found`);
             }
-            console.log(`📁 Original Chrome profile path: ${originalProfilePath}`);
+            console.log(`📁 Using profile: ${selectedProfile} (${originalProfilePath})`);
             
-            // Create a temporary copy of the profile for this session
-            console.log('📋 Creating temporary profile copy...');
-            const tempProfilePath = path.join(os.tmpdir(), `jarvus_chrome_${Date.now()}`);
-            if (!fs.existsSync(tempProfilePath)) {
-                fs.mkdirSync(tempProfilePath, { recursive: true });
+            // Use Chrome's native profile system instead of --user-data-dir
+            console.log('📁 Using Chrome native profile system...');
+            
+            // Get the profile directory name (e.g., "Profile 5")
+            const profileDirName = path.basename(originalProfilePath);
+            console.log(`📁 Profile directory name: ${profileDirName}`);
+            
+            // Only create a temporary session backup if session preservation is enabled
+            let sessionBackupPath = null;
+            if (preserveSessions) {
+                console.log('📋 Creating session backup for restoration...');
+                sessionBackupPath = path.join(os.tmpdir(), `jarvus_session_${Date.now()}`);
+                if (!fs.existsSync(sessionBackupPath)) {
+                    fs.mkdirSync(sessionBackupPath, { recursive: true });
+                }
+                // Copy only session-related files for backup
+                this.copySessionFiles(originalProfilePath, sessionBackupPath);
+                console.log(`📁 Session backup path: ${sessionBackupPath}`);
             }
             
-            // Copy essential profile files (without encryption)
-            console.log('📋 Copying profile files...');
-            this.copyProfileFiles(originalProfilePath, tempProfilePath);
-            console.log(`📁 Temporary profile path: ${tempProfilePath}`);
-            
-            // Step 3: Find an available debug port
+            // Step 5: Find an available debug port
             this.debugPort = await this.findAvailablePort(9222, 9230);
             console.log(`🔧 Using debug port: ${this.debugPort}`);
             
-            // Step 4: Launch Chrome as child process with secure profile
-            console.log('🌐 Launching Chrome browser with secure profile...');
+            // Step 6: Launch Chrome as child process with native profile
+            console.log('🌐 Launching Chrome browser with native profile...');
             
             const chromeArgs = [
-                `--user-data-dir=${tempProfilePath}`,
                 `--remote-debugging-port=${this.debugPort}`,
                 `--remote-debugging-address=127.0.0.1`,
                 '--no-first-run',
                 '--no-default-browser-check',
-                '--disable-background-timer-throttling',
-                '--disable-backgrounding-occluded-windows',
-                '--disable-renderer-backgrounding',
-                '--disable-features=TranslateUI',
-                '--disable-ipc-flooding-protection',
-                '--disable-features=VizDisplayCompositor',
-                '--enable-automation',
-                '--password-store=basic',
-                '--no-sandbox',
-                '--disable-dev-shm-usage',
-                '--disable-process-singleton',
-                '--disable-background-networking',
-                '--disable-component-extensions-with-background-pages',
-                '--disable-default-apps',
-                '--disable-extensions',
-                '--disable-sync',
-                '--disable-translate',
-                '--hide-scrollbars',
-                '--mute-audio',
-                '--disable-plugins-discovery',
-                '--disable-plugins'
+                '--password-store=basic'
             ];
             
             console.log(`🔧 Chrome launch arguments: ${chromeArgs.length} args`);
@@ -92,7 +98,7 @@ class ChromeLauncher {
             // Launch Chrome process
             this.chromeProcess = spawn(chromePath, chromeArgs, {
                 stdio: ['ignore', 'pipe', 'pipe'],
-                detached: false
+                detached: true
             });
             
             console.log(`🔗 Chrome process started with PID: ${this.chromeProcess.pid}`);
@@ -100,26 +106,28 @@ class ChromeLauncher {
             // Set up process event handlers
             this.setupProcessEventHandlers();
             
-            // Step 5: Wait for Chrome to start and CDP to be available
+            // Step 7: Wait for Chrome to start and CDP to be available
             console.log('⏳ Waiting for Chrome to start and CDP to be available...');
             await this.waitForCDP();
             
-            // Step 6: Get the actual WebSocket endpoint from Chrome
+            // Step 8: Get the actual WebSocket endpoint from Chrome
             console.log('🔗 Getting WebSocket endpoint from Chrome...');
             const wsEndpoint = await this.getWebSocketEndpoint();
             console.log(`🔗 WebSocket endpoint: ${wsEndpoint}`);
             
-            // Step 7: Connect to Chrome via CDP using chromium.connectOverCDP()
+            // Step 9: Connect to Chrome via CDP using chromium.connectOverCDP()
             console.log('🔗 Connecting to Chrome via CDP...');
             this.browser = await chromium.connectOverCDP(wsEndpoint);
             console.log('✅ Connected to Chrome via CDP successfully');
             
-            // Step 8: Store connection information
+            // Step 10: Store connection information
             this.connectionInfo = {
                 wsEndpoint: wsEndpoint,
                 browserType: 'chrome',
-                profilePath: tempProfilePath,
-                originalProfilePath: originalProfilePath,
+                profilePath: originalProfilePath,
+                sessionBackupPath: sessionBackupPath,
+                selectedProfile: selectedProfile,
+                preserveSessions: preserveSessions,
                 launchTime: new Date().toISOString(),
                 processId: this.chromeProcess.pid,
                 debugPort: this.debugPort
@@ -128,13 +136,13 @@ class ChromeLauncher {
             console.log('✅ Chrome browser launched successfully!');
             console.log(`🔗 WebSocket Endpoint: ${this.connectionInfo.wsEndpoint}`);
             
-            // Step 9: Set up browser event handlers
+            // Step 11: Set up browser event handlers
             this.setupBrowserEventHandlers();
             
             this.isConnected = true;
             console.log('✅ Browser connection established');
             
-            // Step 10: Save connection info to file for Python to read
+            // Step 12: Save connection info to file for Python to read
             console.log('💾 Saving connection info...');
             this.saveConnectionInfo();
             
@@ -304,11 +312,60 @@ class ChromeLauncher {
             this.browser = await chromium.connectOverCDP(wsEndpoint);
             console.log('✅ Connected to existing Chrome successfully');
             
+            // Try to detect the profile being used by the existing Chrome instance
+            let detectedProfile = null;
+            let detectedProfilePath = null;
+            
+            try {
+                // Get Chrome version info which might contain profile info
+                const versionInfo = await new Promise((resolve, reject) => {
+                    http.get(`http://127.0.0.1:${this.debugPort}/json/version`, (res) => {
+                        let data = '';
+                        res.on('data', chunk => data += chunk);
+                        res.on('end', () => {
+                            try {
+                                resolve(JSON.parse(data));
+                            } catch (err) {
+                                reject(err);
+                            }
+                        });
+                    }).on('error', reject);
+                });
+                
+                // Try to find the profile from the user data directory
+                // This is a best-effort approach since Chrome doesn't expose this directly
+                const allProfiles = this.profileManager.discoverAvailableProfiles();
+                for (const [profileName, profileInfo] of Object.entries(allProfiles)) {
+                    if (profileInfo.path && fs.existsSync(profileInfo.path)) {
+                        // Check if this profile is currently in use by looking for lock files
+                        const lockFile = path.join(profileInfo.path, 'lockfile');
+                        if (fs.existsSync(lockFile)) {
+                            detectedProfile = profileName;
+                            detectedProfilePath = profileInfo.path;
+                            break;
+                        }
+                    }
+                }
+                
+                // If no profile detected, use the first available one
+                if (!detectedProfile) {
+                    detectedProfile = this.profileManager.getBestAvailableProfile();
+                    if (detectedProfile) {
+                        detectedProfilePath = this.profileManager.getChromeProfilePath(detectedProfile);
+                    }
+                }
+                
+            } catch (error) {
+                console.warn('Could not detect profile for existing Chrome:', error.message);
+            }
+            
             // Store connection information
             this.connectionInfo = {
                 wsEndpoint: wsEndpoint,
                 browserType: 'chrome',
-                profilePath: 'EXISTING_CHROME',
+                profilePath: detectedProfilePath || 'EXISTING_CHROME',
+                selectedProfile: detectedProfile || 'UNKNOWN',
+                preserveSessions: true,
                 launchTime: new Date().toISOString(),
                 processId: 'EXISTING',
                 debugPort: this.debugPort
@@ -316,7 +373,7 @@ class ChromeLauncher {
             
             console.log('✅ Connected to existing Chrome browser!');
             console.log(`🔗 WebSocket Endpoint: ${this.connectionInfo.wsEndpoint}`);
-            console.log(`📁 Profile Path: ${this.connectionInfo.profilePath}`);
+            console.log(`📁 Detected Profile: ${detectedProfile || 'Unknown'}`);
             
             // Set up browser event handlers
             console.log('🔧 Setting up browser event handlers...');
@@ -329,34 +386,13 @@ class ChromeLauncher {
             console.log('💾 Saving connection info...');
             this.saveConnectionInfo();
             
-            // Test page creation
-            console.log('🧪 Testing page creation...');
-            try {
-                const page = this.browser.pages()[0] || await this.browser.newPage();
-                console.log('✅ Page available successfully');
-                
-                // REMOVE: Navigating to test page and related code
-                // console.log('🧪 Navigating to test page...');
-                // await page.goto('https://example.com');
-                // console.log('✅ Test page loaded successfully');
-                
-                // Get page title to confirm it loaded
-                // const title = await page.title();
-                // console.log(`📄 Page title: "${title}"`);
-                
-                // Check if page is visible
-                // const isVisible = await page.isVisible('body');
-                // console.log(`👁️ Page visible: ${isVisible}`);
-                
-            } catch (pageError) {
-                console.error('❌ Error creating or navigating page:', pageError.message);
-                throw pageError;
-            }
+            // Restore session after connection
+            await this.restoreSession();
             
             return {
                 success: true,
                 connectionInfo: this.connectionInfo,
-                message: 'Connected to existing Chrome browser successfully'
+                message: 'Connected to existing Chrome browser with session restored'
             };
             
         } catch (error) {
@@ -391,6 +427,15 @@ class ChromeLauncher {
         // Handle process exit
         this.chromeProcess.on('exit', (code, signal) => {
             console.log(`🔒 Chrome process exited with code ${code}, signal ${signal}`);
+            
+            // Don't clean up if the process was terminated by SIGINT/SIGTERM (Ctrl+C)
+            // This allows the browser to persist when the Electron app is quit
+            if (signal === 'SIGINT' || signal === 'SIGTERM') {
+                console.log('🔄 Chrome process terminated by signal, keeping browser session alive');
+                this.isConnected = false;
+                return;
+            }
+            
             this.isConnected = false;
             this.cleanup();
         });
@@ -495,6 +540,18 @@ class ChromeLauncher {
                 console.error('❌ Failed to clean up connection file:', error);
             }
         }
+        
+        // Clean up session backup files
+        if (this.connectionInfo && this.connectionInfo.sessionBackupPath) {
+            try {
+                if (fs.existsSync(this.connectionInfo.sessionBackupPath)) {
+                    fs.rmSync(this.connectionInfo.sessionBackupPath, { recursive: true, force: true });
+                    console.log('🗑️ Session backup cleaned up');
+                }
+            } catch (error) {
+                console.error('❌ Failed to clean up session backup:', error);
+            }
+        }
     }
     
     getChromeExecutablePath() {
@@ -513,22 +570,405 @@ class ChromeLauncher {
     }
 
     // Copy profile files (shallow copy, no encryption)
-    copyProfileFiles(src, dest) {
-        const ignore = ["lockfile", "SingletonLock", "SingletonCookie", "SingletonSocket", "Crashpad", "Safe Browsing", "TransportSecurity", "Visited Links", "Network Persistent State", "QuotaManager", "QuotaManager-journal", "Service Worker", "Code Cache", "GrShaderCache", "GPUCache", "DawnCache", "ShaderCache", "File System", "Extension State", "IndexedDB", "Local Storage", "Session Storage", "Sessions", "Sync Data", "WebStorage", "databases", "blob_storage", "pepper_flash", "Platform Notifications", "Notification", "Storage", "Cache Storage", "Cookies-journal", "Cookies", "Favicons", "History Provider Cache", "Top Sites", "Web Data", "Login Data", "Login Data-journal", "Network Action Predictor", "Shortcuts", "Bookmarks", "Preferences", "Secure Preferences", "Affiliation Database", "Affiliation Database-journal", "AutofillStrikeDatabase", "AutofillStrikeDatabase-journal", "BudgetDatabase", "BudgetDatabase-journal", "Contact Info", "Contact Info-journal", "DownloadMetadata", "DownloadMetadata-journal", "Media History", "Media History-journal", "Tab Groups", "Tab Groups-journal", "TabRestoreService", "TabRestoreService-journal", "Tabs", "Tabs-journal", "Top Sites-journal", "Web Data-journal", "WebRTCEventLog", "WebRTCEventLog-journal", "Visited Links-journal", "Webstore Downloads", "Webstore Downloads-journal", "Sync Extension Settings", "Sync Extension Settings-journal", "Sync Preferences", "Sync Preferences-journal", "Sync Secure Preferences", "Sync Secure Preferences-journal", "Sync Web Data", "Sync Web Data-journal", "Sync Webstore Downloads", "Sync Webstore Downloads-journal", "Sync Webstore Extensions", "Sync Webstore Extensions-journal", "Sync Webstore Preferences", "Sync Webstore Preferences-journal", "Sync Webstore Secure Preferences", "Sync Webstore Secure Preferences-journal", "Sync Webstore Web Data", "Sync Webstore Web Data-journal", "Sync Webstore Webstore Downloads", "Sync Webstore Webstore Downloads-journal", "Sync Webstore Webstore Extensions", "Sync Webstore Webstore Extensions-journal", "Sync Webstore Webstore Preferences", "Sync Webstore Webstore Preferences-journal", "Sync Webstore Webstore Secure Preferences", "Sync Webstore Webstore Secure Preferences-journal", "Sync Webstore Webstore Web Data", "Sync Webstore Webstore Web Data-journal", "Sync Webstore Webstore Webstore Downloads", "Sync Webstore Webstore Webstore Downloads-journal", "Sync Webstore Webstore Webstore Extensions", "Sync Webstore Webstore Webstore Extensions-journal", "Sync Webstore Webstore Webstore Preferences", "Sync Webstore Webstore Webstore Preferences-journal", "Sync Webstore Webstore Webstore Secure Preferences", "Sync Webstore Webstore Webstore Secure Preferences-journal", "Sync Webstore Webstore Webstore Web Data", "Sync Webstore Webstore Webstore Web Data-journal"];
+    copyProfileFiles(src, dest, preserveSessions = true) {
+        // Files to always ignore (system files, locks, etc.)
+        const alwaysIgnore = [
+            "lockfile", "SingletonLock", "SingletonCookie", "SingletonSocket", 
+            "Crashpad", "Safe Browsing", "TransportSecurity", "Visited Links", 
+            "Network Persistent State", "QuotaManager", "QuotaManager-journal", 
+            "Service Worker", "Code Cache", "GrShaderCache", "GPUCache", 
+            "DawnCache", "ShaderCache", "File System", "Extension State", 
+            "IndexedDB", "Local Storage", "Session Storage", "Sync Data", 
+            "WebStorage", "databases", "blob_storage", "pepper_flash", 
+            "Platform Notifications", "Notification", "Storage", "Cache Storage", 
+            "Cookies-journal", "Cookies", "Favicons", "History Provider Cache", 
+            "Top Sites", "Web Data", "Login Data", "Login Data-journal", 
+            "Network Action Predictor", "Shortcuts", "Bookmarks", 
+            "Preferences", "Secure Preferences", "Affiliation Database", 
+            "Affiliation Database-journal", "AutofillStrikeDatabase", 
+            "AutofillStrikeDatabase-journal", "BudgetDatabase", 
+            "BudgetDatabase-journal", "Contact Info", "Contact Info-journal", 
+            "DownloadMetadata", "DownloadMetadata-journal", "Media History", 
+            "Media History-journal", "Tab Groups", "Tab Groups-journal", 
+            "Top Sites-journal", "Web Data-journal", "WebRTCEventLog", 
+            "WebRTCEventLog-journal", "Visited Links-journal", 
+            "Webstore Downloads", "Webstore Downloads-journal", 
+            "Sync Extension Settings", "Sync Extension Settings-journal", 
+            "Sync Preferences", "Sync Preferences-journal", 
+            "Sync Secure Preferences", "Sync Secure Preferences-journal", 
+            "Sync Web Data", "Sync Web Data-journal", 
+            "Sync Webstore Downloads", "Sync Webstore Downloads-journal", 
+            "Sync Webstore Extensions", "Sync Webstore Extensions-journal", 
+            "Sync Webstore Preferences", "Sync Webstore Preferences-journal", 
+            "Sync Webstore Secure Preferences", "Sync Webstore Secure Preferences-journal", 
+            "Sync Webstore Web Data", "Sync Webstore Web Data-journal"
+        ];
+        
+        // Session-related files to include when preserveSessions is true
+        const sessionFiles = [
+            "Sessions", "Sessions-journal", "Tabs", "Tabs-journal", 
+            "TabRestoreService", "TabRestoreService-journal"
+        ];
+        
+        // Build final ignore list
+        const ignoreList = [...alwaysIgnore];
+        if (!preserveSessions) {
+            ignoreList.push(...sessionFiles);
+        }
+        
+        console.log(`📋 Copying profile files (preserveSessions: ${preserveSessions})`);
+        if (preserveSessions) {
+            console.log(`📋 Including session files: ${sessionFiles.join(', ')}`);
+        }
+        
         if (!fs.existsSync(src)) return;
+        
+        // Copy files and directories at the root level only (no recursion)
+        this.copyDirectoryContents(src, dest, ignoreList, false);
+    }
+
+    copyDirectoryContents(src, dest, ignoreList, isRecursive = false) {
+        if (!fs.existsSync(src)) return;
+        
         const items = fs.readdirSync(src);
+        let copiedCount = 0;
+        
         for (const item of items) {
-            if (ignore.includes(item)) continue;
+            if (ignoreList.includes(item)) continue;
+            
             const srcPath = path.join(src, item);
             const destPath = path.join(dest, item);
             const stat = fs.statSync(srcPath);
+            
             if (stat.isDirectory()) {
+                // Only copy directory structure, not contents (to avoid recursion)
+                if (!isRecursive) {
                 fs.mkdirSync(destPath, { recursive: true });
-                this.copyProfileFiles(srcPath, destPath);
+                    // Don't recursively copy directory contents to avoid excessive logging
+                }
             } else if (stat.isFile()) {
-                fs.copyFileSync(srcPath, destPath);
+                try {
+                    fs.copyFileSync(srcPath, destPath);
+                    copiedCount++;
+                    if (isRecursive) {
+                        console.log(`📋 Copied: ${item}`);
+                    }
+                } catch (error) {
+                    console.warn(`⚠️ Failed to copy ${item}:`, error.message);
+                }
             }
         }
+        
+        if (!isRecursive) {
+            console.log(`📋 Copied ${copiedCount} files from profile`);
+        }
+    }
+
+    copySessionFiles(src, dest) {
+        // Only copy session-related files for backup/restoration
+        const sessionFiles = [
+            "Sessions", "Sessions-journal", "Tabs", "Tabs-journal", 
+            "TabRestoreService", "TabRestoreService-journal"
+        ];
+        
+        console.log(`📋 Copying session files: ${sessionFiles.join(', ')}`);
+        
+        if (!fs.existsSync(src)) return;
+        
+        const items = fs.readdirSync(src);
+        let copiedCount = 0;
+        
+        for (const item of items) {
+            if (!sessionFiles.includes(item)) continue;
+            
+            const srcPath = path.join(src, item);
+            const destPath = path.join(dest, item);
+            const stat = fs.statSync(srcPath);
+            
+            if (stat.isFile()) {
+                try {
+                fs.copyFileSync(srcPath, destPath);
+                    copiedCount++;
+                    console.log(`📋 Copied session file: ${item}`);
+                } catch (error) {
+                    console.warn(`⚠️ Failed to copy session file ${item}:`, error.message);
+                }
+            }
+        }
+        
+        console.log(`📋 Copied ${copiedCount} session files`);
+    }
+
+    // Session management methods
+    async getSessionInfo() {
+        if (!this.browser || !this.isConnected) {
+            console.warn('Browser not connected, cannot get session info');
+            return null;
+        }
+        try {
+            // Give the browser a moment to fully initialize
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            let pages = [];
+            let sessionInfo = { totalPages: 0, pages: [] };
+            // Try Playwright's pages() first
+            if (this.browser.pages && typeof this.browser.pages === 'function') {
+                try {
+                    pages = await this.browser.pages();
+                } catch (e) {
+                    pages = [];
+                }
+            }
+            // Fallback: Use DevTools Protocol if no pages found
+            if (!pages || pages.length === 0) {
+                try {
+                    const port = this.debugPort;
+                    const jsonList = await new Promise((resolve, reject) => {
+                        http.get(`http://127.0.0.1:${port}/json`, (res) => {
+                            let data = '';
+                            res.on('data', chunk => data += chunk);
+                            res.on('end', () => {
+                                try {
+                                    resolve(JSON.parse(data));
+                                } catch (err) {
+                                    reject(err);
+                                }
+                            });
+                        }).on('error', reject);
+                    });
+                    for (const tab of jsonList) {
+                        if (tab.type === 'page' && tab.url && tab.url !== 'about:blank') {
+                            sessionInfo.pages.push({ url: tab.url, title: tab.title || '' });
+                        }
+                    }
+                    sessionInfo.totalPages = sessionInfo.pages.length;
+                    console.log(`📊 [DTP] Session info: ${sessionInfo.totalPages} pages`);
+                    return sessionInfo;
+                } catch (err) {
+                    console.warn('DevTools Protocol fallback failed:', err.message);
+                }
+            } else {
+                for (const page of pages) {
+                    try {
+                        const url = page.url();
+                        const title = await page.title();
+                        sessionInfo.pages.push({ url, title });
+                    } catch (error) {
+                        console.warn('Could not get page info:', error.message);
+                    }
+                }
+                sessionInfo.totalPages = pages.length;
+                console.log(`📊 Session info: ${pages.length} pages`);
+                return sessionInfo;
+            }
+            return sessionInfo;
+        } catch (error) {
+            console.error('Error getting session info:', error);
+            return null;
+        }
+    }
+
+    async restoreSession() {
+        if (!this.browser || !this.isConnected) {
+            console.warn('Browser not connected, cannot restore session');
+            return false;
+        }
+        try {
+            console.log('🔄 Restoring previous session...');
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            let pages = [];
+            // Try Playwright's pages() first
+            if (this.browser.pages && typeof this.browser.pages === 'function') {
+                try {
+                    pages = await this.browser.pages();
+                } catch (e) {
+                    pages = [];
+                }
+            }
+            // Fallback: Use DevTools Protocol if no pages found
+            if (!pages || pages.length === 0) {
+                try {
+                    const port = this.debugPort;
+                    const jsonList = await new Promise((resolve, reject) => {
+                        http.get(`http://127.0.0.1:${port}/json`, (res) => {
+                            let data = '';
+                            res.on('data', chunk => data += chunk);
+                            res.on('end', () => {
+                                try {
+                                    resolve(JSON.parse(data));
+                                } catch (err) {
+                                    reject(err);
+                                }
+                            });
+                        }).on('error', reject);
+                    });
+                    const openTabs = jsonList.filter(tab => tab.type === 'page' && tab.url && tab.url !== 'about:blank');
+                    if (openTabs.length === 0) {
+                        // Open a new page if none exist
+                        await this.browser.newPage();
+                        console.log('✅ [DTP] Created new page for session');
+                    } else {
+                        console.log(`✅ [DTP] Session restored with ${openTabs.length} pages`);
+                    }
+                    return true;
+                } catch (err) {
+                    console.warn('DevTools Protocol fallback failed:', err.message);
+                }
+            } else {
+                if (pages.length === 0) {
+                    await this.browser.newPage();
+                    console.log('✅ Created new page for session');
+                } else {
+                    console.log(`✅ Session restored with ${pages.length} pages`);
+                }
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('❌ Error restoring session:', error);
+            return false;
+        }
+    }
+
+    // Shutdown non-debugger Chrome instances
+    async shutdownNonDebuggerChrome() {
+        try {
+            console.log('🔄 Checking for non-debugger Chrome instances...');
+            
+            const platform = process.platform;
+            let command, args;
+            
+            if (platform === 'darwin') {
+                // macOS - use ps to find Chrome processes and filter out debug ones
+                command = 'ps';
+                args = ['-eo', 'pid,command'];
+            } else if (platform === 'win32') {
+                // Windows - use tasklist
+                command = 'tasklist';
+                args = ['/FI', 'IMAGENAME eq chrome.exe', '/FO', 'CSV'];
+            } else {
+                // Linux - use ps
+                command = 'ps';
+                args = ['-eo', 'pid,command'];
+            }
+            
+            return new Promise((resolve, reject) => {
+                const process = spawn(command, args, { stdio: 'pipe' });
+                let output = '';
+                
+                process.stdout.on('data', (data) => {
+                    output += data.toString();
+                });
+                
+                process.on('close', async (code) => {
+                    if (code === 0) {
+                        // Parse output to find Chrome processes
+                        const lines = output.split('\n');
+                        const chromePids = [];
+                        
+                        for (const line of lines) {
+                            if (line.includes('Google Chrome') || line.includes('chrome.exe')) {
+                                // Check if this Chrome process is NOT in debug mode
+                                if (!line.includes('--remote-debugging-port')) {
+                                    // Extract PID
+                                    const pidMatch = line.match(/^\s*(\d+)/);
+                                    if (pidMatch) {
+                                        chromePids.push(pidMatch[1]);
+                                    }
+                                }
+                            }
+                        }
+                        
+                        if (chromePids.length > 0) {
+                            console.log(`🔄 Found ${chromePids.length} non-debugger Chrome processes, shutting them down...`);
+                            
+                            // Kill each non-debugger Chrome process
+                            for (const pid of chromePids) {
+                                try {
+                                    if (platform === 'darwin' || platform === 'linux') {
+                                        spawn('kill', [pid], { stdio: 'ignore' });
+                                    } else {
+                                        spawn('taskkill', ['/PID', pid, '/F'], { stdio: 'ignore' });
+                                    }
+                                } catch (error) {
+                                    console.warn(`⚠️ Failed to kill Chrome process ${pid}:`, error.message);
+                                }
+                            }
+                            
+                            console.log('✅ Non-debugger Chrome instances shut down');
+                            resolve(true);
+                        } else {
+                            console.log('✅ No non-debugger Chrome instances found');
+                            resolve(true);
+                        }
+                    } else {
+                        console.warn(`⚠️ Process listing returned code ${code}`);
+                        resolve(false);
+                    }
+                });
+                
+                process.on('error', (error) => {
+                    console.warn('⚠️ Error listing processes:', error.message);
+                    resolve(false);
+                });
+            });
+            
+        } catch (error) {
+            console.error('❌ Error in shutdownNonDebuggerChrome:', error);
+            return false;
+        }
+    }
+
+    // Wait for Chrome processes to fully terminate
+    async waitForChromeShutdown(timeout = 10000) {
+        const startTime = Date.now();
+        
+        while (Date.now() - startTime < timeout) {
+            try {
+                // Check if any Chrome processes are still running
+                const platform = process.platform;
+                let command, args;
+                
+                if (platform === 'darwin') {
+                    command = 'pgrep';
+                    args = ['-f', 'Google Chrome'];
+                } else if (platform === 'win32') {
+                    command = 'tasklist';
+                    args = ['/FI', 'IMAGENAME eq chrome.exe'];
+                } else {
+                    command = 'pgrep';
+                    args = ['-f', 'google-chrome'];
+                }
+                
+                const result = await new Promise((resolve) => {
+                    const process = spawn(command, args, { stdio: 'pipe' });
+                    let output = '';
+                    
+                    process.stdout.on('data', (data) => {
+                        output += data.toString();
+                    });
+                    
+                    process.on('close', (code) => {
+                        resolve({ code, output });
+                    });
+                });
+                
+                // If no Chrome processes found, we're done
+                if (result.code !== 0 || result.output.trim() === '') {
+                    console.log('✅ Chrome processes fully terminated');
+                    return true;
+                }
+                
+                // Wait a bit before checking again
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+            } catch (error) {
+                console.warn('⚠️ Error checking Chrome processes:', error.message);
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+        }
+        
+        console.warn('⚠️ Timeout waiting for Chrome shutdown');
+        return false;
     }
 }
 
@@ -540,17 +980,17 @@ if (require.main === module) {
     const launcher = new ChromeLauncher();
     
     // Handle process termination
-    process.on('SIGINT', async () => {
-        console.log('\n🛑 Received SIGINT, closing browser...');
-        await launcher.closeBrowser();
-        process.exit(0);
-    });
+    // process.on('SIGINT', async () => {
+    //     console.log('\n🛑 Received SIGINT, closing browser...');
+    //     await launcher.closeBrowser();
+    //     process.exit(0);
+    // });
     
-    process.on('SIGTERM', async () => {
-        console.log('\n🛑 Received SIGTERM, closing browser...');
-        await launcher.closeBrowser();
-        process.exit(0);
-    });
+    // process.on('SIGTERM', async () => {
+    //     console.log('\n🛑 Received SIGTERM, closing browser...');
+    //     await launcher.closeBrowser();
+    //     process.exit(0);
+    // });
     
     // Launch the browser
     launcher.launchChrome()
