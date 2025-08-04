@@ -82,10 +82,35 @@ AZURE_AI_FOUNDRY_ENDPOINT=https://<your-resource-name>.openai.azure.com
 AZURE_AI_FOUNDRY_API_VERSION=<your-api-version>
 AZURE_AI_FOUNDRY_DEPLOYMENT_NAME=<your-model-name>
 
-# Google OAuth
-GOOGLE_CLIENT_ID=<id>
-GOOGLE_CLIENT_SECRET=<secret>
-GOOGLE_REDIRECT_URI=http://localhost:5001/oauth2callback
+# OAuth (for future integrations)
+# NOTION_CLIENT_ID=<id>
+# NOTION_CLIENT_SECRET=<secret>
+# NOTION_REDIRECT_URI=http://localhost:5001/notion/callback
+# SLACK_CLIENT_ID=<id>
+# SLACK_CLIENT_SECRET=<secret>
+# SLACK_REDIRECT_URI=http://localhost:5001/slack/callback
+# ZOOM_CLIENT_ID=<id>
+# ZOOM_CLIENT_SECRET=<secret>
+# ZOOM_REDIRECT_URI=http://localhost:5001/zoom/callback
+
+# Pipedream Integration (Direct OAuth)
+PIPEDREAM_REDIRECT_URI=http://localhost:5001/pipedream/callback
+
+# OAuth App IDs - for the actual OAuth flows
+PIPEDREAM_DOCS_OAUTH_APP_ID=<your-pipedream-docs-oauth-app-id>
+PIPEDREAM_SHEETS_OAUTH_APP_ID=<your-pipedream-sheets-oauth-app-id>
+PIPEDREAM_SLIDES_OAUTH_APP_ID=<your-pipedream-slides-oauth-app-id>
+PIPEDREAM_DRIVE_OAUTH_APP_ID=<your-pipedream-drive-oauth-app-id>
+PIPEDREAM_GMAIL_OAUTH_APP_ID=<your-pipedream-gmail-oauth-app-id>
+PIPEDREAM_CALENDAR_OAUTH_APP_ID=<your-pipedream-calendar-oauth-app-id>
+
+# Pipedream Service Endpoints (for Google Workspace tools)
+PIPEDREAM_DOCS_ENDPOINT=<your-pipedream-docs-endpoint>
+PIPEDREAM_SHEETS_ENDPOINT=<your-pipedream-sheets-endpoint>
+PIPEDREAM_SLIDES_ENDPOINT=<your-pipedream-slides-endpoint>
+PIPEDREAM_DRIVE_ENDPOINT=<your-pipedream-drive-endpoint>
+PIPEDREAM_GMAIL_ENDPOINT=<your-pipedream-gmail-endpoint>
+PIPEDREAM_CALENDAR_ENDPOINT=<your-pipedream-calendar-endpoint>
 ```
 
 When running in Azure App Service, set these same keys in the **Configuration → Application settings** blade instead of using a `.env` file.

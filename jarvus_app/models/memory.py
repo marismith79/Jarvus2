@@ -9,7 +9,7 @@ class ShortTermMemory(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     thread_id = db.Column(db.String(255), nullable=False, index=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.String(50), db.ForeignKey('users.id'), nullable=False)
     agent_id = db.Column(db.Integer, db.ForeignKey('history.id'), nullable=False)
     
     # State data stored as JSON
@@ -32,7 +32,7 @@ class ShortTermMemory(db.Model):
         return f"<ShortTermMemory thread_id={self.thread_id} step={self.step_number}>"
 
     @classmethod
-    def get_latest_checkpoint(cls, thread_id: str, user_id: int) -> Optional['ShortTermMemory']:
+    def get_latest_checkpoint(cls, thread_id: str, user_id: str) -> Optional['ShortTermMemory']:
         """Get the latest checkpoint for a thread"""
         return cls.query.filter_by(
             thread_id=thread_id, 
@@ -40,7 +40,7 @@ class ShortTermMemory(db.Model):
         ).order_by(cls.step_number.desc()).first()
 
     @classmethod
-    def get_checkpoint_history(cls, thread_id: str, user_id: int) -> list['ShortTermMemory']:
+    def get_checkpoint_history(cls, thread_id: str, user_id: str) -> list['ShortTermMemory']:
         """Get all checkpoints for a thread in chronological order"""
         return cls.query.filter_by(
             thread_id=thread_id, 
@@ -65,7 +65,7 @@ class LongTermMemory(db.Model):
     __tablename__ = 'long_term_memory'
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.String(50), db.ForeignKey('users.id'), nullable=False)
     
     # Memory organization
     namespace = db.Column(db.String(255), nullable=False, index=True)  # e.g., "memories", "preferences"
@@ -94,7 +94,7 @@ class LongTermMemory(db.Model):
         return f"<LongTermMemory namespace={self.namespace} memory_id={self.memory_id}>"
 
     @classmethod
-    def search_memories(cls, user_id: int, namespace: str, query: str = None, limit: int = 10) -> list['LongTermMemory']:
+    def search_memories(cls, user_id: str, namespace: str, query: str = None, limit: int = 10) -> list['LongTermMemory']:
         """Search memories by namespace and optionally by query text"""
         query_obj = cls.query.filter_by(user_id=user_id, namespace=namespace)
         
@@ -105,7 +105,7 @@ class LongTermMemory(db.Model):
         return query_obj.order_by(cls.importance_score.desc(), cls.last_accessed.desc()).limit(limit).all()
 
     @classmethod
-    def get_memory(cls, user_id: int, namespace: str, memory_id: str) -> Optional['LongTermMemory']:
+    def get_memory(cls, user_id: str, namespace: str, memory_id: str) -> Optional['LongTermMemory']:
         """Get a specific memory by ID"""
         return cls.query.filter_by(
             user_id=user_id,

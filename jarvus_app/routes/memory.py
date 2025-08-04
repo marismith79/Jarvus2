@@ -7,7 +7,7 @@ from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
 import logging
 
-from ..services.enhanced_agent_service import enhanced_agent_service
+from ..services.agent_service import agent_service
 from ..services.memory_service import memory_service
 from ..db import db
 
@@ -23,15 +23,12 @@ def get_memory_context(agent_id):
         thread_id = request.args.get('thread_id')
         if not thread_id:
             return jsonify({'error': 'thread_id parameter is required'}), 400
-        
-        context = enhanced_agent_service.get_agent_memory_context(
-            agent_id=agent_id,
+        # Use memory_service directly
+        context = memory_service.get_context_for_conversation(
             user_id=current_user.id,
             thread_id=thread_id
         )
-        
-        return jsonify(context), 200
-        
+        return jsonify({'context': context}), 200
     except Exception as e:
         logger.error(f"Error getting memory context: {str(e)}")
         return jsonify({'error': str(e)}), 500
@@ -44,15 +41,13 @@ def search_memories():
     try:
         query = request.args.get('query', '')
         limit = int(request.args.get('limit', 10))
-        
-        memories = enhanced_agent_service.search_memories(
+        memories = memory_service.search_memories(
             user_id=current_user.id,
+            namespace="memories",
             query=query,
             limit=limit
         )
-        
-        return jsonify({'memories': memories}), 200
-        
+        return jsonify({'memories': [memory.to_dict() for memory in memories]}), 200
     except Exception as e:
         logger.error(f"Error searching memories: {str(e)}")
         return jsonify({'error': str(e)}), 500
@@ -67,22 +62,20 @@ def store_memory():
         memory_text = data.get('text')
         memory_type = data.get('type', 'fact')
         importance = float(data.get('importance', 1.0))
-        
         if not memory_text:
             return jsonify({'error': 'text is required'}), 400
-        
-        memory_id = enhanced_agent_service.store_user_memory(
+        memory = memory_service.store_memory(
             user_id=current_user.id,
-            memory_text=memory_text,
+            namespace="memories",
+            memory_data={'text': memory_text, 'source': 'manual'},
             memory_type=memory_type,
-            importance=importance
+            importance_score=importance,
+            search_text=memory_text
         )
-        
-        if memory_id:
-            return jsonify({'memory_id': memory_id, 'message': 'Memory stored successfully'}), 201
+        if memory:
+            return jsonify({'memory_id': memory.memory_id, 'message': 'Memory stored successfully'}), 201
         else:
             return jsonify({'error': 'Failed to store memory'}), 500
-        
     except Exception as e:
         logger.error(f"Error storing memory: {str(e)}")
         return jsonify({'error': str(e)}), 500

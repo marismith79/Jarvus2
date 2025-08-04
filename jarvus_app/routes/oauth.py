@@ -1,10 +1,10 @@
 import json
 import os
+import requests
 from datetime import datetime
 
 from flask import (
     Blueprint,
-    current_app,
     jsonify,
     redirect,
     request,
@@ -12,104 +12,58 @@ from flask import (
     url_for,
 )
 from flask_login import current_user, login_required
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import Flow
-from googleapiclient.discovery import build
 
 from ..models.oauth import OAuthCredentials  # Uncommented
 from ..utils.tool_permissions import grant_tool_access
 from ..models.user_tool import UserTool
 from ..db import db
+from jarvus_app.config import ALL_PIPEDREAM_APPS
+
+SERVICES = [app["slug"] for app in ALL_PIPEDREAM_APPS]
+
 
 oauth_bp = Blueprint("oauth", __name__)
 
+# Create a session for connection reuse
+oauth_session = requests.Session()
+oauth_session.headers.update({
+    'Accept': 'application/json',
+    'User-Agent': 'Jarvus-App/1.0'
+})
+
 # Debug environment variables
-print("\nDEBUG: Environment Variables:")
-print(f"GOOGLE_REDIRECT_URI from env: {os.getenv('GOOGLE_REDIRECT_URI')}")
-print(f"GOOGLE_CLIENT_ID from env: {os.getenv('GOOGLE_CLIENT_ID')}")
+# print("\nDEBUG: Environment Variables:")
 
-# OAuth 2.0 configuration
-GOOGLE_CLIENT_CONFIG = {
-    "web": {
-        "client_id": os.getenv("GOOGLE_CLIENT_ID"),
-        "client_secret": os.getenv("GOOGLE_CLIENT_SECRET"),
-        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-        "token_uri": "https://oauth2.googleapis.com/token",
-        "redirect_uris": [os.getenv("GOOGLE_REDIRECT_URI")],
-        "scopes": [
-            # Gmail
-            "https://www.googleapis.com/auth/gmail.readonly",  # Read-only access to emails
-            "https://www.googleapis.com/auth/gmail.compose",   # Compose and send emails
-            "https://www.googleapis.com/auth/gmail.send",       # Send emails only
-            "https://mail.google.com/",                         # Full access to Gmail
-
-            # Google Calendar
-            "https://www.googleapis.com/auth/calendar.readonly", # Read-only access to calendars
-            "https://www.googleapis.com/auth/calendar.events",   # Read/write access to events
-            "https://www.googleapis.com/auth/calendar",          # Full access to calendars
-
-            # Google Meet
-            "https://www.googleapis.com/auth/meetings.space.created", # Create meeting spaces
-            "https://www.googleapis.com/auth/drive.meet.readonly",    # Read-only access to Meet recordings in Drive
-
-            # Google Drive
-            "https://www.googleapis.com/auth/drive.readonly",    # Read-only access to Drive files
-            "https://www.googleapis.com/auth/drive.file",        # Per-file access to files created or opened by the app
-            "https://www.googleapis.com/auth/drive",             # Full access to Drive
-
-            # Google Docs, Sheets, Slides
-            "https://www.googleapis.com/auth/documents.readonly",# Read-only access to Docs
-            "https://www.googleapis.com/auth/documents",         # Full access to Docs
-            "https://www.googleapis.com/auth/spreadsheets.readonly", # Read-only access to Sheets
-            "https://www.googleapis.com/auth/spreadsheets",      # Full access to Sheets
-            "https://www.googleapis.com/auth/presentations.readonly",# Read-only access to Slides
-            "https://www.googleapis.com/auth/presentations"      # Full access to Slides
-        ]
-    }
-}
-
-# Print debug info about OAuth configuration
-print("\nDEBUG: OAuth Configuration:")
-print(f"DEBUG: GOOGLE_CLIENT_ID: {os.getenv('GOOGLE_CLIENT_ID')}")
-print(f"DEBUG: GOOGLE_REDIRECT_URI: {os.getenv('GOOGLE_REDIRECT_URI')}")
-print(
-    f"DEBUG: Full GOOGLE_CLIENT_CONFIG: {json.dumps(GOOGLE_CLIENT_CONFIG, indent=2)}"
-)
-
-NOTION_CLIENT_CONFIG = {
-    "client_id": os.getenv("NOTION_CLIENT_ID"),
-    "client_secret": os.getenv("NOTION_CLIENT_SECRET"),
-    "redirect_uri": os.getenv("NOTION_REDIRECT_URI"),
-    "scopes": ["read_user", "write_user"],
-}
-
-SLACK_CLIENT_CONFIG = {
-    "client_id": os.getenv("SLACK_CLIENT_ID"),
-    "client_secret": os.getenv("SLACK_CLIENT_SECRET"),
-    "redirect_uri": os.getenv("SLACK_REDIRECT_URI"),
-    "scopes": ["chat:write", "channels:read", "groups:read"],
-}
-
-ZOOM_CLIENT_CONFIG = {
-    "client_id": os.getenv("ZOOM_CLIENT_ID"),
-    "client_secret": os.getenv("ZOOM_CLIENT_SECRET"),
-    "redirect_uri": os.getenv("ZOOM_REDIRECT_URI"),
-    "scopes": ["user:read", "meeting:write"],
-}
+def _handle_pipedream_response(response: requests.Response) -> dict:
+    """Enhanced response handling for Pipedream API calls"""
+    # print(f"Response status code: {response.status_code}")
+    # print(f"Response headers: {dict(response.headers)}")
+    
+    if response.status_code == 401:
+        raise ValueError("Authentication failed - check API credentials")
+    elif response.status_code == 403:
+        raise ValueError("Permission denied - check project access")
+    elif response.status_code == 429:
+        raise ValueError("Rate limit exceeded - try again later")
+    
+    response.raise_for_status()
+    
+    content_type = response.headers.get('content-type', '')
+    if 'application/json' in content_type:
+        try:
+            return response.json()
+        except json.JSONDecodeError:
+            raise ValueError("Invalid JSON response from Pipedream")
+    else:
+        return {"text": response.text, "status": response.status_code}
 
 
 @oauth_bp.route("/connect/<service>")
 @login_required
 def connect_service(service):
     """Initiate OAuth flow for the specified service"""
-    if service == "google-workspace":
-        return connect_google_workspace()
-    elif service == "notion":
-        return connect_notion()
-    elif service == "slack":
-        return connect_slack()
-    elif service == "zoom":
-        return connect_zoom()
+    if service in SERVICES:
+        return connect_pipedream_service(service)
     else:
         return redirect(url_for("profile.profile"))
 
@@ -117,193 +71,318 @@ def connect_service(service):
 @oauth_bp.route("/disconnect/<service>", methods=["POST"])
 @login_required
 def disconnect_service(service):
-    """Disconnect the specified service"""
-    print(
-        f"[DEBUG] Disconnect requested for service: {service}, user: {current_user.id}"
-    )
-    if service in ["google-workspace", "notion", "slack", "zoom"]:
+    """Disconnect the specified service, including Pipedream API revocation"""
+    from ..services.pipedream_auth_service import pipedream_auth_service
+    # print(f"[DEBUG] Disconnect requested for service: {service}, user: {current_user.id}")
+    if service in SERVICES:
         success = True
-        
-        # 1. Revoke OAuth tokens with Google (for Google services)
-        if service == "google-workspace":
+        error = None
+        project_id = os.getenv("PIPEDREAM_PROJECT_ID")
+        environment = os.getenv("PIPEDREAM_ENVIRONMENT", "development")
+        access_token = pipedream_auth_service.get_token_from_session()
+        user_id = current_user.id
+
+        if project_id and access_token:
+            # 1. List all accounts for this user and app
+            list_url = f"https://api.pipedream.com/v1/connect/{project_id}/accounts?external_user_id={user_id}&app={service}"
+            headers = {
+                "Authorization": f"Bearer {access_token}",
+                "X-PD-Environment": environment
+            }
             try:
-                # Get credentials before removing them
-                creds = OAuthCredentials.get_credentials(current_user.id, service)
-                if creds and creds.access_token:
-                    # Revoke the token with Google
-                    import requests
-                    revoke_url = "https://oauth2.googleapis.com/revoke"
-                    requests.post(revoke_url, data={'token': creds.access_token})
-                    print(f"[DEBUG] Revoked Google token for {service}")
+                resp = requests.get(list_url, headers=headers, timeout=10)
+                if resp.status_code == 200:
+                    accounts = resp.json().get("data", [])
+                    if accounts:
+                        account_id = accounts[0].get("id")
+                        # 2. Delete the account by account_id
+                        del_url = f"https://api.pipedream.com/v1/connect/{project_id}/accounts/{account_id}"
+                        del_headers = {
+                            "Authorization": f"Bearer {access_token}",
+                            "X-PD-Environment": environment,
+                            "Content-Type": "application/json"
+                        }
+                        del_resp = requests.delete(del_url, headers=del_headers)
+                        # print(f"[DEBUG] Pipedream disconnect response: {del_resp.status_code} {del_resp.text}")
+                        if del_resp.status_code != 204:
+                            success = False
+                            error = del_resp.text
+                    else:
+                        # print("[DEBUG] No connected account found for this app/user.")
+                        success = False
+                        error = "No connected account found for this app/user."
+                else:
+                    # print(f"[DEBUG] Failed to list accounts: {resp.status_code} {resp.text}")
+                    success = False
+                    error = resp.text
             except Exception as e:
-                print(f"[DEBUG] Failed to revoke Google token: {e}")
-                # Don't fail the entire operation if token revocation fails
+                # print(f"[DEBUG] Exception during Pipedream disconnect: {e}")
+                success = False
+                error = str(e)
+        else:
+            # print(f"[DEBUG] Missing project_id or access_token for disconnect")
+            success = False
+            error = "Missing project_id or access_token"
         
-        # 2. Remove OAuth credentials from database
+        # Remove OAuth credentials from database (set status to NULL)
         creds_removed = OAuthCredentials.remove_credentials(current_user.id, service)
-        print(f"[DEBUG] OAuth credentials removal result for {service}: {creds_removed}")
+        # print(f"[DEBUG] OAuth credentials removal result for {service}: {creds_removed}")
         
-        # 3. Deactivate UserTool record
+        # Deactivate UserTool record
         try:
             from ..models.user_tool import UserTool
             user_tool = UserTool.query.filter_by(user_id=current_user.id, tool_name=service).first()
             if user_tool:
                 user_tool.is_active = False
                 db.session.commit()
-                print(f"[DEBUG] Deactivated UserTool for {service}")
+                # print(f"[DEBUG] Deactivated UserTool for {service}")
         except Exception as e:
-            print(f"[DEBUG] Failed to deactivate UserTool: {e}")
+            # print(f"[DEBUG] Failed to deactivate UserTool: {e}")
             success = False
         
-        # 4. Revoke all tool permissions
+        # Revoke all tool permissions
         try:
             from ..models.tool_permission import ToolPermission
             permissions = ToolPermission.query.filter_by(user_id=current_user.id, tool_name=service).all()
             for permission in permissions:
                 permission.is_granted = False
             db.session.commit()
-            print(f"[DEBUG] Revoked {len(permissions)} tool permissions for {service}")
+            # print(f"[DEBUG] Revoked {len(permissions)} tool permissions for {service}")
         except Exception as e:
-            print(f"[DEBUG] Failed to revoke tool permissions: {e}")
+            # print(f"[DEBUG] Failed to revoke tool permissions: {e}")
             success = False
         
-        return jsonify({"success": success})
+        if success:
+            return jsonify({"success": True})
+        else:
+            return jsonify({"success": False, "error": error or "Failed to disconnect"}), 400
     
-    print(f"[DEBUG] Invalid service disconnect attempted: {service}")
+    # print(f"[DEBUG] Invalid service disconnect attempted: {service}")
     return jsonify({"success": False, "error": "Invalid service"})
 
 
-def connect_google_workspace():
-    """Initiate Google Workspace OAuth flow"""
-    print("\nDEBUG: Starting Google Workspace OAuth flow")
-    redirect_uri = GOOGLE_CLIENT_CONFIG["web"]["redirect_uris"][0]
-    print(f"DEBUG: Using redirect URI: {redirect_uri}")
-    print(
-        f"DEBUG: Full GOOGLE_CLIENT_CONFIG: {json.dumps(GOOGLE_CLIENT_CONFIG, indent=2)}"
-    )
-
-    flow = Flow.from_client_config(
-        GOOGLE_CLIENT_CONFIG,
-        scopes=GOOGLE_CLIENT_CONFIG["web"]["scopes"],
-        redirect_uri=redirect_uri,
-    )
-
-    authorization_url, state = flow.authorization_url(
-        access_type="offline", include_granted_scopes="true", prompt="consent"
-    )
-
-    print(f"DEBUG: Generated authorization URL: {authorization_url}")
-    session["oauth_state"] = state
-    return redirect(authorization_url)
-
-
-@oauth_bp.route("/oauth2callback")
+@oauth_bp.route("/pipedream/callback/<service>")
 @login_required
-def oauth2callback():
-    """Handle OAuth 2.0 callback"""
-    print("\nDEBUG: Received OAuth callback")
-    print(f"DEBUG: Callback URL: {request.url}")
-    print(f"DEBUG: Expected redirect URI: {GOOGLE_CLIENT_CONFIG['web']['redirect_uris'][0]}")
-    print(f"DEBUG: Current user in OAuth callback: {getattr(current_user, 'id', None)}")
-    print(f"DEBUG: Error parameter: {request.args.get('error')}")
-    print(f"DEBUG: Error description: {request.args.get('error_description')}")
+def pipedream_callback(service):
+    """Handle Pipedream OAuth callback after they complete the OAuth flow for any service"""
+    # print(f"\nDEBUG: Received Pipedream callback for service: {service}")
+    # print(f"DEBUG: Callback URL: {request.url}")
+    # print(f"DEBUG: Current user: {getattr(current_user, 'id', None)}")
+    # print(f"DEBUG: All query parameters: {dict(request.args)}")
+    
+    # Log all headers for debugging
+    # print(f"DEBUG: All headers: {dict(request.headers)}")
+    
+    # Validate service
+    if service not in SERVICES:
+        # print(f"ERROR: Invalid service: {service}")
+        return redirect(url_for("profile.profile"))
+    
+    # Check for errors
+    error = request.args.get('error')
+    if error:
+        # print(f"ERROR: Pipedream returned error: {error}")
+        return redirect(url_for("profile.profile"))
+    
+
+    # Get state from callback
+    state = request.args.get('state')
+    
+    # print(f"DEBUG: Received state: {state}")
+    # print(f"DEBUG: Expected state: {session.get('oauth_state')}")
+    
+    # Verify state parameter
+    expected_state = session.get('oauth_state')
+    if not expected_state or state != expected_state:
+        # print("ERROR: State parameter mismatch")
+        return redirect(url_for("profile.profile"))
     
 
     try:
-        flow = Flow.from_client_config(
-            GOOGLE_CLIENT_CONFIG,
-            scopes=GOOGLE_CLIENT_CONFIG["web"]["scopes"],
-            redirect_uri=GOOGLE_CLIENT_CONFIG["web"]["redirect_uris"][0],
-            state=session.get("oauth_state"),
-        )
-
-        print("DEBUG: Fetching token from callback")
-        flow.fetch_token(
-            authorization_response=request.url, include_granted_scopes="true"
-        )
-
-        credentials = flow.credentials
-        print("DEBUG: Successfully obtained credentials")
-        print(f"DEBUG: Credentials type: {type(credentials)}")
-        print(f"DEBUG: Access token type: {type(credentials.token)}")
-        print(f"DEBUG: Access token length: {len(credentials.token)}")
-        print(f"DEBUG: Access token first 50 chars: {credentials.token[:50]}")
-        print(f"DEBUG: Refresh token type: {type(credentials.refresh_token)}")
-        print(f"DEBUG: Refresh token length: {len(credentials.refresh_token) if credentials.refresh_token else 0}")
-        print(f"DEBUG: Expiry type: {type(credentials.expiry)}")
-        print(f"DEBUG: Expiry value: {credentials.expiry}")
-        print(f"DEBUG: Scopes: {credentials.scopes}")
-
-        # Store credentials in database with separate fields
+        # Store the connection status in database (status=1 for connected)
         OAuthCredentials.store_credentials(
             current_user.id,
-            "google-workspace",
-            access_token=credentials.token,
-            refresh_token=credentials.refresh_token,
-            expires_at=datetime.fromtimestamp(credentials.expiry.timestamp()) if credentials.expiry else None,
-            scopes=credentials.scopes
+            service,
+            state=state
         )
-        print("DEBUG: Stored credentials in database")
-
-        # Grant Google Workspace tool permissions after successful OAuth
+        # print(f"DEBUG: Stored connection status in database for {service}")
+        
+        # Grant tool permissions after successful OAuth
         try:
             grant_tool_access(
                 user_id=current_user.id,
-                tool_name="google-workspace"
+                tool_name=service
             )
-            print("DEBUG: Granted Google Workspace tool permissions to user")
+            # print(f"DEBUG: Granted {service} tool permissions to user")
         except Exception as e:
-            print(f"ERROR: Failed to grant tool permissions: {e}")
-
-        # Ensure UserTool record for Google Workspace exists
+            # print(f"ERROR: Failed to grant tool permissions: {e}")
+            pass
+        
+        # Ensure UserTool record exists
         try:
-            user_tool = UserTool.query.filter_by(user_id=current_user.id, tool_name="google-workspace").first()
+            user_tool = UserTool.query.filter_by(user_id=current_user.id, tool_name=service).first()
             if not user_tool:
-                user_tool = UserTool(user_id=current_user.id, tool_name="google-workspace", is_active=True)
+                user_tool = UserTool(user_id=current_user.id, tool_name=service, is_active=True)
                 db.session.add(user_tool)
                 db.session.commit()
-                print("DEBUG: Created UserTool for Google Workspace")
+                # print(f"DEBUG: Created UserTool for {service}")
             else:
-                print("DEBUG: UserTool for Google Workspace already exists")
+                # print(f"DEBUG: UserTool for {service} already exists")
+                pass
         except Exception as e:
-            print(f"ERROR: Failed to create UserTool: {e}")
-
-        return redirect(url_for("profile.profile"))
+            # print(f"ERROR: Failed to create UserTool: {e}")
+            pass
+        
+        # Clear the state from session
+        session.pop('oauth_state', None)
+        # Detect if this is a popup flow (by query param)
+        if request.args.get('popup') == '1':
+            # Render a minimal HTML page that closes the popup and notifies the opener
+            return '''
+            <html><body><script>
+            if (window.opener) {
+                window.opener.postMessage('tool_connected', '*');
+                window.close();
+            } else {
+                window.location.href = '/profile';
+            }
+            </script>
+            <p>Connection complete. You can close this window.</p>
+            </body></html>
+            '''
+        else:
+            return redirect(url_for("profile.profile"))
+        
     except Exception as e:
-        print(f"ERROR: Failed to process OAuth callback: {str(e)}")
-        print(f"ERROR: Full error details: {repr(e)}")
+        # print(f"ERROR: Failed to process Pipedream callback for {service}: {str(e)}")
+        # print(f"ERROR: Full error details: {repr(e)}")
         return redirect(url_for("profile.profile"))
 
+def connect_pipedream_service(service):
+    """Initiate OAuth flow for any Pipedream service using Connect Link API with proper two-step authentication"""
+    # print(f"\nDEBUG: Starting {service} OAuth flow via Pipedream Connect Link API")
+    
+    pipedream_api_client_id = os.getenv("PIPEDREAM_API_CLIENT_ID")
+    pipedream_api_client_secret = os.getenv("PIPEDREAM_API_CLIENT_SECRET")
+    pipedream_project_id = os.getenv("PIPEDREAM_PROJECT_ID")
+    
+    if not all([pipedream_api_client_id, pipedream_api_client_secret, pipedream_project_id]):
+        # print("ERROR: Pipedream API credentials not configured")
+        return redirect(url_for("profile.profile"))
+    
+    redirect_uri = os.getenv("PIPEDREAM_REDIRECT_URI")
+    # print(f"DEBUG: This is the redirect URI: {redirect_uri}")
+    if not redirect_uri:
+        # print(f"ERROR: PIPEDREAM_REDIRECT_URI not configured")
+        return redirect(url_for("profile.profile"))
+    
+    oauth_app_id_var = f"PIPEDREAM_{service.upper()}_APP_ID"
+    oauth_app_id = os.getenv(oauth_app_id_var)
+    if not oauth_app_id:
+        # print(f"ERROR: {oauth_app_id_var} not configured for {service}")
+        return redirect(url_for("profile.profile"))
+    
+    import secrets
+    state = secrets.token_urlsafe(32)
+    session["oauth_state"] = state
+    
+    environment = os.getenv("PIPEDREAM_ENVIRONMENT", "development")
+    
+    # print("DEBUG: PIPEDREAM_PROJECT_ID =", os.getenv("PIPEDREAM_PROJECT_ID"))
+    # print("DEBUG: OAUTH_APP_ID =", os.getenv(f"PIPEDREAM_{service.upper()}_OAUTH_APP_ID"))
+    
+    try:
+        # Step 1: Get Bearer token using client credentials
+        # print("=== STEP 1: GETTING BEARER TOKEN ===")
+        
+        # Step 1: Get Bearer token
+        token_data = {
+            "grant_type": "client_credentials",
+            "client_id": pipedream_api_client_id,
+            "client_secret": pipedream_api_client_secret,
+            "project_id": pipedream_project_id
+        }
+        
+        # print("Token Request URL:", "https://api.pipedream.com/v1/oauth/token")
+        # print("Token Request Payload:", json.dumps(token_data, indent=2))
+        
+        token_response = oauth_session.post(
+            "https://api.pipedream.com/v1/oauth/token",
+            headers={
+                "X-PD-Environment": environment
+            },
+            data=token_data,
+            timeout=30
+        )
+        
+        # print("=== TOKEN RESPONSE ===")
+        # print("Status:", token_response.status_code)
+        # print("Headers:", dict(token_response.headers))
+        # print("Body:", token_response.text)
+        # print("===============================")
+        
+        token_info = _handle_pipedream_response(token_response)
+        bearer_token = token_info.get("access_token")
+        
+        if not bearer_token:
+            # print("ERROR: No access_token in token response!")
+            return redirect(url_for("profile.profile"))
+        
+        # print("✅ Successfully obtained Bearer token!")
+        
+        # Step 2: Use Bearer token to create connect token
+        # print("\n=== STEP 2: CREATING CONNECT TOKEN ===")
+        
+        external_user_id = str(current_user.id)
+        # print(f"[OAUTH DEBUG] Sending external_user_id to Pipedream: {external_user_id}")
+        # print(f"[OAUTH DEBUG] Current user ID: {current_user.id}")
+        
+        connect_token_data = {
+            "external_user_id": external_user_id,
+            "app": {
+                "id": oauth_app_id,
+                "name": service
+            },
+            "project_id": pipedream_project_id,
+            "success_redirect_uri": f"{redirect_uri}/{service}?state={state}&popup=1",
+            "error_redirect_uri": f"{redirect_uri}/{service}?state={state}&popup=1",
+            "allowed_origins": ["http://localhost:5001"],
+        }
 
-def connect_notion():
-    """Initiate Notion OAuth flow"""
-    auth_url = (
-        f"https://api.notion.com/v1/oauth/authorize?"
-        f"client_id={NOTION_CLIENT_CONFIG['client_id']}&"
-        f"response_type=code&owner=user&"
-        f"redirect_uri={NOTION_CLIENT_CONFIG['redirect_uri']}"
-    )
-    return redirect(auth_url)
+        # print("Connect Token Request URL:", f"https://api.pipedream.com/v1/connect/{pipedream_project_id}/tokens")
+        # print("Connect Token Request Payload:", json.dumps(connect_token_data, indent=2))
 
+        response = oauth_session.post(
+            f"https://api.pipedream.com/v1/connect/{pipedream_project_id}/tokens",
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {bearer_token}",
+                "X-PD-Environment": environment
+            },
+            json=connect_token_data,
+            timeout=30
+        )
+        
+        # print("=== CONNECT TOKEN RESPONSE ===")
+        # print("Status:", response.status_code)
+        # print("Headers:", dict(response.headers))
+        # print("Body:", response.text)
+        # print("===============================")
+        
+        connect_data = _handle_pipedream_response(response)
+        connect_link_url = connect_data.get("connect_link_url")
+        
+        if not connect_link_url:
+            # print("ERROR: No connect_link_url received from Pipedream")
+            return redirect(url_for("profile.profile"))
+        
+        # Add app parameter to the connect_link_url
+        separator = "&" if "?" in connect_link_url else "?"
+        connect_link_url_with_app = f"{connect_link_url}{separator}app={service}"
 
-def connect_slack():
-    """Initiate Slack OAuth flow"""
-    auth_url = (
-        f"https://slack.com/oauth/v2/authorize?"
-        f"client_id={SLACK_CLIENT_CONFIG['client_id']}&"
-        f"scope={','.join(SLACK_CLIENT_CONFIG['scopes'])}&"
-        f"redirect_uri={SLACK_CLIENT_CONFIG['redirect_uri']}"
-    )
-    return redirect(auth_url)
-
-
-def connect_zoom():
-    """Initiate Zoom OAuth flow"""
-    auth_url = (
-        f"https://zoom.us/oauth/authorize?"
-        f"response_type=code&"
-        f"client_id={ZOOM_CLIENT_CONFIG['client_id']}&"
-        f"redirect_uri={ZOOM_CLIENT_CONFIG['redirect_uri']}&"
-        f"scope={','.join(ZOOM_CLIENT_CONFIG['scopes'])}"
-    )
-    return redirect(auth_url)
+        # print(f"DEBUG: Generated Pipedream connect link: {connect_link_url_with_app}")
+        return redirect(connect_link_url_with_app)
+        
+    except Exception as e:
+        # print(f"ERROR: Failed to create Pipedream connect token: {str(e)}")
+        return redirect(url_for("profile.profile"))

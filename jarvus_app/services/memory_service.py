@@ -42,7 +42,7 @@ class MemoryService:
     def save_checkpoint(
         self, 
         thread_id: str, 
-        user_id: int, 
+        user_id: str, 
         agent_id: int, 
         state_data: Dict[str, Any],
         checkpoint_id: Optional[str] = None,
@@ -79,17 +79,17 @@ class MemoryService:
             logger.error(f"Failed to save checkpoint: {str(e)}")
             raise
     
-    def get_latest_state(self, thread_id: str, user_id: int) -> Optional[Dict[str, Any]]:
+    def get_latest_state(self, thread_id: str, user_id: str) -> Optional[Dict[str, Any]]:
         """Get the latest state for a thread"""
         checkpoint = ShortTermMemory.get_latest_checkpoint(thread_id, user_id)
         return checkpoint.state_data if checkpoint else None
     
-    def get_state_history(self, thread_id: str, user_id: int) -> List[Dict[str, Any]]:
+    def get_state_history(self, thread_id: str, user_id: str) -> List[Dict[str, Any]]:
         """Get the complete state history for a thread"""
         checkpoints = ShortTermMemory.get_checkpoint_history(thread_id, user_id)
         return [checkpoint.to_dict() for checkpoint in checkpoints]
     
-    def delete_thread(self, thread_id: str, user_id: int) -> bool:
+    def delete_thread(self, thread_id: str, user_id: str) -> bool:
         """Delete all checkpoints for a thread"""
         try:
             checkpoints = ShortTermMemory.query.filter_by(
@@ -113,7 +113,7 @@ class MemoryService:
     
     def store_memory(
         self, 
-        user_id: int, 
+        user_id: str, 
         namespace: str, 
         memory_data: Dict[str, Any], 
         memory_type: str = 'fact',
@@ -178,12 +178,13 @@ class MemoryService:
     
     def store_episodic_memory(
         self, 
-        user_id: int, 
+        user_id: str, 
         episode_type: str, 
         episode_data: Dict[str, Any],
         importance_score: float = 1.0
     ) -> LongTermMemory:
         """Store an episodic memory (user action, feedback, etc.)"""
+        # logger.info(f"store_episodic_memory called: user_id={user_id}, episode_type={episode_type}, episode_data={episode_data}")
         return self.store_memory(
             user_id=user_id,
             namespace='episodes',
@@ -199,12 +200,13 @@ class MemoryService:
     
     def store_semantic_memory(
         self, 
-        user_id: int, 
+        user_id: str, 
         fact_type: str, 
         fact_data: Dict[str, Any],
         importance_score: float = 1.0
     ) -> LongTermMemory:
         """Store a semantic memory (fact, preference, etc.)"""
+        # logger.info(f"store_semantic_memory called: user_id={user_id}, fact_type={fact_type}, fact_data={fact_data}")
         return self.store_memory(
             user_id=user_id,
             namespace='semantic',
@@ -219,12 +221,13 @@ class MemoryService:
     
     def store_procedural_memory(
         self, 
-        user_id: int, 
+        user_id: str, 
         procedure_name: str, 
         procedure_data: Dict[str, Any],
         importance_score: float = 1.0
     ) -> LongTermMemory:
         """Store a procedural memory (workflow, how-to, etc.)"""
+        # logger.info(f"store_procedural_memory called: user_id={user_id}, procedure_name={procedure_name}, procedure_data={procedure_data}")
         return self.store_memory(
             user_id=user_id,
             namespace='procedures',
@@ -239,7 +242,7 @@ class MemoryService:
     
     def search_memories(
         self, 
-        user_id: int, 
+        user_id: str, 
         namespace: str, 
         query: Optional[str] = None, 
         limit: int = 10,
@@ -286,7 +289,7 @@ class MemoryService:
             # Fallback to SQL search
             return LongTermMemory.search_memories(user_id, namespace, query, limit)
     
-    def get_memory(self, user_id: int, namespace: str, memory_id: str) -> Optional[LongTermMemory]:
+    def get_memory(self, user_id: str, namespace: str, memory_id: str) -> Optional[LongTermMemory]:
         """Get a specific memory by ID"""
         try:
             memory = LongTermMemory.get_memory(user_id, namespace, memory_id)
@@ -297,7 +300,7 @@ class MemoryService:
             logger.error(f"Failed to get memory {memory_id}: {str(e)}")
             return None
     
-    def delete_memory(self, user_id: int, namespace: str, memory_id: str) -> bool:
+    def delete_memory(self, user_id: str, namespace: str, memory_id: str) -> bool:
         """Delete a specific memory"""
         try:
             memory = LongTermMemory.get_memory(user_id, namespace, memory_id)
@@ -316,7 +319,7 @@ class MemoryService:
     
     def create_hierarchical_context(
         self,
-        user_id: int,
+        user_id: str,
         name: str,
         description: str,
         context_data: Dict[str, Any],
@@ -384,7 +387,7 @@ class MemoryService:
             logger.error(f"Failed to create hierarchical context: {str(e)}")
             raise
     
-    def get_active_contexts(self, user_id: int) -> List[HierarchicalMemory]:
+    def get_active_contexts(self, user_id: str) -> List[HierarchicalMemory]:
         """Get all active contexts for a user"""
         try:
             contexts = HierarchicalMemory.get_active_contexts(user_id)
@@ -393,7 +396,7 @@ class MemoryService:
             logger.error(f"Failed to get active contexts: {str(e)}")
             return []
     
-    def get_context_influence(self, memory_id: str, user_id: int) -> Dict[str, Any]:
+    def get_context_influence(self, memory_id: str, user_id: str) -> Dict[str, Any]:
         """Get the combined influence context from a memory and its ancestors"""
         try:
             memory = HierarchicalMemory.query.filter_by(
@@ -409,7 +412,7 @@ class MemoryService:
             logger.error(f"Failed to get context influence: {str(e)}")
             return {}
     
-    def get_root_contexts(self, user_id: int) -> List[HierarchicalMemory]:
+    def get_root_contexts(self, user_id: str) -> List[HierarchicalMemory]:
         """Get all root-level contexts for a user"""
         try:
             return HierarchicalMemory.get_root_contexts(user_id)
@@ -417,7 +420,7 @@ class MemoryService:
             logger.error(f"Failed to get root contexts: {str(e)}")
             return []
     
-    def get_context_children(self, memory_id: str, user_id: int) -> List[HierarchicalMemory]:
+    def get_context_children(self, memory_id: str, user_id: str) -> List[HierarchicalMemory]:
         """Get all children of a context"""
         try:
             return HierarchicalMemory.get_children(memory_id, user_id)
@@ -427,7 +430,7 @@ class MemoryService:
     
     def update_context(
         self,
-        user_id: int,
+        user_id: str,
         memory_id: str,
         context_data: Optional[Dict[str, Any]] = None,
         influence_rules: Optional[Dict[str, Any]] = None,
@@ -464,7 +467,7 @@ class MemoryService:
             logger.error(f"Failed to update context: {str(e)}")
             return None
     
-    def delete_context(self, user_id: int, memory_id: str) -> bool:
+    def delete_context(self, user_id: str, memory_id: str) -> bool:
         """Delete a hierarchical context"""
         try:
             context = HierarchicalMemory.query.filter_by(
@@ -493,7 +496,7 @@ class MemoryService:
     
     def get_contextualized_memories(
         self, 
-        user_id: int, 
+        user_id: str, 
         namespace: str, 
         query: Optional[str] = None,
         context_memory_id: Optional[str] = None,
@@ -515,7 +518,7 @@ class MemoryService:
             logger.error(f"Failed to get contextualized memories: {str(e)}")
             return [], {}
     
-    def create_vacation_context_example(self, user_id: int) -> HierarchicalMemory:
+    def create_vacation_context_example(self, user_id: str) -> HierarchicalMemory:
         """Example: Create a vacation context that influences all other decisions"""
         vacation_context = self.create_hierarchical_context(
             user_id=user_id,
@@ -572,7 +575,7 @@ class MemoryService:
     
     def get_combined_context_for_decision(
         self, 
-        user_id: int, 
+        user_id: str, 
         decision_type: str
     ) -> Dict[str, Any]:
         """Get all relevant contexts for a specific decision type"""
@@ -602,7 +605,7 @@ class MemoryService:
 
     # --- Memory Editing & Improvement System ---
     
-    def find_mergeable_memories(self, user_id: int, namespace: str, similarity_threshold: float = 0.85) -> List[List[LongTermMemory]]:
+    def find_mergeable_memories(self, user_id: str, namespace: str, similarity_threshold: float = 0.85) -> List[List[LongTermMemory]]:
         """Find memories that can be merged based on similarity"""
         try:
             memories = self.search_memories(user_id, namespace, limit=100)
@@ -624,7 +627,7 @@ class MemoryService:
             logger.error(f"Failed to find mergeable memories: {str(e)}")
             return []
     
-    def merge_memories(self, user_id: int, memory_ids: List[str], merge_type: str = 'episodic') -> Optional[LongTermMemory]:
+    def merge_memories(self, user_id: str, memory_ids: List[str], merge_type: str = 'episodic') -> Optional[LongTermMemory]:
         """Merge multiple memories into a single, improved memory"""
         try:
             memories = []
@@ -669,7 +672,7 @@ class MemoryService:
             logger.error(f"Failed to merge memories: {str(e)}")
             return None
     
-    def improve_memory(self, user_id: int, memory_id: str, improvement_type: str = 'auto') -> Optional[LongTermMemory]:
+    def improve_memory(self, user_id: str, memory_id: str, improvement_type: str = 'auto') -> Optional[LongTermMemory]:
         """Improve a specific memory with enhanced content"""
         try:
             memory = self.get_memory(user_id, 'episodes', memory_id)
@@ -699,7 +702,7 @@ class MemoryService:
             logger.error(f"Failed to improve memory: {str(e)}")
             return None
     
-    def assess_memory_quality(self, user_id: int, memory_id: str) -> Dict[str, float]:
+    def assess_memory_quality(self, user_id: str, memory_id: str) -> Dict[str, float]:
         """Assess the quality of a memory across multiple dimensions"""
         try:
             memory = self.get_memory(user_id, 'episodes', memory_id)
@@ -720,7 +723,7 @@ class MemoryService:
             logger.error(f"Failed to assess memory quality: {str(e)}")
             return {}
     
-    def detect_memory_conflicts(self, user_id: int, namespace: str) -> List[Dict[str, Any]]:
+    def detect_memory_conflicts(self, user_id: str, namespace: str) -> List[Dict[str, Any]]:
         """Detect conflicts between memories"""
         try:
             memories = self.search_memories(user_id, namespace, limit=100)
@@ -744,7 +747,7 @@ class MemoryService:
             logger.error(f"Failed to detect memory conflicts: {str(e)}")
             return []
     
-    def resolve_memory_conflicts(self, user_id: int, conflicts: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def resolve_memory_conflicts(self, user_id: str, conflicts: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Resolve memory conflicts intelligently"""
         try:
             resolutions = []
@@ -763,7 +766,7 @@ class MemoryService:
             logger.error(f"Failed to resolve memory conflicts: {str(e)}")
             return []
     
-    def get_memory_evolution(self, user_id: int, memory_id: str) -> List[Dict[str, Any]]:
+    def get_memory_evolution(self, user_id: str, memory_id: str) -> List[Dict[str, Any]]:
         """Get the evolution history of a memory"""
         try:
             # This would require a separate versioning table in a full implementation
@@ -1236,7 +1239,7 @@ class MemoryService:
     def search_hierarchical_contexts_vector(
         self, 
         query: str, 
-        user_id: int, 
+        user_id: str, 
         n_results: int = 10,
         similarity_threshold: float = 0.7
     ) -> List[Dict[str, Any]]:
@@ -1256,7 +1259,7 @@ class MemoryService:
     def efficient_semantic_search(
         self, 
         query: str, 
-        user_id: int, 
+        user_id: str, 
         namespace: str, 
         n_results: int = 10,
         similarity_threshold: float = 0.7
@@ -1287,7 +1290,7 @@ class MemoryService:
     
     def update_memory_content(
         self, 
-        user_id: int, 
+        user_id: str, 
         namespace: str, 
         memory_id: str, 
         new_content: str
@@ -1320,7 +1323,7 @@ class MemoryService:
     
     def delete_memory_with_vector(
         self, 
-        user_id: int, 
+        user_id: str, 
         namespace: str, 
         memory_id: str
     ) -> bool:
@@ -1344,7 +1347,7 @@ class MemoryService:
     
     def delete_hierarchical_context_with_vector(
         self, 
-        user_id: int, 
+        user_id: str, 
         memory_id: str
     ) -> bool:
         """Delete hierarchical context from both SQL and vector databases"""
@@ -1365,11 +1368,225 @@ class MemoryService:
             logger.error(f"Failed to delete hierarchical context with vector: {str(e)}")
             return False
 
+    def get_importance_score_from_llm(self, memory_type: str, memory_content: str, conversation_text: str = None, user_goal: str = None) -> (float, str):
+        """
+        Use the LLM to rate the importance of a memory, given its type, content, and context.
+        Returns a tuple: (importance_score, justification)
+        """
+        prompt = f"""
+You are an AI assistant helping to organize a user's memories. Here is the context:
+
+- Memory type: {memory_type}
+- Memory content: {memory_content}
+"""
+        if conversation_text:
+            prompt += f"\n- Conversation or event: {conversation_text}"
+        if user_goal:
+            prompt += f"\n- User's current goal: {user_goal}"
+        prompt += """
+
+On a scale from 1 (not important) to 5 (very important), how important is this memory for the user's future actions or understanding? Respond with a single number and a brief reason, e.g. '4: This is a key user preference.'
+"""
+
+        response = self.llm_client.format_response(self.llm_client.create_chat_completion([
+            self.llm_client.format_message("system", "You are an expert at evaluating the importance of user memories for an AI assistant."),
+            self.llm_client.format_message("user", prompt)
+        ], max_tokens=64, temperature=0.2))
+        content = response.get('content', '')
+        import re
+        match = re.match(r"(\d(?:\.\d+)?)[^\d]*(.*)", content.strip())
+        if match:
+            score = float(match.group(1))
+            justification = match.group(2).strip()
+        else:
+            score = 3.0
+            justification = content.strip() or "No justification provided."
+        # Normalize to 1.0-5.0, then to 0.2-1.0 for storage if desired
+        normalized_score = max(1.0, min(5.0, score))
+        return normalized_score, justification
+
+    def extract_and_store_memories(
+        self,
+        user_id: str,
+        conversation_messages: list,
+        agent_id: int = None,
+        tool_call: dict = None,
+        feedback: str = None,
+        user_goal: str = None
+    ) -> list:
+        """
+        Compress/summarize and store episodic, semantic, and procedural memories from a conversation.
+        - Store the conversation as an episodic memory (summarized).
+        - Extract and store semantic facts about the user.
+        - If a tool was used, store the workflow and feedback as procedural memory.
+        - After storing, improve and merge memories as appropriate.
+        Returns a list of stored/updated memory objects.
+        """
+        # logger.info(f"extract_and_store_memories called: user_id={user_id}, agent_id={agent_id}, tool_call={tool_call}, feedback={feedback}")
+        stored_memories = []
+        # 1. Summarize conversation for episodic memory
+        conversation_text = "\n".join([
+            f"{msg.get('role', 'user')}: {msg.get('content', '')}" for msg in conversation_messages if msg.get('content')
+        ])
+        summary_prompt = (
+            "Summarize the following conversation as an episode, focusing on key events, actions, and outcomes. "
+            "Be concise but capture important details.\n\nConversation:\n" + conversation_text
+        )
+        summary = self.llm_client.format_response(self.llm_client.create_chat_completion([
+            self.llm_client.format_message("system", "You are a helpful assistant that summarizes conversations for memory storage."),
+            self.llm_client.format_message("user", summary_prompt)
+        ]))
+        episode_summary = summary.get('content', conversation_text)
+        # Get importance for episodic memory
+        episodic_score, episodic_justification = self.get_importance_score_from_llm(
+            memory_type="episodic",
+            memory_content=episode_summary,
+            conversation_text=conversation_text,
+            user_goal=user_goal
+        )
+        episodic_memory = self.store_episodic_memory(
+            user_id=user_id,
+            episode_type="conversation",
+            episode_data={
+                "summary": episode_summary,
+                "raw": conversation_text,
+                "agent_id": agent_id,
+                "importance_justification": episodic_justification
+            },
+            importance_score=episodic_score
+        )
+        stored_memories.append(episodic_memory)
+
+        # 2. Extract semantic facts
+        semantic_prompt = (
+            "From the following conversation, extract any facts, preferences, or information about the user that should be stored as semantic memory. "
+            "Return a JSON list of facts, each as an object with 'type' and 'data'. If none, return an empty list.\n\nConversation:\n" + conversation_text
+        )
+        semantic_response = self.llm_client.format_response(self.llm_client.create_chat_completion([
+            self.llm_client.format_message("system", "You extract user facts for semantic memory in JSON format."),
+            self.llm_client.format_message("user", semantic_prompt)
+        ]))
+        import json as _json
+        facts = []
+        try:
+            facts = _json.loads(semantic_response.get('assistant', {}).get('content', '[]'))
+        except Exception:
+            pass
+        for fact in facts:
+            fact_type = fact.get('type', 'fact')
+            fact_data = fact.get('data', fact)
+            # Get importance for semantic memory
+            semantic_score, semantic_justification = self.get_importance_score_from_llm(
+                memory_type=fact_type,
+                memory_content=str(fact_data),
+                conversation_text=conversation_text,
+                user_goal=user_goal
+            )
+            semantic_memory = self.store_semantic_memory(
+                user_id=user_id,
+                fact_type=fact_type,
+                fact_data={**fact_data, "importance_justification": semantic_justification},
+                importance_score=semantic_score
+            )
+            stored_memories.append(semantic_memory)
+
+        # 3. Store procedural memory if tool was used
+        if tool_call:
+            procedure_name = tool_call.get('name', 'tool_usage')
+            procedure_data = {
+                'tool': tool_call,
+                'conversation': conversation_text,
+                'feedback': feedback
+            }
+            # Get importance for procedural memory
+            procedural_score, procedural_justification = self.get_importance_score_from_llm(
+                memory_type="procedure",
+                memory_content=str(procedure_data),
+                conversation_text=conversation_text,
+                user_goal=user_goal
+            )
+            procedural_memory = self.store_procedural_memory(
+                user_id=user_id,
+                procedure_name=procedure_name,
+                procedure_data={**procedure_data, "importance_justification": procedural_justification},
+                importance_score=procedural_score
+            )
+            stored_memories.append(procedural_memory)
+
+        # 4. Memory editing/improvement: improve and merge similar memories
+        # Improve procedural memories
+        for mem in stored_memories:
+            if getattr(mem, 'memory_type', None) == 'procedure':
+                self.improve_memory(user_id, mem.memory_id, improvement_type='procedural')
+        # Merge similar episodic, semantic, and procedural memories
+        for ns, mtype in [('episodes', 'episodic'), ('semantic', 'semantic'), ('procedures', 'procedural')]:
+            mergeable = self.find_mergeable_memories(user_id, ns)
+            for group in mergeable:
+                if len(group) > 1:
+                    self.merge_memories(user_id, [m.memory_id for m in group], merge_type=mtype)
+
+        return stored_memories
+
+    def get_context_for_conversation(
+        self,
+        user_id: str,
+        thread_id: str = None,
+        current_message: str = None,
+        max_memories: int = 5,
+        max_tokens: int = 1500,
+        as_sections: bool = True
+    ):
+        """
+        Retrieve and summarize the most relevant episodic, semantic, and procedural memories for a user and thread.
+        Returns a dict of context sections for LLM input, or a string if as_sections=False (legacy).
+        """
+        # logger.info(f"get_context_for_conversation called: user_id={user_id}, thread_id={thread_id}, current_message={current_message}")
+        
+        try:
+            # Get recent episodic memories
+            episodic_memories = self.search_memories(
+                user_id, "episodes", current_message, limit=max_memories, search_type='efficient_hybrid'
+            )
+            
+            # Get relevant semantic memories
+            semantic_memories = self.search_memories(
+                user_id, "semantic", current_message, limit=max_memories, search_type='efficient_hybrid'
+            )
+            
+            # Get relevant procedural memories
+            procedural_memories = self.search_memories(
+                user_id, "procedures", current_message, limit=max_memories, search_type='efficient_hybrid'
+            )
+            
+            # Combine context - filter out None values and ensure string values to prevent join errors
+            def safe_string(value):
+                """Convert value to string safely, return None if not convertible"""
+                if value is None:
+                    return None
+                if isinstance(value, str):
+                    return value
+                try:
+                    return str(value)
+                except:
+                    return None
+            
+            context = {
+                "episodic": [safe_string(m.memory_data.get('summary')) for m in episodic_memories if safe_string(m.memory_data.get('summary')) is not None],
+                "semantic": [safe_string(m.memory_data.get('data')) for m in semantic_memories if safe_string(m.memory_data.get('data')) is not None],
+                "procedural": [safe_string(m.memory_data.get('data')) for m in procedural_memories if safe_string(m.memory_data.get('data')) is not None]
+            }
+            
+            return context
+            
+        except Exception as e:
+            logger.error(f"Failed to get context for conversation: {str(e)}")
+            return {"episodic": [], "semantic": [], "procedural": []}
+
 
 class MemoryConfig:
     """Configuration for memory management"""
     
-    def __init__(self, thread_id: str, user_id: int, agent_id: int):
+    def __init__(self, thread_id: str, user_id: str, agent_id: int):
         self.thread_id = thread_id
         self.user_id = user_id
         self.agent_id = agent_id

@@ -6,14 +6,10 @@ from datetime import datetime, timedelta
 
 from ..models.oauth import OAuthCredentials
 from ..models.tool_permission import ToolPermission
+from jarvus_app.config import ALL_PIPEDREAM_APPS
 
-# Define available tools and their descriptions
-TOOLS = {
-    "google-workspace": "Access to Google Workspace functionality through MCP server",
-    "notion": "Access to Notion functionality through MCP server",
-    "slack": "Access to Slack functionality through MCP server",
-    "zoom": "Access to Zoom functionality through MCP server",
-}
+# Define available tools and their descriptions, generated from ALL_PIPEDREAM_APPS
+TOOLS = {app["slug"]: f"Access to {app['name']} functionality through MCP server" for app in ALL_PIPEDREAM_APPS}
 
 def grant_tool_access(user_id, tool_name, duration_days=None):
     """
@@ -21,7 +17,7 @@ def grant_tool_access(user_id, tool_name, duration_days=None):
 
     Args:
         user_id (str): The user's ID
-        tool_name (str): The name of the tool (e.g., 'google-workspace')
+        tool_name (str): The name of the tool (e.g., 'docs')
         duration_days (int, optional): Number of days until permission expires
     """
     if tool_name not in TOOLS:
@@ -97,25 +93,14 @@ def get_connected_services(user_id):
     """Get a dictionary of connected services for a user."""
     services = {}
     for service in TOOLS.keys():
-        if service == "google-workspace":
-            # Check if user has OAuth credentials for this service
-            creds = OAuthCredentials.get_credentials(user_id, service)
-            
-            # Debug: Print what we find
-            print(f"DEBUG: Checking OAuth credentials for user {user_id}, service {service}")
-            print(f"DEBUG: OAuth credentials found: {creds is not None}")
-            
-            # Consider connected if OAuth credentials exist
-            services[service] = creds is not None
-            print(f"DEBUG: Final result for {service}: {services[service]}")
-        else:
-            # Mark other services as not connected (coming soon)
-            services[service] = False
+        # Check if user is connected (status=1)
+        is_connected = OAuthCredentials.is_connected(user_id, service)
+        
+        # Debug: Print what we find
+        # print(f"DEBUG: Checking OAuth credentials for user {user_id}, service {service}")
+        # print(f"DEBUG: OAuth credentials found: {is_connected}")
+        
+        # Consider connected if status=1
+        services[service] = is_connected
+        # print(f"DEBUG: Final result for {service}: {services[service]}")
     return services
-
-def get_user_oauth_scopes(user_id: str, service: str) -> list:
-    """Get the OAuth scopes granted by a user for a specific service."""
-    creds = OAuthCredentials.get_credentials(user_id, service)
-    if creds and creds.scopes:
-        return creds.scopes.split(" ")
-    return []

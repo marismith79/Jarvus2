@@ -38,45 +38,20 @@
                 <div class="profile-card">
                     <h2>App Integrations</h2>
                     <div class="integrations-grid">
-                        <!-- Google Workspace Integration -->
+                        
+                        {% for tool in tool_list %}
                         <div class="integration-card">
                             <div class="integration-header">
-                                <img src="{{ url_for('static', filename='images/google-logo.png') }}" alt="Google Workspace Logo" class="integration-logo">
-                                <span class="integration-name">Google Workspace</span>
+                                <img src="{{ url_for('static', filename='images/google-logo.png') }}" alt="{{ tool.name }} Logo" class="integration-logo">
+                                <span class="integration-name">{{ tool.name }}</span>
                             </div>
-                            {% if google_workspace_connected %}
-                                <button class="cta-button secondary" onclick="disconnectGoogleWorkspace()">Disconnect</button>
+                            {% if tool.connected %}
+                                <button class="cta-button secondary" onclick="disconnectService('{{ tool.slug }}')">Disconnect</button>
                             {% else %}
-                                <button class="cta-button" onclick="connectGoogleWorkspace()">Connect</button>
+                                <button class="cta-button" onclick="connectService('{{ tool.slug }}')">Connect</button>
                             {% endif %}
                         </div>
-
-                        <!-- Notion Integration -->
-                        <div class="integration-card">
-                            <div class="integration-header">
-                                <img src="{{ url_for('static', filename='images/notion-logo.png') }}" alt="Notion Logo" class="integration-logo">
-                                <span class="integration-name">Notion</span>
-                            </div>
-                            <button class="cta-button" onclick="showComingSoon()">Coming Soon</button>
-                        </div>
-
-                        <!-- Slack Integration -->
-                        <div class="integration-card">
-                            <div class="integration-header">
-                                <img src="{{ url_for('static', filename='images/slack-logo.png') }}" alt="Slack Logo" class="integration-logo">
-                                <span class="integration-name">Slack</span>
-                            </div>
-                            <button class="cta-button" onclick="showComingSoon()">Coming Soon</button>
-                        </div>
-
-                        <!-- Zoom Integration -->
-                        <div class="integration-card">
-                            <div class="integration-header">
-                                <img src="{{ url_for('static', filename='images/zoom-logo.png') }}" alt="Zoom Logo" class="integration-logo">
-                                <span class="integration-name">Zoom</span>
-                            </div>
-                            <button class="cta-button" onclick="showComingSoon()">Coming Soon</button>
-                        </div>
+                        {% endfor %}
                     </div>
                 </div>
             </div>
@@ -93,5 +68,8 @@
 {% endblock %}
 
 {% block extra_js %}
+<script>
+window.toolSlugs = {{ tool_list | map(attribute='slug') | list | tojson }};
+</script>
 <script src="{{ url_for('static', filename='js/profile.js') }}"></script>
 {% endblock %}

@@ -4,6 +4,7 @@ import logging
 
 from ..utils.tool_permissions import get_connected_services
 from ..utils.token_utils import get_valid_jwt_token
+from jarvus_app.config import ALL_PIPEDREAM_APPS
 
 profile_bp = Blueprint("profile", __name__)
 logger = logging.getLogger(__name__)
@@ -26,11 +27,15 @@ def profile():
     # Get connected services using centralized function
     connected_services = get_connected_services(current_user.id)
 
+    # Build tool_list with a 'connected' property for each tool
+    tool_list = []
+    for app in ALL_PIPEDREAM_APPS:
+        slug = app["slug"]
+        tool = app.copy()
+        tool["connected"] = connected_services.get(slug, False)
+        tool_list.append(tool)
     return render_template(
         "profile.html",
-        user=current_user,
-        google_workspace_connected=connected_services["google-workspace"],
-        notion_connected=connected_services["notion"],
-        slack_connected=connected_services["slack"],
-        zoom_connected=connected_services["zoom"],
+        tool_list=tool_list,
+        user=current_user
     )

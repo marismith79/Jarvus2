@@ -8,12 +8,14 @@ from typing import Any, Dict, List, Optional
 import time
 import logging
 import json
+import re
+from datetime import datetime, timedelta
 
 from ..llm.client import JarvusAIClient
 from ..services.tool_registry import tool_registry
 from flask_login import login_required, current_user
 from flask import Blueprint, jsonify, request, session
-from ..utils.tool_permissions import check_tool_access, get_user_oauth_scopes, get_user_tools
+from ..utils.tool_permissions import check_tool_access, get_user_tools
 import logging
 from azure.ai.inference.models import (
     SystemMessage,
@@ -24,23 +26,25 @@ from azure.ai.inference.models import (
 )
 from ..config import Config
 from jarvus_app.models.history import History
+from jarvus_app.models.todo import Todo
 from ..db import db
-from ..services.agent_service import get_agent, get_agent_tools, get_agent_history, get_agent_interaction_history, append_message, create_agent, delete_agent, save_interaction
-from ..services.enhanced_agent_service import enhanced_agent_service
+from ..services.agent_service import agent_service
 from ..utils.token_utils import get_valid_jwt_token
+from ..services.pipedream_tool_registry import pipedream_tool_service
+from ..services.workflow_execution_service import workflow_execution_service
 
 jarvus_ai = JarvusAIClient()
 
 chatbot_bp = Blueprint('chatbot', __name__)
 logger = logging.getLogger(__name__)
-tool_choice = 'required'
+tool_choice = 'auto'
 
 @chatbot_bp.route('/tools', methods=['GET'])
 @login_required
 def get_available_tools():
     """Return only the definitions the user has toggled on."""
     # all of your definitions:
-    all_defs = tool_registry.get_sdk_tools()
+    all_defs = pipedream_tool_service.get_sdk_tools()
 
     # which names did the user pick?
     selected = session.get('selected_tools', [])
@@ -74,7 +78,7 @@ def create_agent_route():
     tools = data.get('tools', [])
     description = data.get('description', '')
 
-    agent = create_agent(current_user.id, agent_name, tools, description)
+    agent = agent_service.create_agent(current_user.id, agent_name, tools, description)
     return jsonify({
         'id': agent.id,
         'name': agent.name,
@@ -85,314 +89,46 @@ def create_agent_route():
 @chatbot_bp.route('/agents/<int:agent_id>/history', methods=['GET'])
 @login_required
 def get_agent_history_route(agent_id):
-    agent = get_agent(agent_id, current_user.id)
-    interaction_history = get_agent_interaction_history(agent)
+    agent = agent_service.get_agent(agent_id, current_user.id)
+    interaction_history = agent_service.get_agent_interaction_history(agent)
     return jsonify({'history': interaction_history})
 
 @chatbot_bp.route('/send', methods=['POST'])
 @login_required
 def handle_chat_message():
-    """Handle chat message with legacy approach (for backward compatibility)"""
-    return handle_chat_message_legacy()
-
-@chatbot_bp.route('/send-with-memory', methods=['POST'])
-@login_required
-def handle_chat_message_with_memory():
-    """Handle chat message with enhanced memory management"""
-    return handle_chat_message_enhanced()
-
-def handle_chat_message_legacy():
-    """Handle incoming chat messages, invoking LLM and tools as needed."""
-    import sys
-    logger.info("=== Starting chat message handling ===")
-    logger.info(f"Request method: {request.method}")
-    logger.info(f"Request headers: {dict(request.headers)}")
-    logger.info(f"Request args: {dict(request.args)}")
-    logger.info(f"Request form: {dict(request.form)}")
-    logger.info(f"Request json: {request.get_json(silent=True)}")
-    logger.info(f"Current user: {current_user.id}")
-    logger.info(f"Session ID: {session.sid if hasattr(session, 'sid') else 'No session ID'}")
-
-    # Log session size and key details
-    session_total_size = 0
-    logger.info("=== Session Key Size Debug ===")
-    for k, v in session.items():
-        try:
-            if isinstance(v, (str, bytes)):
-                size = len(v)
-            else:
-                import json
-                size = len(json.dumps(v))
-        except Exception as e:
-            size = -1
-        session_total_size += size if size > 0 else 0
-        logger.info(f"Session key: {k} | type: {type(v).__name__} | size: {size} bytes")
-    logger.info(f"Total session size (approx): {session_total_size} bytes")
-    logger.info("====================================")
-
-    data = request.get_json() or {}
-    user_text = data.get('message', '')
-    agent_id = data.get('agent_id')
-    tool_choice = data.get('tool_choice', 'auto')
-    web_search_enabled = data.get('web_search_enabled', True)
-    jwt_token = get_valid_jwt_token()
-    if not jwt_token:
-        # Token refresh failed, force re-login
-        return redirect(url_for("auth.signin"))
-    logger.info(f"Received message: {user_text}")
-    logger.info(f"Agent ID: {agent_id}")
-    logger.info(f"Tool choice: {tool_choice}")
-    logger.info(f"JWT token present: {bool(jwt_token)}")
-
-    if not all([user_text, agent_id]):
-        return jsonify({'error': 'Message and agent_id are required.'}), 400
-
-    agent = get_agent(agent_id, current_user.id)
-    messages = []
-    for m in (agent.messages or []):
-        role = m.get('role')
-        if role == 'user':
-            messages.append(UserMessage(content=m.get('content', '')))
-        elif role == 'assistant':
-            messages.append(AssistantMessage(content=m.get('content', ''), tool_calls=None))
-        elif role == 'system':
-            messages.append(SystemMessage(content=m.get('content', '')))
-        else:
-            messages.append(UserMessage(content=m.get('content', '')))
-    messages.append(UserMessage(content=user_text))
-
-    # Helper: map user_scopes to tool module names
-    def scopes_to_tools(user_scopes):
-        SCOPE_KEYWORDS = {
-            'gmail': ['gmail'],
-            'calendar': ['calendar'],
-            'drive': ['drive'],
-            'docs': ['documents'],
-            'sheets': ['spreadsheets'],
-            'slides': ['presentations'],
-        }
-        tool_set = set()
-        for tool, keywords in SCOPE_KEYWORDS.items():
-            for keyword in keywords:
-                if any(keyword in scope for scope in user_scopes):
-                    tool_set.add(tool)
-        return tool_set
-
-    agent_tools = set(get_agent_tools(agent))
-    user_scopes = get_user_oauth_scopes(current_user.id, "google-workspace")
-    user_tools = scopes_to_tools(user_scopes)
-    allowed_tools = list(agent_tools & user_tools)
-    if web_search_enabled:
-        allowed_tools.append('web')
-    print('DEBUG agent_tools', agent_tools)
-    print('DEBUG user_tools', user_tools)
-    print('DEBUG allowed_tools', allowed_tools)
-    print('DEBUG user_scopes', user_scopes)
-
-    # # Get tool categories for allowed tools
-    # allowed_tool_objs = [tool_registry.get_tool(t) for t in allowed_tools if tool_registry.get_tool(t)]
-    # allowed_categories = list(set([t.category.value for t in allowed_tool_objs if t and hasattr(t, 'category')]))
-    # print('DEBUG allowed_tool_objs', allowed_tool_objs)
-    # print('DEBUG allowed_categories', allowed_categories)
-
-    # Step 1: Ask LLM which tool/category is needed
-    tool_selection_prompt = (
-        "Given the following user message and these tool categories, "
-        "which tool(s) or tool category(ies) would you use to answer the message? "
-        "Respond with a JSON list of tool names or categories. If none, return an empty list."
-    )
-    tool_selection_messages = [
-        {"role": "system", "content": tool_selection_prompt},
-        {"role": "user", "content": user_text},
-        {"role": "system", "content": f"Available tool categories: {allowed_tools}"}
-    ]
-    tool_selection_response = jarvus_ai.create_chat_completion(tool_selection_messages)
-    # Helper to parse tool names/categories from LLM response
-    import re
-    import json as pyjson
-    def parse_tools_from_response(resp):
-        # Try to extract a JSON list from the response
-        try:
-            if isinstance(resp, dict) and 'assistant' in resp and 'content' in resp['assistant']:
-                content = resp['assistant']['content']
-            elif isinstance(resp, dict) and 'choices' in resp and resp['choices']:
-                content = resp['choices'][0]['message']['content']
-            else:
-                content = str(resp)
-            match = re.search(r'\[.*\]', content, re.DOTALL)
-            if match:
-                return pyjson.loads(match.group(0))
-            # fallback: try to parse whole content
-            return pyjson.loads(content)
-        except Exception:
-            return []
-    print("DEBUG tool_selection_response", tool_selection_response)
-    needed_tools_or_categories = set(parse_tools_from_response(tool_selection_response))
-
-    # Step 2: Filter allowed tools to only those needed
-    filtered_tools = [
-        t for t in allowed_tools
-        if t in needed_tools_or_categories or (hasattr(t, 'category') and t.category.value in needed_tools_or_categories)
-    ]
-    # Filter out web tools if web_search_enabled is False
-    if not web_search_enabled:
-        filtered_tools = [
-            t for t in filtered_tools
-            if not (hasattr(tool_registry.get_tool(t), 'category') and getattr(tool_registry.get_tool(t), 'category', None) and tool_registry.get_tool(t).category.value == 'web')
-        ]
-    sdk_tools = tool_registry.get_sdk_tools_by_modules(filtered_tools, user_scopes)
-    logger.info(f"Filtered tools for LLM: {filtered_tools}")
-    # --- END: Two-step tool selection orchestration ---
-
-    try:
-        new_messages = []
-        # Recursive tool calling loop
-        while True:
-            logger.info("Calling Azure AI for completion")
-            response: ChatCompletions = jarvus_ai.client.complete(
-                messages=messages,
-                model=jarvus_ai.deployment_name,
-                tools=sdk_tools,
-                stream=False,
-                tool_choice=tool_choice
-            )
-            logger.info("Received response from Azure AI")
-
-            choice = response.choices[0]
-            msg = choice.message
-            # Always ensure content is a string
-            assistant_msg = AssistantMessage(content=msg.content if msg.content is not None else "", tool_calls=msg.tool_calls)
-            messages.append(assistant_msg)
-            new_messages.append({'role': 'assistant', 'content': assistant_msg.content})
-            logger.info(f"Assistant message: {assistant_msg}")
-            if not msg.tool_calls:
-                logger.info("No tool calls in response - conversation complete")
-                break
-
-            logger.info(f"Processing {len(msg.tool_calls)} tool calls")
-            for call in msg.tool_calls:
-                retries = 0
-                max_retries = 3
-                current_call = call
-                while retries < max_retries:
-                    tool_name = current_call.function.name
-                    tool_args = json.loads(current_call.function.arguments) if current_call.function.arguments else {}
-                    logger.info(f"Executing tool: {tool_name} with args: {tool_args}")
-                    try:
-                        tool_result = tool_registry.execute_tool(
-                            tool_name=tool_name,
-                            parameters=tool_args,
-                            jwt_token=jwt_token,
-                        )
-                        # On success, append a ToolMessage with the result
-                        tool_msg = ToolMessage(content=json.dumps(tool_result), tool_call_id=current_call.id)
-                        messages.append(tool_msg)
-                        # Prompt the LLM again to get the final response after tool execution
-                        logger.info("Prompting LLM for final response after tool execution")
-                        response = jarvus_ai.client.complete(
-                            messages=messages,
-                            model=jarvus_ai.deployment_name,
-                            stream=False,
-                        )
-                        choice = response.choices[0]
-                        msg = choice.message
-                        assistant_msg = AssistantMessage(content=msg.content if msg.content is not None else "", tool_calls=msg.tool_calls)
-                        messages.append(assistant_msg)
-                        new_messages.append({'role': 'assistant', 'content': assistant_msg.content})
-                        break  # Exit retry loop on success
-                    except Exception as e:
-                        error_msg = f"Tool call '{tool_name}' failed with error: {str(e)}"
-                        logger.error(error_msg)
-                        # Insert a ToolMessage with the error for this tool_call_id
-                        tool_msg = ToolMessage(content=json.dumps({"error": error_msg}), tool_call_id=current_call.id)
-                        messages.append(tool_msg)
-                        # Inject a clear, actionable error as a user message for the LLM to see
-                        messages.append(UserMessage(content=f"{error_msg}. Please analyze the error and try a different tool or fix the arguments and call a tool again. Do not just suggest alternatives in text—actually call a tool."))
-                        # Add a system message to reinforce the instruction
-                        messages.append(SystemMessage(content="When you see an error message, you must analyze it and try a different tool or fix the arguments and call a tool again. Do not just suggest alternatives in text—actually call a tool."))
-                        retries += 1
-                        if retries >= max_retries:
-                            logger.error(f"Max retries reached for tool call '{tool_name}'. Moving on.")
-                            break
-                        # Prompt the LLM again for a new tool call after error
-                        logger.info("Prompting LLM again after tool call failure")
-                        response = jarvus_ai.client.complete(
-                            messages=messages,
-                            model=jarvus_ai.deployment_name,
-                            tools=sdk_tools,
-                            stream=False,
-                            tool_choice="required"
-                        )
-                        logger.info("Received response from Azure AI (retry)")
-                        choice = response.choices[0]
-                        msg = choice.message
-                        assistant_msg = AssistantMessage(content=msg.content if msg.content is not None else "", tool_calls=msg.tool_calls)
-                        messages.append(assistant_msg)
-                        new_messages.append({'role': 'assistant', 'content': assistant_msg.content})
-                        logger.info(f"Assistant message (retry): {assistant_msg}")
-                        if not msg.tool_calls:
-                            logger.info("No tool calls in response after retry - conversation complete")
-                            break
-                        # Use the first tool call from the new LLM response
-                        current_call = msg.tool_calls[0]
-
-        # Save updated messages to DB (as dicts)
-        agent.messages = []
-        for m in messages:
-            if isinstance(m, UserMessage):
-                agent.messages.append({'role': 'user', 'content': m.content})
-            elif isinstance(m, AssistantMessage):
-                agent.messages.append({'role': 'assistant', 'content': m.content})
-            elif isinstance(m, SystemMessage):
-                agent.messages.append({'role': 'system', 'content': m.content})
-            else:
-                agent.messages.append({'role': 'user', 'content': getattr(m, 'content', '')})
-        db.session.commit()
-        
-        # Save the user input and final assistant response to interaction history
-        final_assistant_message = ""
-        if new_messages:
-            # Get the last assistant message from new_messages
-            for msg in reversed(new_messages):
-                if msg.get('role') == 'assistant' and msg.get('content'):
-                    final_assistant_message = msg.get('content')
-                    break
-        
-        if final_assistant_message:
-            save_interaction(agent, user_text, final_assistant_message)
-        
-        agent = get_agent(agent_id, current_user.id)  # Re-fetch from DB
-        return jsonify({"new_messages": [final_assistant_message]})
-
-    except Exception as e:
-        logger.error(f"Error processing message for agent {agent_id}: {str(e)}", exc_info=True)
-        return jsonify({'error': str(e)}), 500
-
-def handle_chat_message_enhanced():
-    """Handle incoming chat messages with enhanced memory management."""
+    """Handle incoming chat messages with enhanced memory management and tool orchestration."""
     try:
         data = request.get_json() or {}
         user_text = data.get('message', '').strip()
         agent_id = data.get('agent_id')
         thread_id = data.get('thread_id')  # Optional thread ID for memory
-        
-        if not all([user_text, agent_id]):
-            return jsonify({'error': 'Message and agent_id are required.'}), 400
-        
-        # Process message with memory
-        assistant_message, memory_info = enhanced_agent_service.process_message_with_memory(
+        tool_choice = data.get('tool_choice', 'auto')
+        web_search_enabled = data.get('web_search_enabled', True)
+        if not user_text:
+            return jsonify({'error': 'Message is required.'}), 400
+
+        # --- Normal Chat Handling ---
+        if not agent_id:
+            return jsonify({'error': 'agent_id is required.'}), 400
+        # Get current task context
+        current_task = Todo.get_current_task(current_user.id)
+        final_assistant_message, memory_info = agent_service.process_message(
             agent_id=agent_id,
             user_id=current_user.id,
             user_message=user_text,
-            thread_id=thread_id
+            thread_id=thread_id,
+            tool_choice=tool_choice,
+            web_search_enabled=web_search_enabled,
+            current_task=current_task,
+            logger=logger,
+            execution_type="chat"
         )
-        
-        return jsonify({
-            'response': assistant_message,
+        response_data = {
+            'response': final_assistant_message,
             'memory_info': memory_info,
             'thread_id': memory_info.get('thread_id')
-        }), 200
-        
+        }
+        return jsonify(response_data), 200
     except Exception as e:
         logger.error(f"Error processing message with memory: {str(e)}", exc_info=True)
         return jsonify({'error': str(e)}), 500
@@ -402,7 +138,7 @@ def handle_chat_message_enhanced():
 def delete_agent_route(agent_id):
     """Delete an agent and all its associated data."""
     try:
-        success = delete_agent(agent_id, current_user.id)
+        success = agent_service.delete_agent(agent_id, current_user.id)
         if success:
             return jsonify({'message': 'Agent deleted successfully'}), 200
         else:
@@ -410,3 +146,530 @@ def delete_agent_route(agent_id):
     except Exception as e:
         logger.error(f"Error deleting agent {agent_id}: {str(e)}", exc_info=True)
         return jsonify({'error': str(e)}), 500
+
+@chatbot_bp.route('/agents/most-recent', methods=['GET'])
+@login_required
+def get_most_recent_agent():
+    """Get the most recent agent for the current user."""
+    try:
+        # Get the most recent agent by creation date
+        most_recent_agent = History.query.filter_by(user_id=current_user.id).order_by(History.created_at.desc()).first()
+        
+        if most_recent_agent:
+            return jsonify({
+                'id': most_recent_agent.id,
+                'name': most_recent_agent.name,
+                'description': most_recent_agent.description,
+                'tools': most_recent_agent.tools or []
+            }), 200
+        else:
+            return jsonify({'error': 'No agents found'}), 404
+            
+    except Exception as e:
+        logger.error(f"Error getting most recent agent: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+# --- NEW: Todo API Routes ---
+@chatbot_bp.route('/todos', methods=['GET'])
+@login_required
+def get_todos():
+    """Get all todos for the current user."""
+    try:
+        todos = Todo.get_user_todos(current_user.id)
+        return jsonify({'todos': [todo.to_dict() for todo in todos]}), 200
+    except Exception as e:
+        logger.error(f"Error fetching todos: {str(e)}", exc_info=True)
+        return jsonify({'error': 'Failed to fetch todos'}), 500
+
+@chatbot_bp.route('/todos/current', methods=['GET'])
+@login_required
+def get_current_task():
+    """Get the current active task for the user."""
+    try:
+        current_task = Todo.get_current_task(current_user.id)
+        if current_task:
+            return jsonify({'current_task': current_task.to_dict()}), 200
+        else:
+            return jsonify({'current_task': None}), 200
+    except Exception as e:
+        logger.error(f"Error fetching current task: {str(e)}", exc_info=True)
+        return jsonify({'error': 'Failed to fetch current task'}), 500
+
+@chatbot_bp.route('/todos/clear-current', methods=['POST'])
+@login_required
+def clear_current_task():
+    """Clear all current tasks for the user."""
+    try:
+        # Clear all current tasks for this user
+        Todo.query.filter_by(user_id=current_user.id, current_task=True).update({'current_task': False})
+        db.session.commit()
+        return jsonify({'message': 'Current task cleared'}), 200
+    except Exception as e:
+        logger.error(f"Error clearing current task: {str(e)}", exc_info=True)
+        return jsonify({'error': 'Failed to clear current task'}), 500
+
+@chatbot_bp.route('/todos', methods=['POST'])
+@login_required
+def create_todo():
+    """Create a new todo for the current user."""
+    try:
+        data = request.get_json() or {}
+        text = data.get('text', '').strip()
+        
+        if not text:
+            return jsonify({'error': 'Todo text is required'}), 400
+        
+        todo = Todo.create_todo(
+            user_id=current_user.id,
+            text=text,
+            completed=data.get('completed', False)
+        )
+        
+        return jsonify({'todo': todo.to_dict()}), 201
+        
+    except Exception as e:
+        logger.error(f"Error creating todo: {str(e)}", exc_info=True)
+        return jsonify({'error': 'Failed to create todo'}), 500
+
+@chatbot_bp.route('/todos/<int:todo_id>', methods=['PUT'])
+@login_required
+def update_todo(todo_id):
+    """Update a todo for the current user."""
+    try:
+        todo = Todo.query.filter_by(id=todo_id, user_id=current_user.id).first()
+        if not todo:
+            return jsonify({'error': 'Todo not found'}), 404
+        
+        data = request.get_json() or {}
+        text = data.get('text')
+        completed = data.get('completed')
+        current_task = data.get('current_task')
+        
+        todo.update_todo(text=text, completed=completed, current_task=current_task)
+        
+        return jsonify({'todo': todo.to_dict()}), 200
+        
+    except Exception as e:
+        logger.error(f"Error updating todo {todo_id}: {str(e)}", exc_info=True)
+        return jsonify({'error': 'Failed to update todo'}), 500
+
+@chatbot_bp.route('/todos/<int:todo_id>', methods=['DELETE'])
+@login_required
+def delete_todo(todo_id):
+    """Delete a todo for the current user."""
+    try:
+        todo = Todo.query.filter_by(id=todo_id, user_id=current_user.id).first()
+        if not todo:
+            return jsonify({'error': 'Todo not found'}), 404
+        
+        todo.delete_todo()
+        
+        return jsonify({'message': 'Todo deleted successfully'}), 200
+        
+    except Exception as e:
+        logger.error(f"Error deleting todo {todo_id}: {str(e)}", exc_info=True)
+        return jsonify({'error': 'Failed to delete todo'}), 500
+
+# --- NEW: Calendar Integration Route ---
+@chatbot_bp.route('/calendar', methods=['GET'])
+@login_required
+def get_calendar_events():
+    """Get Google Calendar events for the current user."""
+    try:
+        # Hardcoded request to pull Google Calendar data using Pipedream MCP
+        external_user_id = str(current_user.id)
+        app_slug = "google_calendar"
+        
+        # Try different possible tool names for listing events
+        possible_tool_names = [
+            "google_calendar-list-events",
+            "google_calendar-events-list", 
+            "google_calendar-get-events",
+            "list-events",
+            "events-list"
+        ]
+        
+        # Get today's date range
+        today = datetime.now().date()
+        start_time = datetime.combine(today, datetime.min.time()).isoformat() + 'Z'
+        end_time = datetime.combine(today, datetime.max.time()).isoformat() + 'Z'
+        
+        # logger.info(f"Fetching events for today: {today}")
+        # logger.info(f"Time range: {start_time} to {end_time}")
+        
+        # Try to get available tools first to see what's available
+        # logger.info(f"Attempting to get calendar events for user {external_user_id}")
+        
+        # First, let's try to discover what tools are available
+        tools_data = pipedream_tool_service.get_tools_for_app(external_user_id, app_slug)
+        if tools_data and 'tools' in tools_data:
+            available_tools = [tool.get('name', '') for tool in tools_data['tools']]
+            # logger.info(f"Available Google Calendar tools: {available_tools}")
+            
+            # Find the best matching tool for listing events
+            list_events_tool = None
+            for tool_name in possible_tool_names:
+                if tool_name in available_tools:
+                    list_events_tool = tool_name
+                    break
+            
+            if not list_events_tool:
+                # If no exact match, look for tools containing 'event' or 'list'
+                for tool in tools_data['tools']:
+                    tool_name = tool.get('name', '').lower()
+                    if 'event' in tool_name or 'list' in tool_name:
+                        list_events_tool = tool.get('name')
+                        break
+            
+            if not list_events_tool:
+                logger.error(f"No suitable calendar list events tool found. Available: {available_tools}")
+                return jsonify({'error': 'No calendar list events tool available'}), 500
+        else:
+            logger.warning("Could not discover available tools, using default tool name")
+            list_events_tool = "google_calendar-list-events"
+        
+        # logger.info(f"Using calendar tool: {list_events_tool}")
+        
+        # Prepare tool arguments - try different parameter combinations
+        tool_args_variations = [
+            {
+                "timeMin": start_time,
+                "timeMax": end_time,
+                "maxResults": 10
+            },
+            {
+                "start": start_time,
+                "end": end_time,
+                "maxResults": 10
+            },
+            {
+                "timeMin": start_time,
+                "timeMax": end_time,
+                "calendarId": "primary"
+            },
+            {
+                "start": start_time,
+                "end": end_time,
+                "calendarId": "primary"
+            }
+        ]
+        
+        result = None
+        for i, tool_args in enumerate(tool_args_variations):
+            try:
+                # logger.info(f"Trying calendar tool with args variation {i+1}: {tool_args}")
+                result = pipedream_tool_service.execute_tool(
+                    external_user_id=external_user_id,
+                    app_slug=app_slug,
+                    tool_name=list_events_tool,
+                    tool_args=tool_args
+                )
+                
+                if result and 'error' not in result:
+                    # logger.info(f"Calendar tool succeeded with variation {i+1}")
+                    break
+                elif result and 'error' in result:
+                    logger.warning(f"Calendar tool error with variation {i+1}: {result['error']}")
+                    
+            except Exception as e:
+                logger.warning(f"Calendar tool exception with variation {i+1}: {str(e)}")
+                continue
+        
+        if not result or 'error' in result:
+            error_msg = result.get('error', 'Unknown error') if result else 'No result from calendar tool'
+            logger.error(f"All calendar tool variations failed. Last error: {error_msg}")
+            return jsonify({'error': f'Calendar access failed: {error_msg}'}), 500
+        
+        # logger.info(f"Calendar tool raw result: {result}")
+        
+        # Parse the calendar events from the result
+        events = []
+        
+        # Handle different possible response structures
+        items = None
+        
+        # Check if result has 'content' array (Pipedream MCP format)
+        if 'content' in result and isinstance(result['content'], list):
+            for content_item in result['content']:
+                if isinstance(content_item, dict) and 'text' in content_item:
+                    try:
+                        # Parse the JSON string from the text field
+                        text_content = content_item['text']
+                        if isinstance(text_content, str):
+                            parsed_content = json.loads(text_content)
+                            if 'ret' in parsed_content and isinstance(parsed_content['ret'], list):
+                                items = parsed_content['ret']
+                                break
+                    except (json.JSONDecodeError, KeyError) as e:
+                        logger.warning(f"Failed to parse content text: {e}")
+                        continue
+        
+        # Fallback to direct structure checking
+        if not items:
+            if 'items' in result:
+                items = result['items']
+            elif 'events' in result:
+                items = result['events']
+            elif isinstance(result, list):
+                items = result
+            elif 'data' in result and isinstance(result['data'], list):
+                items = result['data']
+            elif 'ret' in result and isinstance(result['ret'], list):
+                items = result['ret']
+        
+        if items:
+            # logger.info(f"Found {len(items)} calendar events")
+            for item in items:
+                # Handle different event structures
+                if isinstance(item, dict):
+                    start_time = item.get('start', {}).get('dateTime', item.get('start', {}).get('date')) if isinstance(item.get('start'), dict) else item.get('start')
+                    end_time = item.get('end', {}).get('dateTime', item.get('end', {}).get('date')) if isinstance(item.get('end'), dict) else item.get('end')
+                    
+                    # Skip events without proper start/end times
+                    if not start_time or not end_time:
+                        continue
+                    
+                    try:
+                        # Parse the start time and check if it's today
+                        start_dt = datetime.fromisoformat(start_time.replace('Z', '+00:00'))
+                        end_dt = datetime.fromisoformat(end_time.replace('Z', '+00:00'))
+                        
+                        # Convert to local timezone for comparison
+                        from datetime import timezone
+                        local_tz = datetime.now().astimezone().tzinfo
+                        start_local = start_dt.astimezone(local_tz)
+                        end_local = end_dt.astimezone(local_tz)
+                        
+                        # Check if the event is today
+                        event_date = start_local.date()
+                        if event_date != today:
+                            # logger.info(f"Skipping event '{item.get('summary', 'No Title')}' - date {event_date} is not today {today}")
+                            continue
+                        
+                        event = {
+                            'title': item.get('summary', item.get('title', 'No Title')),
+                            'start': start_time,
+                            'end': end_time,
+                            'start_local': start_local.isoformat(),
+                            'end_local': end_local.isoformat(),
+                            'location': item.get('location', ''),
+                            'description': item.get('description', ''),
+                            'urgent': False,
+                            'type': 'meeting' if 'meeting' in str(item.get('summary', '')).lower() else 'event'
+                        }
+                        events.append(event)
+                        # logger.info(f"Added event: {event['title']} at {start_local.strftime('%H:%M')}")
+                        
+                    except (ValueError, TypeError) as e:
+                        logger.warning(f"Failed to parse event time for '{item.get('summary', 'No Title')}': {e}")
+                        continue
+        else:
+            logger.warning(f"No events found in calendar response. Result structure: {list(result.keys()) if isinstance(result, dict) else type(result)}")
+        
+        # logger.info(f"Returning {len(events)} parsed events")
+        return jsonify({'events': events}), 200
+        
+    except Exception as e:
+        logger.error(f"Error fetching calendar events: {str(e)}", exc_info=True)
+        return jsonify({'error': f'Failed to fetch calendar events: {str(e)}'}), 500
+
+# --- NEW: Calendar Debug Route ---
+@chatbot_bp.route('/calendar/debug', methods=['GET'])
+@login_required
+def debug_calendar():
+    """Debug endpoint to check calendar access and available tools."""
+    try:
+        external_user_id = str(current_user.id)
+        app_slug = "google_calendar"
+        
+        debug_info = {
+            'user_id': external_user_id,
+            'app_slug': app_slug,
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        # Check if tools are available
+        tools_data = pipedream_tool_service.get_tools_for_app(external_user_id, app_slug)
+        if tools_data and 'tools' in tools_data:
+            available_tools = [tool.get('name', '') for tool in tools_data['tools']]
+            debug_info['available_tools'] = available_tools
+            debug_info['tool_count'] = len(available_tools)
+            
+            # Check for event-related tools
+            event_tools = [tool for tool in available_tools if 'event' in tool.lower()]
+            debug_info['event_tools'] = event_tools
+            
+            # Check for list-related tools
+            list_tools = [tool for tool in available_tools if 'list' in tool.lower()]
+            debug_info['list_tools'] = list_tools
+            
+        else:
+            debug_info['error'] = 'No tools data available'
+            debug_info['tools_data'] = tools_data
+        
+        # Check authentication status
+        try:
+            auth_headers = pipedream_tool_service.get_mcp_auth_headers(external_user_id, app_slug)
+            debug_info['auth_headers_available'] = bool(auth_headers)
+            if auth_headers:
+                debug_info['auth_keys'] = list(auth_headers.keys())
+        except Exception as auth_error:
+            debug_info['auth_error'] = str(auth_error)
+        
+        return jsonify(debug_info), 200
+        
+    except Exception as e:
+        logger.error(f"Error in calendar debug: {str(e)}", exc_info=True)
+        return jsonify({'error': f'Debug failed: {str(e)}'}), 500
+
+# --- NEW: Todo Generation Route ---
+@chatbot_bp.route('/generate-todos', methods=['POST'])
+@login_required
+def generate_morning_todos():
+    """Generate morning todos through conversation with the agent."""
+    try:
+        data = request.get_json() or {}
+        agent_id = data.get('agent_id')
+        
+        if not agent_id:
+            return jsonify({'error': 'Agent ID is required'}), 400
+        
+        # Get today's date information
+        today = datetime.now()
+        today_str = today.strftime("%A, %B %d, %Y")  # e.g., "Friday, July 12, 2025"
+        
+        # Create a morning todo generation prompt with today's date
+        morning_prompt = f"""Good morning! Today is {today_str}. It's time to plan your day. 
+
+Based on your calendar for today ({today_str}), emails, and ongoing projects, please suggest 3-5 specific tasks for today. Focus on:
+1. High-priority items that need attention
+2. Follow-ups from yesterday
+3. Preparation for upcoming meetings
+4. Important deadlines
+
+Please respond with just a simple list of tasks, one per line, without explanations."""
+        
+        # Get today's calendar events to provide context
+        try:
+            # Get today's calendar events for context
+            today_events = []
+            external_user_id = str(current_user.id)
+            app_slug = "google_calendar"
+            
+            # Use the same calendar fetching logic as the calendar route
+            tools_data = pipedream_tool_service.get_tools_for_app(external_user_id, app_slug)
+            if tools_data and 'tools' in tools_data:
+                available_tools = [tool.get('name', '') for tool in tools_data['tools']]
+                list_events_tool = None
+                for tool_name in ["google_calendar-list-events", "google_calendar-events-list", "list-events"]:
+                    if tool_name in available_tools:
+                        list_events_tool = tool_name
+                        break
+                
+                if list_events_tool:
+                    today = datetime.now().date()
+                    start_time = datetime.combine(today, datetime.min.time()).isoformat() + 'Z'
+                    end_time = datetime.combine(today, datetime.max.time()).isoformat() + 'Z'
+                    
+                    result = pipedream_tool_service.execute_tool(
+                        external_user_id=external_user_id,
+                        app_slug=app_slug,
+                        tool_name=list_events_tool,
+                        tool_args={"timeMin": start_time, "timeMax": end_time, "maxResults": 10}
+                    )
+                    
+                    if result and 'content' in result:
+                        for content_item in result['content']:
+                            if isinstance(content_item, dict) and 'text' in content_item:
+                                try:
+                                    parsed_content = json.loads(content_item['text'])
+                                    if 'ret' in parsed_content:
+                                        for item in parsed_content['ret']:
+                                            if isinstance(item, dict) and 'summary' in item:
+                                                start_time = item.get('start', {}).get('dateTime', '')
+                                                if start_time:
+                                                    start_dt = datetime.fromisoformat(start_time.replace('Z', '+00:00'))
+                                                    local_tz = datetime.now().astimezone().tzinfo
+                                                    start_local = start_dt.astimezone(local_tz)
+                                                    if start_local.date() == today:
+                                                        today_events.append({
+                                                            'title': item.get('summary', 'No Title'),
+                                                            'time': start_local.strftime('%H:%M'),
+                                                            'duration': '1 hour'  # Default duration
+                                                        })
+                                except (json.JSONDecodeError, KeyError, ValueError):
+                                    continue
+        except Exception as e:
+            logger.warning(f"Failed to fetch today's events for todo generation: {e}")
+        
+        # Add calendar context to the prompt
+        calendar_context = ""
+        if today_events:
+            calendar_context = f"\n\nToday's calendar events:\n" + "\n".join([f"- {event['time']}: {event['title']}" for event in today_events[:5]])
+        
+        enhanced_prompt = morning_prompt + calendar_context
+        
+        # Use the agent service to process the morning prompt
+        final_assistant_message, memory_info = agent_service.process_message(
+            agent_id=agent_id,
+            user_id=current_user.id,
+            user_message=enhanced_prompt,
+            thread_id=None,
+            tool_choice='auto',
+            web_search_enabled=True,
+            logger=logger,
+            execution_type="todo_generation"
+        )
+        
+        # Parse the response to extract todo items
+        if final_assistant_message:
+            # Split by lines and clean up
+            lines = final_assistant_message.split('\n')
+            todos = []
+            for line in lines:
+                line = line.strip()
+                # Remove common prefixes like numbers, dashes, etc.
+                line = re.sub(r'^[\d\-\.\s]+', '', line)
+                if line and len(line) > 3:  # Minimum length for a meaningful todo
+                    todos.append(line)
+            
+            # Create todos in the database
+            created_todos = []
+            for todo_text in todos[:5]:  # Limit to 5 todos
+                todo = Todo.create_todo(
+                    user_id=current_user.id,
+                    text=todo_text,
+                    completed=False
+                )
+                created_todos.append(todo.to_dict())
+            
+            return jsonify({'todos': created_todos}), 200
+        else:
+            return jsonify({'error': 'Failed to generate todos'}), 500
+            
+    except Exception as e:
+        logger.error(f"Error generating morning todos: {str(e)}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
+@chatbot_bp.route('/tools/config', methods=['GET'])
+@login_required
+def get_tools_config():
+    """Return tool configuration with mention mappings."""
+    from jarvus_app.config import ALL_PIPEDREAM_APPS
+    
+    # Get user's selected tools from session
+    selected_tools = session.get('selected_tools', [])
+    
+    available_tools = []
+    for app in ALL_PIPEDREAM_APPS:
+        # If no tools selected, show all; otherwise filter by selected tools
+        if not selected_tools or app['slug'] in selected_tools:
+            tool_info = {
+                'name': app['name'],
+                'slug': app['slug'],
+                'mention': app.get('mention', app['slug']),
+                'description': f"Access {app['name']} functionality"
+            }
+            available_tools.append(tool_info)
+    
+    return jsonify(available_tools), 200

@@ -16,6 +16,7 @@ from jarvus_app.routes.oauth import oauth_bp
 from jarvus_app.routes.profile import profile_bp
 from jarvus_app.routes.web_pages import web
 from jarvus_app.routes.memory import memory_bp
+from jarvus_app.routes.workflow import workflow_bp
 
 from .db import db  # Use the shared db instance
 from .models.user import User
@@ -89,12 +90,11 @@ def create_app():
     app.register_blueprint(web)
     app.register_blueprint(auth)
     app.register_blueprint(api)
-    # app.register_blueprint(mcp_bp, url_prefix='/mcp')
     app.register_blueprint(chatbot_bp, url_prefix="/chatbot")
     app.register_blueprint(memory_bp, url_prefix="/memory")
+    app.register_blueprint(workflow_bp, url_prefix="/workflows")
     app.register_blueprint(oauth_bp)
     app.register_blueprint(profile_bp)
-    # app.register_blueprint(flow_builder_bp, url_prefix='/flow_builder')
 
     return app
 
@@ -105,6 +105,11 @@ def setup_logging():
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
+    logging.basicConfig(level=logging.INFO)
+    logging.getLogger("jarvus.memory").setLevel(logging.INFO)
+    
+    logging.getLogger("azure.core.pipeline.policies.http_logging_policy").setLevel(logging.WARNING)
+
 
     # Get a logger for your app
     logger = logging.getLogger("jarvus")

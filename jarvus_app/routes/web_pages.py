@@ -8,6 +8,7 @@ from sqlalchemy.exc import ProgrammingError
 from ..utils.tool_permissions import get_connected_services
 from .chatbot import handle_chat_message
 from ..models.history import History
+from jarvus_app.config import ALL_PIPEDREAM_APPS
 
 web = Blueprint("web", __name__)
 
@@ -15,6 +16,12 @@ web = Blueprint("web", __name__)
 @web.route("/")
 def landing():
     return render_template("landing.html")
+
+
+@web.route("/control-bar")
+def control_bar():
+    """Serve the control bar interface for the Electron desktop app"""
+    return render_template("control-bar.html")
 
 
 @web.route("/chatbot", strict_slashes=False)
@@ -27,14 +34,25 @@ def chatbot():
     agents = History.query.filter_by(user_id=current_user.id).order_by(History.created_at.desc()).all()
     most_recent_agent = agents[0] if agents else None
 
+    # Import and fetch workflows
+    from ..models.workflow import Workflow
+    workflows = Workflow.get_user_workflows(current_user.id)
+
+    # Build tool_list with a 'connected' property for each tool
+    tool_list = []
+    for app in ALL_PIPEDREAM_APPS:
+        slug = app["slug"]
+        tool = app.copy()
+        tool["connected"] = connected_services.get(slug, False)
+        tool_list.append(tool)
+    tool_slugs = [tool["slug"] for tool in tool_list]
     return render_template(
         "chatbot.html",
+        tool_list=tool_list,
+        tool_slugs=tool_slugs,
         agents=agents,
         most_recent_agent=most_recent_agent,
-        google_workspace_connected=connected_services["google-workspace"],
-        notion_connected=connected_services["notion"],
-        slack_connected=connected_services["slack"],
-        zoom_connected=connected_services["zoom"],
+        workflows=workflows
     )
 
 @web.route("/chatbot/send", methods=["POST"])

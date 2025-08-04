@@ -40,14 +40,14 @@ class MCPClient:
     
     def __init__(self, base_url: Optional[str] = None):
         self.base_url = base_url or os.getenv("MCP_SERVER_URL", "http://localhost:8000")
-        print(f"\nMCP Client initialized with URL: {self.base_url}")
+        # print(f"\nMCP Client initialized with URL: {self.base_url}")
         self.default_timeout = 60  # 60 second default timeout
 
     def _handle_response(self, response: requests.Response) -> Dict[str, Any]:
         """Handle HTTP response and raise appropriate exceptions."""
-        print("\n=== MCP Response Debug ===")
-        print(f"Response status code: {response.status_code}")
-        print(f"Response headers: {dict(response.headers)}")
+        # print("\n=== MCP Response Debug ===")
+        # print(f"Response status code: {response.status_code}")
+        # print(f"Response headers: {dict(response.headers)}")
         
         if response.status_code == 401:
             raise AuthenticationError("Authentication failed")
@@ -59,9 +59,9 @@ class MCPClient:
         response.raise_for_status()
         result = response.json()
         
-        print(f"Response body type: {type(result)}")
-        # print(f"Response body: {result}")
-        print("=== End MCP Response Debug ===\n")
+        # print(f"Response body type: {type(result)}")
+        # # print(f"Response body: {result}")
+        # print("=== End MCP Response Debug ===\n")
         
         return result
 
@@ -71,7 +71,7 @@ class MCPClient:
         
         Args:
             tool_name: The name of the tool (e.g., 'gmail', 'calendar')
-            parameters: Operation-specific parameters
+            payload: Operation-specific parameters
             jwt_token: Optional JWT token for authentication
             timeout: Optional timeout in seconds (defaults to self.default_timeout)
             
@@ -90,34 +90,33 @@ class MCPClient:
         if not isinstance(payload, dict):
             raise ToolExecutionError("Parameters must be a dictionary")
         
-        print(f"\nExecuting {tool_name}")
-        print(f"Parameters: {payload}")
-        print(f"JWT Token provided: {jwt_token is not None}")
+        # print(f"\nExecuting {tool_name}")
+        # print(f"Original payload: {payload}")
+        # print(f"JWT Token provided: {jwt_token is not None}")
         
         try:
-            # Construct the URL for the MCP server with trailing slash
+            # Use the MCP server URL
             url = f"{self.base_url}/{tool_name}/"
-            print(f"Making request to: {url}")
+            # print(f"Making request to MCP server: {url}")
+            request_body = payload
             
             # Set up headers with JWT token if provided
             headers = {}
             if jwt_token:
                 headers['Authorization'] = f'Bearer {jwt_token}'
-                print(f"Added Authorization header: Bearer {jwt_token[:10]}...")
+                # print(f"Added Authorization header: Bearer {jwt_token[:10]}...")
             else:
-                print("No JWT token provided, skipping Authorization header")
+                # print("No JWT token provided, skipping Authorization header")
+                pass
             
-            print(f"Request headers: {headers}")
+            # print(f"Request headers: {headers}")
+            # print(f"Request payload: {request_body}")
             
-            # If parameters contains an 'operation' field, use the nested parameters
-            # request_body = parameters.get('parameters', parameters)
-            print(f"Request payload: {payload}")
-            
-            # Send parameters directly as the request body with timeout
+            # Send request with timeout
             timeout = timeout or self.default_timeout
             resp = requests.post(
                 url, 
-                json=payload, 
+                json=request_body, 
                 headers=headers, 
                 allow_redirects=True,
                 timeout=timeout
@@ -127,20 +126,20 @@ class MCPClient:
             result = self._handle_response(resp)
             
             # Log successful execution
-            print(f"Successfully executed {tool_name}")
-            # print(f"About to return result: {result}")
-            print(f"Result type: {type(result)}")
+            # print(f"Successfully executed {tool_name}")
+            # # print(f"About to return result: {result}")
+            # print(f"Result type: {type(result)}")
             return result
-            
+        
         except requests.exceptions.Timeout:
             error_msg = f"Request timed out after {timeout} seconds for {tool_name}"
-            print(f"\n{error_msg}")
+            # print(f"\n{error_msg}")
             raise ToolExecutionError(error_msg)
         except requests.exceptions.RequestException as e:
             error_msg = f"Error executing {tool_name}: {str(e)}"
-            print(f"\n{error_msg}")
-            print(f"Request URL: {url}")
-            print(f"Request payload: {payload}")
+            # print(f"\n{error_msg}")
+            # print(f"Request URL: {url}")
+            # print(f"Request payload: {request_body}")
             raise ToolExecutionError(error_msg) from e
 
 

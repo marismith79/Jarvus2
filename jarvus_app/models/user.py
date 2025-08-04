@@ -15,6 +15,7 @@ class User(UserMixin, db.Model):
 
     # Add this line
     histories = db.relationship('History', back_populates='user', lazy=True, cascade="all, delete-orphan")
+    todos = db.relationship('Todo', back_populates='user', lazy=True, cascade="all, delete-orphan")
 
     @property
     def is_authenticated(self):

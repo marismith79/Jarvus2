@@ -11,26 +11,22 @@ from typing import Any, Callable, Dict, List, Optional
 from azure.ai.inference.models import ChatCompletionsToolDefinition, FunctionDefinition
 
 from .mcp_client import mcp_client, ToolExecutionError
-from ..utils.scope_helpers import generate_scope_description
 
 
 class ToolCategory(Enum):
     """Categories for different types of tools."""
     # Service Provider Categories
-    GOOGLE_WORKSPACE = "google-workspace"
     MICROSOFT_365 = "microsoft-365"
     CUSTOM = "custom"
     WEB = "web"
+    BROWSER = "browser"
     CHROME = "chrome"
-    
-    # Google Workspace Service Categories
-    GMAIL = "google-workspace.gmail"
-    DRIVE = "google-workspace.drive"
-    DOCS = "google-workspace.docs"
-    SHEETS = "google-workspace.sheets"
-    SLIDES = "google-workspace.slides"
-
-    CALENDAR = "google-workspace.calendar"
+    DOCS = "docs"
+    GMAIL = "gmail"
+    CALENDAR = "calendar"
+    DRIVE = "drive"
+    SHEETS = "sheets"
+    SLIDES = "slides"
 
 
 @dataclass
@@ -66,7 +62,7 @@ class ToolMetadata:
     parameters: Optional[List[ToolParameter]] = None
     result_formatter: Optional[Callable] = None
 
-    def to_sdk_definition(self, user_scopes: Optional[List[str]] = None, scope_description: Optional[str] = None) -> ChatCompletionsToolDefinition:
+    def to_sdk_definition(self) -> ChatCompletionsToolDefinition:
         """Convert this metadata into an Azure SDK ChatCompletionsToolDefinition."""
         props: Dict[str, Any] = {}
         required: List[str] = []
@@ -86,14 +82,9 @@ class ToolMetadata:
                 }
             }
 
-        # Add scope description to the tool description if available
-        description = self.description
-        if scope_description:
-            description = f"{description}\n\n{scope_description}"
-
         func_def = FunctionDefinition(
             name=self.name,
-            description=description,
+            description=self.description,
             parameters={
                 "type": "object",
                 "properties": props,
@@ -108,7 +99,7 @@ class ToolRegistry:
 
     def __init__(self):
         self._tools: Dict[str, ToolMetadata] = {}
-        print("Tool Registry initialized")
+        # print("Tool Registry initialized")
 
     def register(self, tool: ToolMetadata) -> None:
         """Register a new tool's metadata."""
@@ -144,9 +135,9 @@ class ToolRegistry:
             tools_by_category[tool.category].append(tool)
         return tools_by_category
 
-    def get_sdk_tools(self, user_scopes: Optional[List[str]] = None) -> List[ChatCompletionsToolDefinition]:
+    def get_sdk_tools(self) -> List[ChatCompletionsToolDefinition]:
         """Return all active tools as Azure SDK definitions."""
-        return [m.to_sdk_definition(user_scopes) for m in self._tools.values() if m.is_active]
+        return [m.to_sdk_definition() for m in self._tools.values() if m.is_active]
 
     def execute_tool(
         self,
@@ -155,74 +146,76 @@ class ToolRegistry:
         jwt_token: Optional[str] = None
     ) -> Any:
         """Execute a tool operation and format the result."""
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        # logger.info(f"🔧 ToolRegistry.execute_tool called with tool_name: {tool_name}")
+        # logger.info(f"🔧 Parameters: {parameters}")
+        
         tool = self.get_tool(tool_name)
         if not tool or not tool.is_active:
+            logger.error(f"🔧 Tool not available or not active: {tool_name}")
             raise ValueError(f"Tool not available: {tool_name}")
 
+        # logger.info(f"🔧 Found tool: {tool.name}, executor: {tool.executor}")
         executor = tool.executor or mcp_client.execute_tool
-        request_body = {
-            "operation": tool_name,
-            "parameters": parameters
-        }
-        raw_result = executor(
-            tool_name=tool.server_path,
-            payload=request_body,
-            jwt_token=jwt_token
-        )
+        
+        # For browser tools, pass parameters directly
+        if tool_name in ["open_website", "get_page_metadata", "get_tabs_info", "get_page_content", "execute_javascript"]:
+            # logger.info("🔧 Using direct parameter passing for browser tool")
+            raw_result = executor(tool_name, parameters, jwt_token)
+        else:
+            # For other tools, use the legacy format
+            request_body = {
+                "operation": tool_name,
+                "parameters": parameters
+            }
+            # logger.info(f"🔧 Using legacy format, request_body: {request_body}")
+            raw_result = executor(
+                tool_name=tool.server_path,
+                payload=request_body,
+                jwt_token=jwt_token
+            )
+        
+        # logger.info(f"🔧 Raw result: {raw_result}")
         return self._handle_tool_response(tool, raw_result)
 
     def _handle_tool_response(self, tool: ToolMetadata, raw_result: Any) -> Any:
         """Handle and optionally format the raw tool execution result."""
-        print(f"\nTool Registry: Got result from {tool.name}")
+        # print(f"\nTool Registry: Got result from {tool.name}")
         if tool.result_formatter:
             return tool.result_formatter(raw_result)
         return raw_result
 
-    def get_tools_by_module(self, module_name: str, user_scopes: Optional[List[str]] = None) -> List[ChatCompletionsToolDefinition]:
+    def get_tools_by_module(self, module_name: str) -> List[ChatCompletionsToolDefinition]:
         """Get tools from a specific module/file."""
         # Map frontend tool names to tool categories
         module_to_category = {
-            'gmail': ToolCategory.GMAIL,
+            'web': ToolCategory.WEB,
             'docs': ToolCategory.DOCS,
-            'slides': ToolCategory.SLIDES,
-            'sheets': ToolCategory.SHEETS,
-            'drive': ToolCategory.DRIVE,
+            'gmail': ToolCategory.GMAIL,
             'calendar': ToolCategory.CALENDAR,
             'web': ToolCategory.WEB,
+            'browser': ToolCategory.BROWSER,
         }
         
         category = module_to_category.get(module_name.lower())
         if category:
-            # Generate scope description for this module
-            scope_description = None
-            if user_scopes:
-                service_names = {
-                    ToolCategory.GMAIL: "Gmail",
-                    ToolCategory.CALENDAR: "Calendar", 
-                    ToolCategory.DRIVE: "Drive",
-                    ToolCategory.DOCS: "Docs",
-                    ToolCategory.SHEETS: "Sheets",
-                    ToolCategory.SLIDES: "Slides",
-                    ToolCategory.WEB: "Web"
-                }
-                service_name = service_names.get(category, module_name.title())
-                scope_description = generate_scope_description(user_scopes, service_name)
-            
             # Debug logging to help diagnose issues
-            tools = [m.to_sdk_definition(scope_description=scope_description) 
+            tools = [m.to_sdk_definition() 
                     for m in self._tools.values() 
                     if m.is_active and m.category == category]
             
-            print(f"Found {len(tools)} tools for category {category}")
+            # print(f"Found {len(tools)} tools for category {category}")
             return tools
-        print(f"No category found for module {module_name}")
+        # print(f"No category found for module {module_name}")
         return []
 
-    def get_sdk_tools_by_modules(self, module_names: List[str], user_scopes: Optional[List[str]] = None) -> List[ChatCompletionsToolDefinition]:
+    def get_sdk_tools_by_modules(self, module_names: List[str]) -> List[ChatCompletionsToolDefinition]:
         """Get tools from multiple modules."""
         all_tools = []
         for module_name in module_names:
-            all_tools.extend(self.get_tools_by_module(module_name, user_scopes))
+            all_tools.extend(self.get_tools_by_module(module_name))
         return all_tools
 
 
@@ -233,24 +226,6 @@ def format_tool_result(result: Any) -> str:
     if isinstance(result, dict):
         return "\n".join(f"{k}: {v}" for k, v in result.items())
     return str(result)
-
-
-def format_gmail_result(result: Any) -> Dict[str, Any]:
-    """Format Gmail tool results while preserving dictionary structure."""
-    if isinstance(result, dict):
-        return result
-    if isinstance(result, list):
-        return {"messages": result}
-    return {"result": str(result)}
-
-
-def format_calendar_result(result: Any) -> Dict[str, Any]:
-    """Format Calendar tool results while preserving dictionary structure."""
-    if isinstance(result, dict):
-        return result
-    if isinstance(result, list):
-        return {"events": result}
-    return {"result": str(result)}
 
 
 def format_font_result(result: Any) -> str:
@@ -308,27 +283,72 @@ def format_font_result(result: Any) -> str:
     return "\n".join(report)
 
 
+def format_browser_result(result: Any) -> Dict[str, Any]:
+    """Format browser tool results while preserving dictionary structure."""
+    if isinstance(result, dict):
+        return result
+    if isinstance(result, list):
+        return {"items": result}
+    return {"result": str(result)}
+
+
 # Instantiate registry
 tool_registry = ToolRegistry()
 
 # Import all tool registration functions
 from .tools import (
-    register_gmail_tools,
-    register_calendar_tools,
-    register_drive_tools,
-    register_docs_tools,
-    register_sheets_tools,
-    register_slides_tools,
-    register_chrome_tools,
-    register_web_search_tools
+    # register_browser_tools,
+    register_web_search_tools,
+    # register_docs_tools,
+    # register_gmail_tools,
+    # register_calendar_tools,
+    # register_drive_tools,
+    # register_sheets_tools,
+    # register_slides_tools
 )
 
 # Register all tools
-register_gmail_tools(tool_registry)
-register_calendar_tools(tool_registry)
-register_drive_tools(tool_registry)
-register_docs_tools(tool_registry)
-register_sheets_tools(tool_registry)
-register_slides_tools(tool_registry)
-register_chrome_tools(tool_registry)
-register_web_search_tools(tool_registry) 
+# register_browser_tools(tool_registry)
+# register_web_search_tools(tool_registry)
+# register_docs_tools(tool_registry)
+# register_gmail_tools(tool_registry)
+# register_calendar_tools(tool_registry)
+# register_drive_tools(tool_registry)
+# register_sheets_tools(tool_registry)
+# register_slides_tools(tool_registry) 
+
+def user_feedback_executor(**kwargs):
+    """Executor for user_feedback tool. If user_response is provided, return it as the result. Otherwise, trigger sidebar notification/event for clarification."""
+    question = kwargs.get('question')
+    user_response = kwargs.get('user_response')
+    if user_response is not None:
+        return {'user_response': user_response, 'status': 'received'}
+    # If no user_response, return a dict indicating clarification is needed
+    import logging
+    logging.getLogger(__name__).info(f"Triggering sidebar clarification: {question}")
+    return {
+        'action': 'user_feedback',
+        'question': question,
+        'status': 'pending'
+    }
+
+user_feedback_tool = ToolMetadata(
+    name="user_feedback",
+    description="Use this tool to ask the user for clarification or missing information ONLY if it is necessary to proceed. Do not trigger this tool unless the user's input is required to resolve ambiguity or missing data.",
+    category=ToolCategory.CUSTOM,
+    server_path="user_feedback",
+    requires_auth=False,
+    is_active=True,
+    executor=user_feedback_executor,
+    parameters=[
+        ToolParameter(
+            name="question",
+            type="string",
+            description="The clarification or question to ask the user.",
+            required=True
+        )
+    ]
+)
+
+# Register the tool (add this to wherever tools are registered)
+tool_registry.register(user_feedback_tool) 

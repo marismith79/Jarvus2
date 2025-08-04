@@ -31,7 +31,25 @@ def log_test_result(test_name: str, status: str, response: Any = None, error: st
     with open(RESULTS_FILE, 'w') as f:
         json.dump(results, f, indent=2)
 
-
+def log_test_result_to_stdout(test_name: str, status: str, response: Any = None, error: str = None, extra: Dict[str, Any] = None):
+    """Append a test result as a JSON string (one per line) to test_results/test_run_log.txt, handling non-serializable objects."""
+    def default_serializer(obj):
+        if hasattr(obj, 'to_dict'):
+            return obj.to_dict()
+        return str(obj)
+    result = {
+        'test_name': test_name,
+        'status': status,
+        'timestamp': datetime.datetime.utcnow().isoformat(),
+        'response': response,
+        'error': error,
+    }
+    if extra:
+        result.update(extra)
+    log_file = os.path.join(RESULTS_DIR, 'test_run_log.txt')
+    with open(log_file, 'a') as f:
+        f.write(json.dumps(result, default=default_serializer) + '\n')
+    
 def reset_results():
     """Clear the results file before a new test run."""
     with open(RESULTS_FILE, 'w') as f:

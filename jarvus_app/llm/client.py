@@ -1,15 +1,24 @@
 """
 Azure AI Inference client implementation for handling LLM interactions.
 This module provides a clean interface for communicating with Azure AI Foundry API
-and managing conversation state.
+and managing conversation state with multimodal support.
 """
 
 import json
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from azure.ai.inference import ChatCompletionsClient
 from azure.core.credentials import AzureKeyCredential
+from azure.ai.inference.models import (
+    SystemMessage,
+    UserMessage,
+    AssistantMessage,
+    ToolMessage,
+    TextContentItem,
+    ImageContentItem,
+    ImageUrl
+)
 
 
 class JarvusAIClient:
@@ -43,12 +52,12 @@ class JarvusAIClient:
                 return {}
             return json.loads(arguments)
         except json.JSONDecodeError as e:
-            print(f"Failed to parse tool arguments: {e}")
+            # print(f"Failed to parse tool arguments: {e}")
             return {}
 
     def create_chat_completion(
         self,
-        messages: List[Dict[str, str]],
+        messages: List[Union[Dict[str, str], SystemMessage, UserMessage, AssistantMessage, ToolMessage]],
         max_tokens: int = 2048,
         temperature: float = 0.8,
         top_p: float = 0.1,
@@ -57,15 +66,11 @@ class JarvusAIClient:
         frequency_penalty: float = 0.0,
         tools: Optional[List[dict]] = None,
         tool_choice: Optional[str] = None,
-    ) -> Dict:
-        """Create a chat completion using Azure AI Foundry API."""
+        logger: Optional[Any] = None,  # Add logger argument
+    ):
+        """Create a chat completion using Azure AI Foundry API with multimodal support."""
         try:
-            print("\n=== Creating Chat Completion ===")
-            print(f"Number of messages: {len(messages)}")
-            print(f"Last message role: {messages[-1]['role'] if messages else 'None'}")
-            print(f"Tool choice: {tool_choice}")
-            # print(f"Raw messages: {messages}")
-            
+            # Messages are already in the correct format from agent_service
             kwargs = {
                 "messages": messages,
                 "max_tokens": max_tokens,
@@ -77,27 +82,28 @@ class JarvusAIClient:
                 **({"tools": tools} if tools else {}),
                 **({"tool_choice": tool_choice} if tool_choice else {}),
             }
+            # if logger:
+            #     logger.info(f"[AzureAI] Request kwargs: {json.dumps({k: v for k, v in kwargs.items() if k != 'messages'}, default=str)[:1000]}")
+            #     # Log message count instead of full content to avoid base64 spam
+            #     message_count = len(messages)
+            #     logger.info(f"[AzureAI] Request messages: {message_count} messages")
             response = self.client.complete(**kwargs)
-            
-            print(f"Request kwargs: {kwargs}")
-            print(f"Raw response: {response}")
-            print(f"Response choices: {response['choices']}")
-            print(f"First choice message: {response['choices'][0]['message']}")
-            
-            choice = response.choices[0] # ChatChoice
-            msg = choice.message # ChatResponseMessage
-            if msg.tool_calls:
-                # one or more ChatCompletionsToolCall objects
-                for call in msg.tool_calls:
-                    print("Function to call:", call.name)
-                    print("With args JSON:", call.arguments)
-            else:
-                return {"assistant": {"role": msg.role, "content": msg.content}}
-
+            # if logger:
+            #     try:
+            #         logger.info(f"[AzureAI] Response Logged")
+            #     except Exception as e:
+            #         logger.warning(f"[AzureAI] Could not log response: {e}")
+            return response
         except Exception as e:
             error_msg = f"Azure AI Foundry API Error: {str(e)}"
+            if logger:
+                logger.error(f"[AzureAI] Exception: {error_msg}")
             return {"error": error_msg}
 
     def format_message(self, role: str, content: str) -> Dict[str, str]:
         """Format a message for the chat completion."""
         return {"role": role, "content": content}
+    
+    def format_response(self, response) -> Dict:
+        """Format a response from azure open ai api"""
+        return {"assistant": {"role": response.choices[0].message.role, "content": response.choices[0].message.content}}
